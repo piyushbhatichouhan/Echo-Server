@@ -1,0 +1,26 @@
+.eh-deployment-controls {
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 20px;
+}
+
+.eh-deployment-controls h2 {
+
+  margin: 0;
+
+  font-size: 1.35rem;
+
+  font-weight: 700;
+}
+
+.eh-control-grid {
+
+  display: flex;
+
+  flex-wrap: wrap;
+
+  gap: 14px;
+}

@@ -1,0 +1,35 @@
+.eh-nav-item {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 14px;
+
+    padding: 12px 16px;
+
+    border-radius: var(--radius);
+
+    color: var(--text-secondary);
+
+    transition: var(--transition);
+
+}
+
+.eh-nav-item:hover {
+
+    background: rgba(255, 138, 0, .08);
+
+    color: var(--text-primary);
+
+}
+
+.eh-nav-item.active {
+
+    background: rgba(255, 138, 0, .16);
+
+    color: var(--accent);
+
+    box-shadow: var(--glow);
+
+}

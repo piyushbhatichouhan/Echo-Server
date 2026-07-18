@@ -1,0 +1,72 @@
+.eh-project-grid {
+
+    display: grid;
+
+    grid-template-columns: 320px 1fr;
+
+    gap: 24px;
+
+    margin-top: 24px;
+}
+
+@media (max-width: 900px) {
+
+    .eh-project-grid {
+
+        grid-template-columns: 1fr;
+    }
+
+}
+
+.eh-project-grid {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 24px;
+
+    margin-top: 24px;
+}
+
+.eh-project-top {
+
+    display: grid;
+
+    grid-template-columns: 1fr 320px;
+
+    gap: 24px;
+
+    align-items: start;
+}
+
+@media(max-width:900px) {
+
+    .eh-project-top {
+
+        grid-template-columns: 1fr;
+    }
+}
+
+
+.eh-workspace {
+
+    display: grid;
+
+    grid-template-columns: 320px 1fr;
+
+    gap: 24px;
+
+    margin-top: 20px;
+
+    align-items: start;
+}
+
+@media(max-width:1000px) {
+
+    .eh-workspace {
+
+        grid-template-columns: 1fr;
+    }
+
+}

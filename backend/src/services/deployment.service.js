@@ -163,9 +163,14 @@ const stopProject = async (projectId, ownerId) => {
 
   await containerService.stopContainer(projectId);
 
+  await deploymentLogService.addLog(
+    deployment.id,
+    "Container stopped successfully.",
+  );
+
   await deploymentRepository.updateDeploymentStatus(deployment.id, "stopped");
 
-  await deploymentLogService.addLog(deployment.id, "Container stopped.");
+  await deploymentLogService.addLog(deployment.id, "Project is now offline.");
 
   return {
     message: "Project stopped successfully",
@@ -185,13 +190,15 @@ const startProject = async (projectId, ownerId) => {
 
   await containerService.startContainerByProject(projectId, deployment.id);
 
-  await deploymentRepository.updateDeploymentStatus(deployment.id, "running");
-
-  await deploymentLogService.addLog(deployment.id, "Container started.");
   await deploymentLogService.addLog(
     deployment.id,
-    "Deployment completed successfully.",
+    "Container started successfully.",
   );
+
+  await deploymentRepository.updateDeploymentStatus(deployment.id, "running");
+
+  await deploymentLogService.addLog(deployment.id, "Project is now online.");
+
   return {
     message: "Project started successfully",
   };
@@ -210,9 +217,14 @@ const restartProject = async (projectId, ownerId) => {
 
   await containerService.restartContainer(projectId, deployment.id);
 
+  await deploymentLogService.addLog(
+    deployment.id,
+    "Container restarted successfully.",
+  );
+
   await deploymentRepository.updateDeploymentStatus(deployment.id, "running");
 
-  await deploymentLogService.addLog(deployment.id, "Container restarted.");
+  await deploymentLogService.addLog(deployment.id, "Project is back online.");
 
   return {
     message: "Project restarted successfully",

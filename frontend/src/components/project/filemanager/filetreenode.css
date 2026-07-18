@@ -1,0 +1,53 @@
+.eh-tree-folder {
+    display: flex;
+    flex-direction: column;
+}
+
+.eh-tree-folder-header,
+.eh-tree-file {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    padding: 7px 10px;
+
+    border-radius: 8px;
+
+    cursor: pointer;
+
+    transition: background .15s;
+}
+
+.eh-tree-folder-header:hover,
+.eh-tree-file:hover {
+    background: rgba(255, 255, 255, .05);
+}
+
+.eh-tree-folder-header {
+    font-weight: 600;
+}
+
+.eh-tree-file {
+    color: #cfcfcf;
+}
+
+.eh-tree-file.active {
+    background: #0e639c;
+    color: white;
+}
+
+.eh-tree-label {
+    flex: 1;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+
+    white-space: nowrap;
+}
+
+.eh-tree-children {
+    margin-left: 16px;
+    padding-left: 10px;
+    border-left: 1px solid rgba(255, 255, 255, .08);
+}

@@ -1,0 +1,63 @@
+.eh-files {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.eh-files-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.eh-files-header h2 {
+  margin: 0;
+}
+
+.eh-files-toolbar {
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.eh-files-body {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 500px;
+  padding-right: 4px;
+}
+
+.eh-files-empty {
+  opacity: .6;
+  text-align: center;
+  padding: 60px 0;
+}
+
+.eh-new-folder {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  padding: 8px 10px;
+  margin-bottom: 6px;
+
+  border-radius: 8px;
+
+  background: rgba(255, 255, 255, .04);
+}
+
+.eh-new-folder input {
+  flex: 1;
+
+  background: transparent;
+
+  border: none;
+
+  outline: none;
+
+  color: inherit;
+
+  font-size: 14px;
+}

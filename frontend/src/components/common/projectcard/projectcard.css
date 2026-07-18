@@ -1,0 +1,51 @@
+.eh-project-card {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 18px;
+
+}
+
+.eh-project-card h3 {
+
+    margin-bottom: 6px;
+
+}
+
+.eh-project-card p {
+
+    color: var(--text-muted);
+
+}
+
+.eh-project-meta {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    color: var(--text-secondary);
+
+    font-size: .9rem;
+
+}
+
+.eh-project-link {
+
+    color: var(--accent);
+
+    text-decoration: none;
+
+    font-weight: 600;
+
+}
+
+.eh-project-card-link {
+
+    text-decoration: none;
+
+    color: inherit;
+
+}

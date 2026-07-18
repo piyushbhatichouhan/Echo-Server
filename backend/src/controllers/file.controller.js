@@ -1,13 +1,17 @@
-const { saveFile } = require("../services/file.service");
 const {
+  saveFile,
   getProjectFiles,
   getFileForDownload,
   deleteFile,
+  loadFileContent,
+  updateFileContent,
 } = require("../services/file.service");
+
+const { createFolder } = require("../services/file.service");
 
 const uploadFile = async (req, res, next) => {
   try {
-    console.log("req.file =", req.file);
+    req.file.relativePath = req.body.relativePath || req.file.originalname;
     const file = await saveFile(req.params.id, req.user.id, req.file);
 
     res.status(201).json({
@@ -56,9 +60,56 @@ const removeFile = async (req, res, next) => {
   }
 };
 
+const saveFileContent = async (req, res, next) => {
+  try {
+    await updateFileContent(req.params.id, req.user.id, req.body.content);
+
+    res.json({
+      success: true,
+      message: "File saved.",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getFileContent = async (req, res, next) => {
+  try {
+    const file = await loadFileContent(req.params.id, req.user.id);
+
+    res.json({
+      success: true,
+      data: file,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const createProjectFolder = async (req, res, next) => {
+  try {
+    const folder = await createFolder(
+      req.params.id,
+      req.user.id,
+      req.body.path,
+    );
+
+    res.status(201).json({
+      success: true,
+      data: folder,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   uploadFile,
   listFiles,
   downloadFile,
   removeFile,
+
+  saveFileContent,
+  getFileContent,
+  createProjectFolder,
 };
