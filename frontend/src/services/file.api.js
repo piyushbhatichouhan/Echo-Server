@@ -67,3 +67,11 @@ export const createFolder = async (projectId, path) => {
 
   return response.data.data;
 };
+
+export const createFile = async (projectId, relativePath) => {
+  const response = await api.post(`/projects/${projectId}/files/create`, {
+    path: relativePath,
+  });
+
+  return response.data.data;
+};
