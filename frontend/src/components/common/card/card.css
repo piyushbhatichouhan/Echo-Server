@@ -1,0 +1,33 @@
+.eh-card {
+
+    background: var(--bg-secondary);
+
+    border: 1px solid var(--border);
+
+    border-radius: var(--radius);
+
+    box-shadow: var(--shadow);
+
+    overflow: hidden;
+
+}
+
+.eh-card-header {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    padding: 20px;
+
+    border-bottom: 1px solid var(--border);
+
+}
+
+.eh-card-body {
+
+    padding: 20px;
+
+}

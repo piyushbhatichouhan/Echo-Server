@@ -1,0 +1,39 @@
+.eh-project-header {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    margin-bottom: 32px;
+
+}
+
+.eh-project-header p {
+
+    color: var(--text-muted);
+
+    margin-top: 6px;
+
+}
+
+.eh-project-info {
+
+    display: flex;
+
+    gap: 12px;
+
+}
+
+.eh-project-info span {
+
+    padding: 10px 16px;
+
+    border-radius: var(--radius);
+
+    background: var(--bg-secondary);
+
+    border: 1px solid var(--border);
+
+}

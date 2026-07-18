@@ -21,24 +21,17 @@ const addLog = async (deploymentId, message) => {
 const getLogs = async (projectId) => {
   const result = await pool.query(
     `
-        SELECT
-            dl.id,
-            dl.message,
-            dl.created_at
-        FROM deployment_logs dl
-        INNER JOIN deployments d
-            ON d.id = dl.deployment_id
-        WHERE
-            d.project_id = $1
-        AND
-            d.id = (
-                SELECT id
-                FROM deployments
-                WHERE project_id = $1
-                ORDER BY created_at DESC
-                LIMIT 1
-            )
-        ORDER BY dl.created_at ASC
+  SELECT
+    dl.id,
+    dl.timestamp,
+    dl.message
+FROM deployment_logs dl
+INNER JOIN deployments d
+    ON d.id = dl.deployment_id
+WHERE
+    d.project_id = $1
+ORDER BY
+    dl.timestamp ASC;
         `,
     [projectId],
   );

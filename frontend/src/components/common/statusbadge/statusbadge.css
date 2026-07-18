@@ -1,0 +1,45 @@
+.eh-status-badge {
+
+    padding: 8px 14px;
+
+    border-radius: 999px;
+
+    font-size: .85rem;
+
+    font-weight: 600;
+
+}
+
+.eh-status-badge.running {
+
+    background: #1b5e20;
+
+    color: white;
+
+}
+
+.eh-status-badge.stopped {
+
+    background: #616161;
+
+    color: white;
+
+}
+
+.eh-status-badge.failed {
+
+    background: #b71c1c;
+
+    color: white;
+
+}
+
+.eh-status-badge.starting,
+.eh-status-badge.building,
+.eh-status-badge.health_check {
+
+    background: #ef6c00;
+
+    color: white;
+
+}

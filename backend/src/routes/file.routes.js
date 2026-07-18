@@ -10,10 +10,15 @@ const {
   listFiles,
   downloadFile,
   removeFile,
+
+  saveFileContent,
+  createProjectFolder,
 } = require("../controllers/file.controller");
 
-router.get("/projects/:id/files", authenticate, listFiles);
+const { getFileContent } = require("../controllers/file.controller");
 
+router.get("/projects/:id/files", authenticate, listFiles);
+router.post("/projects/:id/folders", authenticate, createProjectFolder);
 router.post(
   "/projects/:id/files",
   authenticate,
@@ -35,8 +40,10 @@ router.post(
   uploadFile,
 );
 router.delete("/files/:id", authenticate, removeFile);
-router.get("/files/:id/download", authenticate, downloadFile);
+router.get("/files/:id/content", authenticate, getFileContent);
 
-router.delete("/files/:id", authenticate, removeFile);
+router.put("/files/:id/content", authenticate, saveFileContent);
+
+router.get("/files/:id/download", authenticate, downloadFile);
 
 module.exports = router;

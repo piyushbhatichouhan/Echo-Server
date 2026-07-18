@@ -13,21 +13,25 @@ router.post(
 );
 
 router.post(
-  "/:projectId/start",
+  "/projects/:projectId/start",
   authenticate,
   deploymentController.startProject,
 );
 
-router.post("/:projectId/stop", authenticate, deploymentController.stopProject);
+router.post(
+  "/projects/:projectId/stop",
+  authenticate,
+  deploymentController.stopProject,
+);
 
 router.post(
-  "/:projectId/restart",
+  "/projects/:projectId/restart",
   authenticate,
   deploymentController.restartProject,
 );
 
 router.post(
-  "/:projectId/redeploy",
+  "/projects/:projectId/redeploy",
   authenticate,
   deploymentController.redeployProject,
 );

@@ -1,0 +1,75 @@
+.eh-editor {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    gap: 18px;
+}
+
+.eh-editor-top {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.eh-editor-path {
+    flex: 1;
+    font-size: 15px;
+    font-weight: 600;
+    opacity: .85;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.eh-editor-dirty {
+    color: #ffb347;
+    font-size: 14px;
+}
+
+.eh-editor-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.eh-code-editor {
+    flex: 1;
+
+    min-height: 650px;
+
+    border: none;
+
+    outline: none;
+
+    resize: none;
+
+    background: #1e1e1e;
+
+    color: #e5e5e5;
+
+    padding: 18px;
+
+    border-radius: 12px;
+
+    font-family:
+        Consolas,
+        monospace;
+
+    font-size: 14px;
+
+    line-height: 1.6;
+}
+
+
+.eh-editor {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.eh-editor-body {
+    flex: 1;
+    overflow: hidden;
+    border-radius: 10px;
+}

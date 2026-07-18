@@ -110,7 +110,10 @@ const getContainerStatus = async (projectId) => {
       running: info.State.Running,
       status: info.State.Status,
       startedAt: info.State.StartedAt,
-      finishedAt: info.State.FinishedAt,
+      finishedAt:
+        info.State.FinishedAt === "0001-01-01T00:00:00Z"
+          ? null
+          : info.State.FinishedAt,
       restartCount: info.RestartCount,
     };
   } catch {
@@ -157,12 +160,8 @@ const stopContainer = async (projectId) => {
   await container.stop();
 };
 
-const restartContainer = async (projectId) => {
+const restartContainer = async (projectId, deploymentId) => {
   const container = getContainer(projectId);
-
-  if (!container) {
-    throw new Error("Container not found");
-  }
 
   await container.restart();
 

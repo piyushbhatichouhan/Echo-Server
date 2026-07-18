@@ -1,0 +1,45 @@
+.eh-project-tabs {
+    display: flex;
+
+    gap: 10px;
+
+    margin: 20px 0 24px;
+
+    border-bottom: 1px solid rgba(255, 255, 255, .08);
+
+    padding-bottom: 12px;
+}
+
+.eh-project-tab {
+
+    background: transparent;
+
+    border: none;
+
+    color: #888;
+
+    font-size: .95rem;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+    padding: 8px 14px;
+
+    border-radius: 8px;
+
+    transition: .2s;
+}
+
+.eh-project-tab:hover {
+    color: white;
+
+    background: rgba(255, 255, 255, .05);
+}
+
+.eh-project-tab.active {
+
+    color: #ff8b2b;
+
+    background: rgba(255, 139, 43, .12);
+}
