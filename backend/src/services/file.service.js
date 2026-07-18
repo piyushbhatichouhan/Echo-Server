@@ -365,6 +365,57 @@ VALUES
   };
 };
 
+const createEmptyFile = async (projectId, ownerId, relativePath) => {
+  const { verifyProjectOwnership } = require("./project.service");
+  await verifyProjectOwnership(projectId, ownerId);
+
+  const projectDirectory = getProjectFilesDirectory(projectId);
+
+  const fullPath = path.join(projectDirectory, relativePath);
+
+  await fs.mkdir(path.dirname(fullPath), {
+    recursive: true,
+  });
+
+  await fs.writeFile(fullPath, "");
+
+  const originalName = path.basename(relativePath);
+
+  const storedName = originalName;
+
+  const result = await pool.query(
+    `
+    INSERT INTO files
+    (
+        project_id,
+        original_name,
+        relative_path,
+        stored_name,
+        mime_type,
+        file_size,
+        storage_path,
+        is_directory
+    )
+    VALUES
+    (
+        $1,$2,$3,$4,$5,$6,$7,false
+    )
+    RETURNING *
+    `,
+    [
+      projectId,
+      originalName,
+      relativePath,
+      storedName,
+      "text/plain",
+      0,
+      fullPath,
+    ],
+  );
+
+  return result.rows[0];
+};
+
 module.exports = {
   saveFile,
   getProjectFiles,
@@ -375,4 +426,5 @@ module.exports = {
   loadFileContent,
   updateFileContent,
   createFolder,
+  createEmptyFile,
 };

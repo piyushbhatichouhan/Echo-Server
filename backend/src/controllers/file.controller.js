@@ -7,7 +7,7 @@ const {
   updateFileContent,
 } = require("../services/file.service");
 
-const { createFolder } = require("../services/file.service");
+const { createFolder, createEmptyFile } = require("../services/file.service");
 
 const uploadFile = async (req, res, next) => {
   try {
@@ -103,6 +103,23 @@ const createProjectFolder = async (req, res, next) => {
   }
 };
 
+const createProjectFile = async (req, res, next) => {
+  try {
+    const file = await createEmptyFile(
+      req.params.id,
+      req.user.id,
+      req.body.path,
+    );
+
+    res.status(201).json({
+      success: true,
+      data: file,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   uploadFile,
   listFiles,
@@ -112,4 +129,5 @@ module.exports = {
   saveFileContent,
   getFileContent,
   createProjectFolder,
+  createProjectFile,
 };

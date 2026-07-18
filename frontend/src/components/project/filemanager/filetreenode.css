@@ -51,3 +51,26 @@
     padding-left: 10px;
     border-left: 1px solid rgba(255, 255, 255, .08);
 }
+
+.eh-tree-add-file {
+    margin-left: auto;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 22px;
+    height: 22px;
+
+    border: none;
+    border-radius: 5px;
+
+    background: transparent;
+    color: inherit;
+
+    cursor: pointer;
+}
+
+.eh-tree-add-file:hover {
+    background: rgba(255, 255, 255, .08);
+}   

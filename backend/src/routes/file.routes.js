@@ -13,12 +13,14 @@ const {
 
   saveFileContent,
   createProjectFolder,
+  createProjectFile,
 } = require("../controllers/file.controller");
 
 const { getFileContent } = require("../controllers/file.controller");
 
 router.get("/projects/:id/files", authenticate, listFiles);
 router.post("/projects/:id/folders", authenticate, createProjectFolder);
+router.post("/projects/:id/files/create", authenticate, createProjectFile);
 router.post(
   "/projects/:id/files",
   authenticate,

@@ -8,9 +8,15 @@ import {
   Folder,
   FolderOpen,
   File,
+  Plus,
 } from "lucide-react";
 
-export default function FileTreeNode({ node, onOpen, selectedFile }) {
+export default function FileTreeNode({
+  node,
+  onOpen,
+  selectedFile,
+  onCreateFile,
+}) {
   const [open, setOpen] = useState(true);
 
   if (node.type === "file") {
@@ -33,9 +39,19 @@ export default function FileTreeNode({ node, onOpen, selectedFile }) {
       <div className="eh-tree-folder-header" onClick={() => setOpen(!open)}>
         {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
 
-        {open ? <FolderOpen size={16} /> : <Folder size={16} />}
+        <Folder size={16} />
 
-        <span className="eh-tree-label">{node.name}</span>
+        <span className="eh-tree-folder-name">{node.name}</span>
+
+        <button
+          className="eh-tree-add-file"
+          onClick={(e) => {
+            e.stopPropagation();
+            onCreateFile(node.path);
+          }}
+        >
+          <Plus size={14} />
+        </button>
       </div>
 
       {open && (
@@ -46,6 +62,7 @@ export default function FileTreeNode({ node, onOpen, selectedFile }) {
               node={child}
               onOpen={onOpen}
               selectedFile={selectedFile}
+              onCreateFile={onCreateFile}
             />
           ))}
         </div>

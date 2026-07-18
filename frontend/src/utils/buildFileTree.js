@@ -1,28 +1,26 @@
 export default function buildFileTree(files) {
   const root = [];
 
-  for (const file of files) {
-    const parts = file.relative_path.split("/");
+  for (const item of files) {
+    const parts = item.relative_path.split("/");
 
     let current = root;
+    let currentPath = "";
 
     parts.forEach((part, index) => {
       const isLast = index === parts.length - 1;
 
-      const nodeType = isLast
-        ? file.is_directory
-          ? "folder"
-          : "file"
-        : "folder";
+      currentPath = currentPath === "" ? part : `${currentPath}/${part}`;
 
-      let existing = current.find((item) => item.name === part);
+      let existing = current.find((node) => node.name === part);
 
       if (!existing) {
         existing = {
           name: part,
-          type: nodeType,
+          path: currentPath,
+          type: isLast ? (item.is_directory ? "folder" : "file") : "folder",
           children: [],
-          file: nodeType === "file" ? file : null,
+          file: isLast ? item : null,
         };
 
         current.push(existing);

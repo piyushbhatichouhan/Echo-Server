@@ -12,6 +12,8 @@ import buildFileTree from "../../../utils/buildFileTree";
 
 import FileTreeNode from "./FileTreeNode";
 
+import { createFile } from "../../../services/file.api";
+
 export default function FileManager({
   projectId,
   refresh,
@@ -23,6 +25,10 @@ export default function FileManager({
   const inputRef = useRef(null);
   const [creatingFolder, setCreatingFolder] = useState(false);
   const [folderName, setFolderName] = useState("");
+  const [creatingFile, setCreatingFile] = useState(false);
+  const [newFileName, setNewFileName] = useState("");
+  const [newFileParent, setNewFileParent] = useState("");
+
   const handleUpload = async (event) => {
     const selectedFiles = Array.from(event.target.files);
 
@@ -57,6 +63,26 @@ export default function FileManager({
     } catch (err) {
       console.error(err);
     }
+  };
+
+  const handleCreateFile = async () => {
+    const name = newFileName.trim();
+
+    if (!name) {
+      setCreatingFile(false);
+      return;
+    }
+
+    const relativePath =
+      newFileParent === "" ? name : `${newFileParent}/${name}`;
+
+    await createFile(projectId, relativePath);
+
+    setCreatingFile(false);
+    setNewFileName("");
+    setNewFileParent("");
+
+    await refresh();
   };
 
   const tree = buildFileTree(files);
@@ -96,7 +122,15 @@ export default function FileManager({
               }}
             />
 
-            <Button variant="secondary" icon={FilePlus} disabled />
+            <Button
+              variant="secondary"
+              icon={FilePlus}
+              onClick={() => {
+                setCreatingFile(true);
+                setNewFileName("");
+                setNewFileParent("");
+              }}
+            />
           </div>
         </div>
 
@@ -122,6 +156,29 @@ export default function FileManager({
               />
             </div>
           )}
+
+          {creatingFile && (
+            <div className="eh-new-folder">
+              <FilePlus size={16} />
+
+              <input
+                autoFocus
+                value={newFileName}
+                placeholder="File name"
+                onChange={(e) => setNewFileName(e.target.value)}
+                onBlur={handleCreateFile}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleCreateFile();
+
+                  if (e.key === "Escape") {
+                    setCreatingFile(false);
+                    setNewFileName("");
+                  }
+                }}
+              />
+            </div>
+          )}
+
           {loading ? (
             <div className="eh-files-empty">Loading...</div>
           ) : tree.length === 0 ? (
@@ -133,6 +190,11 @@ export default function FileManager({
                 node={node}
                 onOpen={onOpen}
                 selectedFile={selectedFile}
+                onCreateFile={(folderPath) => {
+                  setCreatingFile(true);
+                  setNewFileParent(folderPath);
+                  setNewFileName("");
+                }}
               />
             ))
           )}
