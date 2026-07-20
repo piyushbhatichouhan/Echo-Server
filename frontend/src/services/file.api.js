@@ -75,3 +75,21 @@ export const createFile = async (projectId, relativePath) => {
 
   return response.data.data;
 };
+
+export const renameFile = async (projectId, oldPath, newPath, type) => {
+  const response = await api.put(`/projects/${projectId}/rename`, {
+    oldPath,
+    newPath,
+    type,
+  });
+
+  return response.data;
+};
+export const deletePath = async (projectId, path, type) => {
+  return api.delete(`/projects/${projectId}/path`, {
+    data: {
+      path,
+      type,
+    },
+  });
+};

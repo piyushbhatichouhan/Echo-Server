@@ -1,0 +1,99 @@
+.eh-environment {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 24px;
+
+}
+
+.eh-environment-header {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    gap: 24px;
+
+}
+
+.eh-environment-header p {
+
+    margin-top: 6px;
+
+    color: var(--eh-text-secondary);
+
+}
+
+.eh-environment-list {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 16px;
+
+}
+
+.eh-environment-empty {
+
+    padding: 80px 20px;
+
+    text-align: center;
+
+    color: var(--eh-text-secondary);
+
+}
+
+
+.eh-env-modal {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 14px;
+
+}
+
+.eh-env-modal label {
+
+    font-weight: 600;
+
+}
+
+.eh-env-modal input,
+.eh-env-modal textarea {
+
+    width: 100%;
+
+    border: none;
+
+    outline: none;
+
+    border-radius: 12px;
+
+    padding: 12px;
+
+    background: var(--eh-surface-2);
+
+    color: var(--eh-text);
+
+    resize: vertical;
+
+}
+
+.eh-modal-actions {
+
+    display: flex;
+
+    justify-content: flex-end;
+
+    gap: 12px;
+
+    margin-top: 12px;
+
+}

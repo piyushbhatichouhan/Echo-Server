@@ -16,19 +16,22 @@ export default function DeploymentControls({
   onStart,
   onStop,
   onRestart,
+  deploymentState,
 }) {
   return (
     <Card>
       <div className="eh-deployment-controls">
         <h2>Deployment Controls</h2>
-
+        <div className={`eh-deployment-status eh-${deploymentState}`}>
+          {deploymentState.replaceAll("_", " ").toUpperCase()}
+        </div>
         <div className="eh-control-grid">
           <Button
             variant="deploy"
             icon={Rocket}
             onClick={onDeploy}
             loading={loading === "deploy"}
-            disabled={hasDeployment}
+            disabled={deploymentState !== "not_found"}
           >
             Deploy
           </Button>
@@ -38,7 +41,11 @@ export default function DeploymentControls({
             icon={RefreshCw}
             onClick={onRedeploy}
             loading={loading === "redeploy"}
-            disabled={!hasDeployment}
+            disabled={
+              deploymentState === "building" ||
+              deploymentState === "creating_container" ||
+              deploymentState === "starting_container"
+            }
           >
             Redeploy
           </Button>
@@ -48,7 +55,9 @@ export default function DeploymentControls({
             icon={Play}
             onClick={onStart}
             loading={loading === "start"}
-            disabled={!hasDeployment || isRunning}
+            disabled={
+              deploymentState === "running" || deploymentState === "building"
+            }
           >
             Start
           </Button>
@@ -58,7 +67,7 @@ export default function DeploymentControls({
             icon={RotateCw}
             onClick={onRestart}
             loading={loading === "restart"}
-            disabled={!isRunning}
+            disabled={deploymentState !== "running"}
           >
             Restart
           </Button>
@@ -68,7 +77,7 @@ export default function DeploymentControls({
             icon={Square}
             onClick={onStop}
             loading={loading === "stop"}
-            disabled={!isRunning}
+            disabled={deploymentState !== "running"}
           >
             Stop
           </Button>

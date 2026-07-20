@@ -21,20 +21,5 @@ export default function Navbar() {
     return "EchoHub";
   };
 
-  return (
-    <header className="eh-navbar">
-      <div>
-        <h2>{getPageTitle()}</h2>
-
-        <p>Welcome back, {user?.username}</p>
-      </div>
-
-      <div className="eh-navbar-right">
-        <div className="eh-status">
-          <span className="eh-status-dot"></span>
-          All Systems Operational
-        </div>
-      </div>
-    </header>
-  );
+  return <header className="eh-navbar"></header>;
 }

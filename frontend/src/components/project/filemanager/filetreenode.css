@@ -74,3 +74,128 @@
 .eh-tree-add-file:hover {
     background: rgba(255, 255, 255, .08);
 }   
+.eh-tree-actions {
+    margin-left: auto;
+
+    display: flex;
+    gap: 6px;
+
+    align-items: center;
+}
+
+
+.eh-tree-action {
+    width: 24px;
+    height: 24px;
+
+    border: none;
+    outline: none;
+
+    border-radius: 6px;
+
+    background: transparent;
+
+    color: var(--text-secondary);
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    cursor: pointer;
+
+    transition: .15s;
+}
+
+.eh-tree-action:hover {
+    background: var(--surface-hover);
+    color: white;
+}
+
+.eh-tree-action:last-child:hover {
+    background: #512020;
+    color: #ff6b6b;
+}
+
+.eh-tree-folder-header,
+.eh-tree-file {
+    display: flex;
+    align-items: center;
+
+    gap: 8px;
+
+    padding: 6px 10px;
+
+    border-radius: 8px;
+}
+
+
+.eh-tree-folder svg {
+    color: #d9b44a;
+}
+
+.eh-tree-file svg {
+    color: #8ab4f8;
+}
+
+
+.eh-tree-file.active {
+    background: #2b3445;
+    border-left: 3px solid #4ea1ff;
+}
+
+
+        .eh-tree-actions {
+            margin-left: auto;
+    
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+    
+        .eh-tree-action {
+            width: 24px;
+            height: 24px;
+    
+            display: flex;
+            justify-content: center;
+            align-items: center;
+    
+            border: none;
+            border-radius: 6px;
+    
+            background: transparent;
+            color: var(--text-secondary);
+    
+            cursor: pointer;
+    
+            transition: 0.15s;
+        }
+    
+        .eh-tree-action:hover {
+            background: var(--surface-hover);
+            color: var(--text-primary);
+        }
+    
+        .eh-tree-action:last-child:hover {
+            background: rgba(220, 53, 69, 0.15);
+            color: #ff5d5d;
+        }
+
+
+                .eh-tree-rename {
+                    flex: 1;
+        
+                    background: #1d1d1d;
+        
+                    color: white;
+        
+                    border: 1px solid #4ea1ff;
+        
+                    border-radius: 4px;
+        
+                    padding: 2px 6px;
+        
+                    font-size: inherit;
+        
+                    outline: none;
+                }

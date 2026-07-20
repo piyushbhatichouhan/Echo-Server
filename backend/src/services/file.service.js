@@ -4,7 +4,7 @@ const path = require("path");
 
 const { verifyProjectOwnership } = require("./project.service");
 const { getProjectFilesDirectory } = require("../storage/storage.manager");
-
+const { syncWorkspaceToGit } = require("./workspace.sync.service");
 const saveFile = async (projectId, ownerId, file) => {
   //
   // Verify project ownership
@@ -203,7 +203,10 @@ const deleteFile = async (fileId, ownerId) => {
       `
     SELECT
         f.id,
-        f.storage_path
+        f.project_id,
+        f.storage_path,
+        f.relative_path,
+        f.is_directory
     FROM files f
     INNER JOIN projects p
         ON p.id = f.project_id
@@ -224,15 +227,33 @@ const deleteFile = async (fileId, ownerId) => {
 
     const file = result.rows[0];
 
-    await client.query(
-      `
+    if (file.is_directory) {
+      await client.query(
+        `
+    DELETE FROM files
+    WHERE
+        project_id = $1
+    AND
+        relative_path LIKE $2
+    `,
+        [file.project_id, `${file.relative_path}%`],
+      );
+
+      await fs.rm(file.storage_path, {
+        recursive: true,
+        force: true,
+      });
+    } else {
+      await client.query(
+        `
     DELETE FROM files
     WHERE id = $1
     `,
-      [fileId],
-    );
+        [file.id],
+      );
 
-    await fs.unlink(file.storage_path);
+      await fs.unlink(file.storage_path);
+    }
 
     await client.query("COMMIT");
 
@@ -322,9 +343,95 @@ const updateFileContent = async (fileId, ownerId, content) => {
 
   await fs.writeFile(result.rows[0].storage_path, content, "utf8");
 
+  const file = await pool.query(
+    `
+    SELECT project_id
+    FROM files
+    WHERE id = $1
+    `,
+    [fileId],
+  );
+
+  await syncWorkspaceToGit(file.rows[0].project_id);
+
   return {
     success: true,
   };
+};
+
+const renamePath = async (projectId, ownerId, oldPath, newPath, type) => {
+  const { verifyProjectOwnership } = require("./project.service");
+  await verifyProjectOwnership(projectId, ownerId);
+
+  const projectDirectory = getProjectFilesDirectory(projectId);
+
+  const oldStoragePath = path.join(projectDirectory, oldPath);
+  const newStoragePath = path.join(projectDirectory, newPath);
+
+  await fs.mkdir(path.dirname(newStoragePath), {
+    recursive: true,
+  });
+
+  await fs.rename(oldStoragePath, newStoragePath);
+
+  if (type === "file") {
+    await pool.query(
+      `
+      UPDATE files
+      SET
+          original_name = $3,
+          relative_path = $2,
+          storage_path = $4
+      WHERE
+          project_id = $1
+      AND
+          relative_path = $5
+      `,
+      [projectId, newPath, path.basename(newPath), newStoragePath, oldPath],
+    );
+
+    return;
+  }
+
+  //
+  // Folder
+  //
+
+  const rows = await pool.query(
+    `
+    SELECT *
+    FROM files
+    WHERE
+        project_id = $1
+    AND
+        relative_path LIKE $2
+    `,
+    [projectId, `${oldPath}%`],
+  );
+
+  for (const file of rows.rows) {
+    const updatedRelative =
+      newPath + file.relative_path.substring(oldPath.length);
+
+    const updatedStorage = path.join(projectDirectory, updatedRelative);
+
+    await pool.query(
+      `
+      UPDATE files
+      SET
+          relative_path = $2,
+          storage_path = $3,
+          original_name = $4
+      WHERE id = $1
+      `,
+      [
+        file.id,
+        updatedRelative,
+        updatedStorage,
+        path.basename(updatedRelative),
+      ],
+    );
+  }
 };
 
 const createFolder = async (projectId, ownerId, relativePath) => {
@@ -416,6 +523,61 @@ const createEmptyFile = async (projectId, ownerId, relativePath) => {
   return result.rows[0];
 };
 
+const deletePath = async (projectId, ownerId, relativePath, type) => {
+  const { verifyProjectOwnership } = require("./project.service");
+  await verifyProjectOwnership(projectId, ownerId);
+
+  const projectDirectory = getProjectFilesDirectory(projectId);
+
+  if (type === "file") {
+    const file = await pool.query(
+      `
+      SELECT *
+      FROM files
+      WHERE
+          project_id=$1
+      AND
+          relative_path=$2
+      `,
+      [projectId, relativePath],
+    );
+
+    if (file.rows.length === 0) throw new Error("File not found");
+
+    await fs.unlink(file.rows[0].storage_path);
+
+    await pool.query(
+      `
+      DELETE FROM files
+      WHERE id=$1
+      `,
+      [file.rows[0].id],
+    );
+
+    return;
+  }
+
+  // folder
+
+  const folderPath = path.join(projectDirectory, relativePath);
+
+  await fs.rm(folderPath, {
+    recursive: true,
+    force: true,
+  });
+
+  await pool.query(
+    `
+    DELETE FROM files
+    WHERE
+        project_id=$1
+    AND
+        relative_path LIKE $2
+    `,
+    [projectId, `${relativePath}%`],
+  );
+};
+
 module.exports = {
   saveFile,
   getProjectFiles,
@@ -427,4 +589,6 @@ module.exports = {
   updateFileContent,
   createFolder,
   createEmptyFile,
+  renamePath,
+  deletePath,
 };

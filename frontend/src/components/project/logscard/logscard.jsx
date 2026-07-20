@@ -3,22 +3,24 @@ import "./LogsCard.css";
 import Card from "../../common/Card/Card";
 import { useRef } from "react";
 import { useEffect, useState } from "react";
+import Button from "../../common/Button/Button";
+import {
+  Rocket,
+  RefreshCw,
+  Play,
+  Square,
+  RotateCw,
+  Trash2,
+  Terminal,
+} from "lucide-react";
 
-export default function LogsCard({ logs }) {
+export default function LogsCard({ logs, onClear }) {
   const consoleRef = useRef(null);
 
   const bottomRef = useRef(null);
   const [latestLogId, setLatestLogId] = useState(null);
   useEffect(() => {
     bottomRef.current?.scrollIntoView({
-      behavior: "smooth",
-    });
-  }, [logs]);
-
-  useEffect(() => {
-    consoleRef.current?.scrollTo({
-      top: consoleRef.current.scrollHeight,
-
       behavior: "smooth",
     });
   }, [logs]);
@@ -41,17 +43,35 @@ export default function LogsCard({ logs }) {
     <Card>
       <div className="eh-logs-card">
         <div className="eh-logs-header">
-          <h3>Live Logs</h3>
+          <div>
+            <h3>Deployment Logs</h3>
 
-          <div className="eh-connected">
-            <span className="eh-live-dot"></span>
-            LIVE
+            <p className="eh-log-subtitle">
+              Live deployment and runtime output
+            </p>
+          </div>
+
+          <div className="eh-log-actions">
+            <Button variant="secondary" icon={Trash2} onClick={onClear}>
+              Clear
+            </Button>
+
+            <div className="eh-connected">
+              <span className="eh-live-dot"></span>
+              LIVE
+            </div>
           </div>
         </div>
 
         <div className="eh-log-console" ref={consoleRef}>
           {logs.length === 0 ? (
-            <p>No logs yet.</p>
+            <div className="eh-log-empty">
+              <Terminal size={40} />
+
+              <h4>No deployment logs</h4>
+
+              <p>Deploy your project to begin streaming logs.</p>
+            </div>
           ) : (
             <div className="eh-log-container">
               {logs.length === 0 ? (
@@ -64,6 +84,10 @@ export default function LogsCard({ logs }) {
                       log.id === latestLogId ? "eh-log-latest" : ""
                     }`}
                   >
+                    <span className="eh-log-index">
+                      {(index + 1).toString().padStart(3, "0")}
+                    </span>
+
                     <span className="eh-log-time">
                       {new Date(log.timestamp).toLocaleTimeString()}
                     </span>

@@ -18,12 +18,21 @@ export default function buildFileTree(files) {
         existing = {
           name: part,
           path: currentPath,
-          type: isLast ? (item.is_directory ? "folder" : "file") : "folder",
+          type: "folder",
           children: [],
-          file: isLast ? item : null,
+          file: null,
         };
 
         current.push(existing);
+      }
+
+      if (isLast && item.is_directory && existing.file === null) {
+        existing.file = item;
+      }
+
+      if (isLast) {
+        existing.file = item;
+        existing.type = item.is_directory ? "folder" : "file";
       }
 
       current = existing.children;

@@ -108,12 +108,19 @@ const getContainerStatus = async (projectId) => {
     return {
       exists: true,
       running: info.State.Running,
+
       status: info.State.Status,
+
+      exitCode: info.State.ExitCode,
+
+      oomKilled: info.State.OOMKilled,
+
+      error: info.State.Error,
+
       startedAt: info.State.StartedAt,
-      finishedAt:
-        info.State.FinishedAt === "0001-01-01T00:00:00Z"
-          ? null
-          : info.State.FinishedAt,
+
+      finishedAt: info.State.FinishedAt,
+
       restartCount: info.RestartCount,
     };
   } catch {
@@ -137,7 +144,7 @@ const streamContainerLogs = async (container, deploymentId) => {
 
   logStream.on("data", async (chunk) => {
     try {
-      const message = chunk.toString().trim();
+      const message = chunk.toString("utf8").replace(/\0/g, "").trim();
 
       if (!message) return;
 

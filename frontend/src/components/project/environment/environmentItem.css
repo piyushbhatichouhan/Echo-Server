@@ -1,0 +1,89 @@
+.eh-env-item {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: flex-start;
+
+    gap: 20px;
+
+    padding: 18px;
+
+    border-radius: 16px;
+
+    border: 1px solid var(--eh-border);
+
+    background: var(--eh-surface-2);
+
+    transition: .2s;
+
+}
+
+.eh-env-item:hover {
+
+    border-color: var(--eh-accent);
+
+    transform: translateY(-2px);
+
+}
+
+.eh-env-info {
+
+    flex: 1;
+
+}
+
+.eh-env-key {
+
+    font-weight: 600;
+
+    font-size: 15px;
+
+}
+
+.eh-env-value {
+
+    margin-top: 8px;
+
+    color: var(--eh-text-secondary);
+
+    font-family: monospace;
+
+    word-break: break-all;
+
+}
+
+.eh-env-actions {
+
+    display: flex;
+
+    gap: 8px;
+
+}
+
+.eh-env-actions button {
+
+    border: none;
+
+    background: none;
+
+    cursor: pointer;
+
+    border-radius: 10px;
+
+    padding: 8px;
+
+    color: var(--eh-text-secondary);
+
+    transition: .2s;
+
+}
+
+.eh-env-actions button:hover {
+
+    background: var(--eh-surface-3);
+
+    color: var(--eh-accent);
+
+}
