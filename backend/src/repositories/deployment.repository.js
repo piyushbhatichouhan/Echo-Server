@@ -120,6 +120,26 @@ const updateDeploymentImage = async (deploymentId, imageName) => {
   return result.rows[0];
 };
 
+const getRunningDeployments = async () => {
+  const { rows } = await pool.query(`
+        SELECT *
+        FROM project_deployments
+        WHERE status='running'
+    `);
+
+  return rows;
+};
+
+const markStoppedByUser = async (projectId, value) => {
+  await pool.query(
+    `
+    UPDATE project_deployments
+    SET stopped_by_user = $2
+    WHERE project_id = $1
+    `,
+    [projectId, value],
+  );
+};
 module.exports = {
   createDeployment,
   updateDeploymentStatus,
@@ -128,4 +148,6 @@ module.exports = {
   getProjectDeployments,
   getDeploymentById,
   updateDeploymentImage,
+  getRunningDeployments,
+  markStoppedByUser,
 };

@@ -22,6 +22,13 @@ import FileEditor from "../../components/project/fileeditor/FileEditor";
 import { getFileContent } from "../../services/file.api";
 import { useEffect } from "react";
 import { saveFileContent, downloadFile } from "../../services/file.api";
+import { deleteFile } from "../../services/file.api";
+import { deletePath as deleteWorkspacePath } from "../../services/file.api";
+import Deployments from "../../components/project/deployments/deployments";
+import Settings from "../../components/project/settings/Settings";
+import DeploymentHistory from "../../components/project/overview/deploymentHistory";
+
+import Environment from "../../components/project/environment/Environment";
 
 export default function Project() {
   const { id } = useParams();
@@ -35,6 +42,7 @@ export default function Project() {
     refreshStatus,
     refreshLogs,
     setLogs,
+    deployments,
   } = useDeployment(id);
 
   const isRunning = status?.running;
@@ -94,6 +102,23 @@ export default function Project() {
   if (projectLoading || deploymentLoading) {
     return <p>Loading...</p>;
   }
+
+  const handleDelete = async (path, type) => {
+    await deleteWorkspacePath(id, path, type);
+
+    if (
+      selectedFile &&
+      type === "file" &&
+      selectedFile.relative_path === path
+    ) {
+      setSelectedFile(null);
+    }
+
+    refreshFiles();
+  };
+
+  const deploymentState = status?.status || "unknown";
+
   return (
     <div className="eh-project-page">
       <ProjectHeader project={project} status={status} />
@@ -107,6 +132,7 @@ export default function Project() {
               <DeploymentControls
                 status={status}
                 loading={actionLoading}
+                deploymentState={deploymentState}
                 hasDeployment={hasDeployment}
                 isRunning={isRunning}
                 onDeploy={() => runAction(deployProject, "deploy")}
@@ -119,7 +145,7 @@ export default function Project() {
               <DeploymentCard status={status} />
             </div>
 
-            <LogsCard logs={logs} />
+            <LogsCard logs={logs} onClear={() => setLogs([])} />
           </>
         )}
         {activeTab === "files" && (
@@ -131,6 +157,7 @@ export default function Project() {
                 files={files}
                 loading={filesLoading}
                 onOpen={setSelectedFile}
+                onDelete={handleDelete}
               />
             ) : (
               <FileEditor
@@ -145,6 +172,14 @@ export default function Project() {
             )}
           </>
         )}
+        {activeTab === "deployments" && (
+          <>
+            <Deployments projectId={id} />
+          </>
+        )}
+
+        {activeTab === "environment" && <Environment projectId={project.id} />}
+        {activeTab === "settings" && <Settings projectId={id} />}
       </div>
     </div>
   );

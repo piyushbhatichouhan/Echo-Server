@@ -7,7 +7,12 @@ const {
   updateFileContent,
 } = require("../services/file.service");
 
-const { createFolder, createEmptyFile } = require("../services/file.service");
+const {
+  createFolder,
+  createEmptyFile,
+  renamePath,
+  deletePath,
+} = require("../services/file.service");
 
 const uploadFile = async (req, res, next) => {
   try {
@@ -120,6 +125,48 @@ const createProjectFile = async (req, res, next) => {
   }
 };
 
+const renameProjectFile = async (req, res, next) => {
+  try {
+    const file = await renameFile(req.params.id, req.user.id, req.body.path);
+
+    res.json({
+      success: true,
+      data: file,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const deleteProjectPath = async (req, res, next) => {
+  try {
+    await deletePath(req.params.id, req.user.id, req.body.path, req.body.type);
+
+    res.json({
+      success: true,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+const renameProjectPath = async (req, res, next) => {
+  try {
+    await renamePath(
+      req.params.id,
+      req.user.id,
+      req.body.oldPath,
+      req.body.newPath,
+      req.body.type,
+    );
+
+    res.json({
+      success: true,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   uploadFile,
   listFiles,
@@ -130,4 +177,7 @@ module.exports = {
   getFileContent,
   createProjectFolder,
   createProjectFile,
+  renameProjectFile,
+  deleteProjectPath,
+  renameProjectPath,
 };

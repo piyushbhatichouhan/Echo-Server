@@ -1,0 +1,266 @@
+.eh-repository-card {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+
+    padding: 22px;
+
+    border-radius: 14px;
+
+    background: #1d1d1d;
+}
+
+.eh-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.eh-field label {
+    font-size: .9rem;
+    color: #bbbbbb;
+}
+
+.eh-field input {
+    padding: 10px 14px;
+
+    border: none;
+    border-radius: 10px;
+
+    background: #2b2b2b;
+
+    color: white;
+
+    outline: none;
+}
+
+.eh-field input:focus {
+    outline: 2px solid #d97706;
+}
+
+.eh-repository-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.eh-validation {
+
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+
+    margin-top: 8px;
+
+    padding: 16px;
+
+    border-radius: 12px;
+
+    background: #252525;
+}
+
+.eh-validation div {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+}
+
+.eh-validation strong {
+
+    color: #bfbfbf;
+
+    font-size: .9rem;
+}
+
+.eh-validation span {
+
+    color: white;
+
+    font-weight: 500;
+}
+
+.eh-status-summary {
+    display: flex;
+    gap: 12px;
+    margin: 15px 0;
+}
+
+.eh-change-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.eh-change-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.eh-change-info small {
+    opacity: .6;
+}
+
+.eh-change-badge {
+    min-width: 90px;
+    text-align: center;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: .8rem;
+}   
+
+.eh-status-summary {
+    display: flex;
+    gap: 14px;
+    margin: 20px 0;
+}
+
+.eh-summary {
+    min-width: 90px;
+    padding: 12px;
+    border-radius: 12px;
+    text-align: center;
+    background: #24211d;
+}
+
+.eh-summary span {
+    display: block;
+    font-size: 1.4rem;
+    font-weight: 700;
+}
+
+.eh-summary small {
+    opacity: .7;
+}
+
+.eh-change-badge {
+
+    width: 90px;
+
+    border-radius: 999px;
+
+    font-size: .75rem;
+
+    font-weight: 600;
+
+    text-align: center;
+
+    padding: 5px 10px;
+}
+
+.eh-change-badge.modified {
+    background: #4a3417;
+    color: #ffb454;
+}
+
+.eh-change-badge.added {
+    background: #143b27;
+    color: #61d095;
+}
+
+.eh-change-badge.deleted {
+    background: #4a2020;
+    color: #ff8b8b;
+}
+
+.eh-change-badge.renamed {
+    background: #1b304d;
+    color: #8fc7ff;
+}
+
+.eh-change-info strong {
+
+    font-size: 16px;
+
+    display: block;
+
+}
+
+.eh-change-info small {
+
+    color: #888;
+
+    font-size: 12px;
+
+}
+
+.eh-commit-card {
+
+    margin-top: 24px;
+
+    padding: 24px;
+
+    border-radius: 14px;
+
+    background: #1f1f1f;
+
+}
+
+.eh-commit-card input {
+
+    width: 100%;
+
+    margin-top: 10px;
+
+    margin-bottom: 18px;
+
+}
+
+.eh-commit-card button {
+
+    margin-left: auto;
+
+    display: flex;
+
+}
+
+.eh-commit-actions {
+
+    display: flex;
+
+    justify-content: flex-end;
+
+}
+
+.eh-show-more {
+    display: block;
+    margin: 18px auto 8px;
+    padding: 8px 18px;
+
+    background: transparent;
+    border: 1px solid rgba(255, 170, 70, 0.25);
+    border-radius: 999px;
+
+    color: #d6b089;
+    font-size: 0.9rem;
+    font-weight: 500;
+
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.eh-show-more:hover {
+    background: rgba(255, 170, 70, 0.08);
+    border-color: rgba(255, 170, 70, 0.5);
+    color: #ffb454;
+    transform: translateY(-1px);
+}
+
+.eh-show-more:active {
+    transform: translateY(0);
+    background: rgba(255, 170, 70, 0.12);
+}
+
+.eh-show-more:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(255, 180, 84, 0.2);
+}
+
+.eh-show-more::after {
+    content: " ▼";
+    font-size: 0.75rem;
+    transition: transform 0.2s ease;
+}

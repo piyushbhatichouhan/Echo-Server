@@ -1,0 +1,71 @@
+.eh-env-card {
+    background: var(--eh-surface-2);
+
+    border: 1px solid var(--eh-border);
+
+    border-radius: 16px;
+
+    padding: 18px;
+
+    transition: .2s;
+}
+
+.eh-env-card:hover {
+    transform: translateY(-2px);
+
+    border-color: var(--eh-accent);
+}
+
+.eh-env-header {
+    display: flex;
+
+    justify-content: space-between;
+
+    gap: 24px;
+}
+
+.eh-env-key {
+    font-size: 15px;
+
+    font-weight: 600;
+}
+
+.eh-env-value {
+    margin-top: 8px;
+
+    font-family: monospace;
+
+    color: var(--eh-text-secondary);
+
+    word-break: break-all;
+}
+
+.eh-env-actions {
+    display: flex;
+
+    align-items: flex-start;
+
+    gap: 8px;
+}
+
+.eh-env-actions button {
+    border: none;
+
+    background: transparent;
+
+    cursor: pointer;
+
+    padding: 8px;
+
+    border-radius: 10px;
+
+    color: var(--eh-text-secondary);
+
+    transition: .2s;
+}
+
+.eh-env-actions button:hover {
+    background: var(--eh-surface-3);
+
+    color: var(--eh-accent);
+}

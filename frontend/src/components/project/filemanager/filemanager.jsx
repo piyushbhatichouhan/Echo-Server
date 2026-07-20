@@ -21,6 +21,7 @@ export default function FileManager({
   loading,
   onOpen,
   selectedFile,
+  onDelete,
 }) {
   const inputRef = useRef(null);
   const [creatingFolder, setCreatingFolder] = useState(false);
@@ -28,7 +29,8 @@ export default function FileManager({
   const [creatingFile, setCreatingFile] = useState(false);
   const [newFileName, setNewFileName] = useState("");
   const [newFileParent, setNewFileParent] = useState("");
-
+  const [renaming, setRenaming] = useState(null);
+  const [renameValue, setRenameValue] = useState("");
   const handleUpload = async (event) => {
     const selectedFiles = Array.from(event.target.files);
 
@@ -84,7 +86,7 @@ export default function FileManager({
 
     await refresh();
   };
-
+  console.log(files);
   const tree = buildFileTree(files);
 
   return (
@@ -195,6 +197,26 @@ export default function FileManager({
                   setNewFileParent(folderPath);
                   setNewFileName("");
                 }}
+                onDelete={(path, type) => {
+                  onDelete(path, type);
+                }}
+                onRename={(oldPath, type) => {
+                  setRenaming({
+                    projectId,
+                    oldPath,
+                    type,
+                  });
+
+                  const parts = oldPath.split("/");
+
+                  setRenameValue(parts[parts.length - 1]);
+                }}
+                renaming={renaming}
+                renameValue={renameValue}
+                setRenameValue={setRenameValue}
+                refresh={refresh}
+                setRenaming={setRenaming}
+                projectId={projectId}
               />
             ))
           )}

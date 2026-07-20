@@ -24,3 +24,50 @@
 
   gap: 14px;
 }
+
+.eh-deployment-status {
+  display: inline-flex;
+  align-items: center;
+
+  padding: 8px 18px;
+
+  margin-top: 12px;
+  margin-bottom: 24px;
+
+  border-radius: 999px;
+
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.eh-running {
+  background: #12391f;
+  color: #5dff8c;
+}
+
+.eh-building,
+.eh-starting_container,
+.eh-creating_container {
+  background: #473512;
+  color: #ffcf5d;
+}
+
+.eh-failed {
+  background: #4d1717;
+  color: #ff6b6b;
+}
+
+.eh-crashed {
+  background: #571919;
+  color: #ff4040;
+}
+
+.eh-stopped {
+  background: #2f2f2f;
+  color: #b8b8b8;
+}
+
+.eh-not_found {
+  background: #2b2b2b;
+  color: #999;
+}

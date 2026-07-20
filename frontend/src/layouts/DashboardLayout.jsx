@@ -11,8 +11,6 @@ export default function DashboardLayout() {
       <Sidebar />
 
       <div className="eh-main">
-        <Navbar />
-
         <main className="eh-content">
           <Outlet />
         </main>

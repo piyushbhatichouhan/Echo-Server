@@ -5,7 +5,10 @@ const router = express.Router();
 const authenticate = require("../middleware/auth.middleware");
 const upload = require("../middleware/upload.middleware");
 
-const { uploadFile } = require("../controllers/file.controller");
+const {
+  uploadFile,
+  renameProjectFile,
+} = require("../controllers/file.controller");
 const {
   listFiles,
   downloadFile,
@@ -16,7 +19,11 @@ const {
   createProjectFile,
 } = require("../controllers/file.controller");
 
-const { getFileContent } = require("../controllers/file.controller");
+const {
+  getFileContent,
+  deleteProjectPath,
+  renameProjectPath,
+} = require("../controllers/file.controller");
 
 router.get("/projects/:id/files", authenticate, listFiles);
 router.post("/projects/:id/folders", authenticate, createProjectFolder);
@@ -48,4 +55,7 @@ router.put("/files/:id/content", authenticate, saveFileContent);
 
 router.get("/files/:id/download", authenticate, downloadFile);
 
+router.put("/files/:id/rename", authenticate, renameProjectFile);
+router.delete("/projects/:id/path", authenticate, deleteProjectPath);
+router.put("/projects/:id/rename", authenticate, renameProjectPath);
 module.exports = router;

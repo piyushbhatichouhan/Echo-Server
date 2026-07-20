@@ -4,12 +4,22 @@ import { getDeploymentStatus } from "../services/deployment.api";
 
 import { getLogs } from "../services/log.api";
 
+import { getDeployments } from "../services/deployment.api";
+
 export default function useDeployment(projectId) {
   const [status, setStatus] = useState(null);
 
   const [logs, setLogs] = useState([]);
 
   const [loading, setLoading] = useState(true);
+
+  const [deployments, setDeployments] = useState([]);
+
+  const refreshDeployments = useCallback(async () => {
+    const data = await getDeployments(projectId);
+
+    setDeployments(data);
+  }, [projectId]);
 
   const refreshStatus = useCallback(async () => {
     console.log("Fetching status...");
@@ -36,21 +46,29 @@ export default function useDeployment(projectId) {
 
     const load = async () => {
       try {
-        console.log("Loading deployment...");
-
-        await Promise.all([refreshStatus(), refreshLogs()]);
-
-        console.log("Finished.");
+        await Promise.all([
+          refreshStatus(),
+          refreshLogs(),
+          refreshDeployments(),
+        ]);
       } catch (err) {
         console.error(err);
       } finally {
-        console.log("Loading false");
-
         setLoading(false);
       }
     };
 
+    // Initial load
     load();
+
+    // Poll deployment status every 3 seconds
+    const statusInterval = setInterval(() => {
+      refreshStatus().catch(console.error);
+    }, 3000);
+
+    return () => {
+      clearInterval(statusInterval);
+    };
   }, [projectId, refreshStatus, refreshLogs]);
 
   return {
@@ -65,5 +83,8 @@ export default function useDeployment(projectId) {
     refreshLogs,
 
     setLogs,
+
+    deployments,
+    refreshDeployments,
   };
 }
