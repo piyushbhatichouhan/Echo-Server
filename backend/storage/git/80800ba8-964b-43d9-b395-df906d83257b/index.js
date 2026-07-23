@@ -31,4 +31,5 @@ app.get("/joke", async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Listening on port ${PORT}`);
   console.log(`API_URL = ${API_URL}`);
+  console.log("hello world test1");
 });

@@ -9,7 +9,10 @@ const start = async (projectId, project) => {
 
     shell: true,
 
-    env: project.environment,
+    env: {
+      ...process.env,
+      ...project.environment,
+    },
 
     stdio: ["ignore", "pipe", "pipe"],
   });
