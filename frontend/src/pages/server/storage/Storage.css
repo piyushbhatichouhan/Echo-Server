@@ -1,0 +1,142 @@
+.storagePage {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+}
+
+.storageHeader h1 {
+    font-size: 2rem;
+    margin-bottom: 6px;
+}
+
+.storageHeader p {
+    color: var(--text-secondary);
+}
+
+.storageLayout {
+    display: grid;
+    grid-template-columns: 230px 1fr;
+    gap: 28px;
+    align-items: start;
+}
+
+.storageSidebar {
+    background: var(--surface-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: 20px;
+    padding: 14px;
+
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+
+    position: sticky;
+    top: 20px;
+}
+
+.storageTab {
+    border: none;
+    background: transparent;
+
+    border-radius: 12px;
+
+    padding: 14px 18px;
+
+    text-align: left;
+
+    color: var(--text-secondary);
+
+    cursor: pointer;
+
+    transition: .2s;
+}
+
+.storageTab:hover {
+    background: var(--surface-secondary);
+    color: var(--text-primary);
+}
+
+.storageTab--active {
+    background: var(--accent-primary);
+    color: white;
+}
+
+.storageContent {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+@media (max-width:900px) {
+
+    .storageLayout {
+        grid-template-columns: 1fr;
+    }
+
+    .storageSidebar {
+        position: static;
+
+        flex-direction: row;
+
+        overflow-x: auto;
+    }
+
+    .storageTab {
+        white-space: nowrap;
+    }
+
+}
+
+.storageTabs {
+    display: flex;
+    gap: 10px;
+
+    border-bottom: 1px solid var(--border-primary);
+
+    margin-bottom: 8px;
+}
+
+.storageTab {
+
+    background: none;
+    border: none;
+
+    padding: 14px 20px;
+
+    cursor: pointer;
+
+    color: var(--text-secondary);
+
+    font-size: .95rem;
+    font-weight: 500;
+
+    position: relative;
+
+    transition: .2s;
+}
+
+.storageTab:hover {
+    color: var(--text-primary);
+}
+
+.storageTab--active {
+
+    color: var(--accent-primary);
+}
+
+.storageTab--active::after {
+
+    content: "";
+
+    position: absolute;
+
+    left: 0;
+    right: 0;
+    bottom: -1px;
+
+    height: 3px;
+
+    border-radius: 999px;
+
+    background: var(--accent-primary);
+}

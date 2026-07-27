@@ -1,0 +1,294 @@
+.manageUsers {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+
+    width: 100%;
+    height: 100%;
+}
+
+.usersHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
+}
+
+.usersHeader h1 {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.usersHeader p {
+    margin-top: 6px;
+    color: var(--text-secondary);
+    font-size: 15px;
+}
+
+.usersSearch {
+    width: 340px;
+
+    padding: 12px 16px;
+
+    border-radius: 14px;
+
+    border: 1px solid rgba(255, 255, 255, 0.08);
+
+    background: var(--bg-secondary);
+
+    color: var(--text-primary);
+
+    outline: none;
+
+    transition: 0.2s;
+}
+
+.usersSearch::placeholder {
+    color: var(--text-secondary);
+}
+
+.usersSearch:focus {
+    border-color: rgba(255, 170, 80, 0.45);
+
+    box-shadow: 0 0 0 3px rgba(255, 170, 80, 0.12);
+}
+
+.usersList {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+
+    overflow-y: auto;
+
+    padding-right: 4px;
+}
+
+.userCard {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    gap: 24px;
+
+    padding: 22px;
+
+    border-radius: 18px;
+
+    background: var(--bg-secondary);
+
+    border: 1px solid rgba(255, 255, 255, 0.06);
+
+    transition: 0.2s;
+}
+
+.userCard:hover {
+    transform: translateY(-2px);
+
+    border-color: rgba(255, 170, 80, 0.35);
+
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+}
+
+.userCard__left {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+
+    flex: 1;
+}
+
+.userAvatar {
+    width: 56px;
+    height: 56px;
+
+    border-radius: 50%;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    font-size: 22px;
+    font-weight: 700;
+
+    color: white;
+
+    background: linear-gradient(135deg,
+            #d97706,
+            #f59e0b);
+
+    flex-shrink: 0;
+}
+
+.userInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.userTop {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.userTop h2 {
+    font-size: 18px;
+    font-weight: 600;
+
+    color: var(--text-primary);
+}
+
+.userInfo p {
+    color: var(--text-secondary);
+
+    font-size: 15px;
+}
+
+.userJoined {
+    color: rgba(255, 255, 255, 0.42);
+
+    font-size: 13px;
+}
+
+.userStatus {
+    padding: 5px 12px;
+
+    border-radius: 999px;
+
+    font-size: 12px;
+    font-weight: 600;
+
+    user-select: none;
+}
+
+.userStatus--active {
+    background: rgba(34, 197, 94, 0.15);
+
+    color: #4ade80;
+}
+
+.userStatus--disabled {
+    background: rgba(239, 68, 68, 0.15);
+
+    color: #f87171;
+}
+
+.userActions {
+    display: flex;
+    gap: 10px;
+
+    flex-shrink: 0;
+}
+
+.usersLoading,
+.usersEmpty {
+    display: flex;
+    flex-direction: column;
+
+    justify-content: center;
+    align-items: center;
+
+    height: 240px;
+
+    border-radius: 18px;
+
+    background: var(--bg-secondary);
+
+    border: 1px dashed rgba(255, 255, 255, 0.08);
+}
+
+.usersLoading {
+    color: var(--text-secondary);
+}
+
+.usersEmpty h3 {
+    color: var(--text-primary);
+
+    margin-bottom: 6px;
+}
+
+.usersEmpty p {
+    color: var(--text-secondary);
+}
+
+@media (max-width: 900px) {
+    .usersHeader {
+        flex-direction: column;
+    }
+
+    .usersSearch {
+        width: 100%;
+    }
+
+    .userCard {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .userActions {
+        width: 100%;
+
+        justify-content: flex-end;
+
+        flex-wrap: wrap;
+    }
+}
+
+
+.userPendingDeletion {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+
+    padding: 5px 12px;
+
+    border: 1px solid rgba(255, 170, 0, 0.45);
+    border-radius: 999px;
+
+    background: rgba(255, 170, 0, 0.12);
+
+    color: #ffb547;
+
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+
+    box-shadow:
+        0 0 10px rgba(255, 170, 0, 0.12),
+        inset 0 0 6px rgba(255, 170, 0, 0.06);
+
+    user-select: none;
+}
+
+.userPendingDeletion::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+
+    border-radius: 50%;
+
+    background: #ffb547;
+
+    box-shadow: 0 0 8px rgba(255, 181, 71, 0.8);
+
+    animation: pendingPulse 1.6s infinite ease-in-out;
+}
+
+@keyframes pendingPulse {
+    0% {
+        transform: scale(0.9);
+        opacity: 0.6;
+    }
+
+    50% {
+        transform: scale(1.2);
+        opacity: 1;
+    }
+
+    100% {
+        transform: scale(0.9);
+        opacity: 0.6;
+    }
+}

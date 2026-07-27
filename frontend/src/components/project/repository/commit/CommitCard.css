@@ -1,0 +1,109 @@
+.eh-commit-card {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 24px;
+
+    padding: 24px;
+
+    border-radius: var(--radius);
+
+    background: var(--bg-card);
+
+    border: 1px solid var(--border);
+
+    box-shadow: var(--shadow);
+
+}
+
+.eh-commit-header {
+
+    display: flex;
+
+    gap: 14px;
+
+    align-items: center;
+
+}
+
+.eh-commit-header svg {
+
+    color: var(--accent);
+
+}
+
+.eh-commit-header h2 {
+
+    font-size: 1.1rem;
+
+    margin-bottom: 4px;
+
+}
+
+.eh-commit-header p {
+
+    color: var(--text-secondary);
+
+    font-size: .9rem;
+
+}
+
+.eh-commit-body {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 18px;
+
+}
+
+.eh-commit-footer {
+
+    display: flex;
+
+    justify-content: flex-end;
+
+}
+
+.eh-sync-section {
+
+    border-top: 1px solid var(--border);
+
+    padding-top: 22px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 16px;
+
+}
+
+.eh-sync-header h3 {
+
+    color: var(--text-primary);
+
+    margin-bottom: 4px;
+
+}
+
+.eh-sync-header p {
+
+    color: var(--text-secondary);
+
+    font-size: .9rem;
+
+}
+
+.eh-sync-actions {
+
+    display: flex;
+
+    gap: 12px;
+
+    flex-wrap: wrap;
+
+}

@@ -1,0 +1,35 @@
+.eh-context-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 999;
+}
+
+.eh-context-menu {
+    position: fixed;
+    background: #2b241d;
+    border: 1px solid #5a4632;
+    border-radius: 10px;
+    min-width: 180px;
+    z-index: 1000;
+    overflow: hidden;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, .4);
+}
+
+.eh-context-item {
+    width: 100%;
+    border: none;
+    background: none;
+    color: white;
+
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    padding: 10px 14px;
+
+    cursor: pointer;
+}
+
+.eh-context-item:hover {
+    background: #3a2f25;
+}

@@ -1,0 +1,147 @@
+.eh-recent-project {
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    gap: 18px;
+
+    padding: 16px 18px;
+
+    border: 1px solid var(--border);
+
+    border-radius: var(--radius);
+
+    background: var(--bg-card);
+
+    cursor: pointer;
+
+    transition: all var(--transition);
+}
+
+.eh-recent-project:hover {
+    border-color: var(--accent);
+
+    box-shadow:
+        var(--shadow),
+        var(--glow);
+
+    transform: translateY(-2px);
+}
+
+.eh-recent-project-left {
+    display: flex;
+
+    align-items: flex-start;
+
+    gap: 14px;
+
+    flex: 1;
+
+    min-width: 0;
+}
+
+.eh-recent-project-icon {
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    width: 40px;
+
+    height: 40px;
+
+    border-radius: 10px;
+
+    background: rgba(255, 138, 0, 0.12);
+
+    color: var(--accent);
+
+    flex-shrink: 0;
+
+    transition: all var(--transition);
+}
+
+.eh-recent-project:hover .eh-recent-project-icon {
+    background: rgba(255, 138, 0, 0.18);
+
+    box-shadow: var(--glow);
+}
+
+.eh-recent-project-content {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 10px;
+
+    flex: 1;
+
+    min-width: 0;
+}
+
+.eh-recent-project-header {
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    gap: 16px;
+}
+
+.eh-recent-project-header h3 {
+    font-size: 1rem;
+
+    font-weight: 600;
+
+    color: var(--text-primary);
+
+    white-space: nowrap;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+}
+
+.eh-recent-project-meta {
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 12px;
+}
+
+.eh-recent-project-meta span {
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 5px;
+
+    color: var(--text-secondary);
+
+    font-size: .82rem;
+}
+
+.eh-recent-project-meta svg {
+    color: var(--accent);
+
+    flex-shrink: 0;
+}
+
+.eh-recent-project-arrow {
+    color: var(--text-muted);
+
+    transition: all var(--transition);
+
+    flex-shrink: 0;
+}
+
+.eh-recent-project:hover .eh-recent-project-arrow {
+    color: var(--accent);
+
+    transform: translateX(5px);
+}

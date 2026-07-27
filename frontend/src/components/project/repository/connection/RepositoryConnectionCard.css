@@ -1,0 +1,99 @@
+.eh-repository-connection-card {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 24px;
+
+    padding: 24px;
+
+    background: var(--bg-card);
+
+    border: 1px solid var(--border);
+
+    border-radius: var(--radius);
+
+    box-shadow: var(--shadow);
+}
+
+.eh-repository-card-header {
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+}
+
+.eh-repository-card-title {
+    display: flex;
+
+    align-items: center;
+
+    gap: 14px;
+}
+
+.eh-repository-card-title svg {
+    color: var(--accent);
+
+    width: 24px;
+
+    height: 24px;
+}
+
+.eh-repository-card-title h2 {
+    font-size: 1.15rem;
+
+    font-weight: 600;
+
+    color: var(--text-primary);
+
+    margin-bottom: 4px;
+}
+
+.eh-repository-card-title p {
+    color: var(--text-secondary);
+
+    font-size: .9rem;
+}
+
+.eh-repository-fields {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 18px;
+}
+
+.eh-repository-actions {
+    display: flex;
+
+    gap: 12px;
+
+    flex-wrap: wrap;
+}
+
+.eh-validation-success {
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
+
+    padding: 14px 16px;
+
+    border-radius: 10px;
+
+    border: 1px solid rgba(46, 204, 113, .25);
+
+    background: rgba(46, 204, 113, .08);
+
+    color: var(--success);
+
+    font-size: .9rem;
+
+    font-weight: 500;
+}
+
+.eh-validation-success svg {
+    flex-shrink: 0;
+}

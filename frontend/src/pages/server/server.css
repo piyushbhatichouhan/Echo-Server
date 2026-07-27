@@ -1,0 +1,109 @@
+.server {
+
+    padding: 40px;
+
+}
+
+.server__header {
+
+    margin-bottom: 35px;
+
+}
+
+.server__header h1 {
+
+    color: var(--primary);
+
+    font-size: 38px;
+
+    margin-bottom: 10px;
+
+}
+
+.server__header p {
+
+    color: var(--muted);
+
+}
+
+.server__grid {
+
+    display: grid;
+
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+
+    gap: 22px;
+
+}
+
+.serverCard {
+
+    background: var(--surface);
+
+    border: 1px solid rgba(255, 150, 70, .08);
+
+    border-radius: 18px;
+
+    padding: 28px;
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    cursor: pointer;
+
+    transition: .25s;
+
+}
+
+.serverCard:hover {
+
+    transform: translateY(-4px);
+
+    border-color: rgba(255, 150, 70, .35);
+
+    box-shadow: 0 15px 35px rgba(255, 140, 40, .12);
+
+}
+
+.serverCard h2 {
+
+    color: white;
+
+    margin-bottom: 10px;
+
+}
+
+.serverCard p {
+
+    color: var(--muted);
+
+    line-height: 1.5;
+
+}
+
+.serverCard span {
+
+    font-size: 30px;
+
+    color: var(--primary);
+
+}
+
+.serverCard--disabled {
+
+    opacity: .55;
+
+    cursor: default;
+
+}
+
+.serverCard--disabled:hover {
+
+    transform: none;
+
+    box-shadow: none;
+
+}

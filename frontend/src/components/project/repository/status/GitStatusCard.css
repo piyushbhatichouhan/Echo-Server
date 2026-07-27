@@ -1,0 +1,264 @@
+.eh-git-status-card {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+
+    padding: 24px;
+
+    background: var(--bg-card);
+
+    border: 1px solid var(--border);
+
+    border-radius: var(--radius);
+
+    box-shadow: var(--shadow);
+}
+
+/* ---------- Header ---------- */
+
+.eh-git-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.eh-git-header svg {
+    color: var(--accent);
+}
+
+.eh-git-header h2 {
+    color: var(--text-primary);
+
+    font-size: 1.1rem;
+
+    margin-bottom: 4px;
+}
+
+.eh-git-header p {
+    color: var(--text-secondary);
+
+    font-size: .9rem;
+}
+
+/* ---------- Clean ---------- */
+
+.eh-clean-state {
+    padding: 18px;
+
+    border-radius: 12px;
+
+    background: rgba(46, 204, 113, .08);
+
+    border: 1px solid rgba(46, 204, 113, .25);
+
+    color: var(--success);
+
+    font-weight: 500;
+
+    text-align: center;
+}
+
+/* ---------- Summary ---------- */
+
+.eh-summary {
+    display: grid;
+
+    grid-template-columns: repeat(3, 1fr);
+
+    gap: 16px;
+}
+
+.eh-summary-card {
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 8px;
+
+    padding: 18px;
+
+    border-radius: 12px;
+
+    border: 1px solid var(--border);
+
+    background: var(--bg-secondary);
+
+    transition: all var(--transition);
+}
+
+.eh-summary-card:hover {
+    transform: translateY(-2px);
+}
+
+.eh-summary-card strong {
+    font-size: 1.35rem;
+
+    color: var(--text-primary);
+}
+
+.eh-summary-card small {
+    color: var(--text-secondary);
+}
+
+.eh-summary-card svg {
+    width: 18px;
+    height: 18px;
+}
+
+.eh-summary-card.modified svg {
+    color: var(--warning);
+}
+
+.eh-summary-card.added svg {
+    color: var(--success);
+}
+
+.eh-summary-card.deleted svg {
+    color: var(--danger);
+}
+
+/* ---------- Change List ---------- */
+
+.eh-change-list {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 10px;
+}
+
+/* ---------- One File ---------- */
+
+.eh-change-item {
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    gap: 20px;
+
+    padding: 14px 16px;
+
+    border-radius: 10px;
+
+    border: 1px solid var(--border);
+
+    background: var(--bg-secondary);
+
+    transition: all var(--transition);
+}
+
+.eh-change-item:hover {
+    border-color: var(--accent);
+
+    transform: translateX(3px);
+}
+
+.eh-change-left {
+    display: flex;
+
+    align-items: center;
+
+    gap: 14px;
+
+    min-width: 0;
+
+    flex: 1;
+}
+
+.eh-change-left svg {
+    color: var(--accent);
+
+    flex-shrink: 0;
+}
+
+.eh-change-left strong {
+    display: block;
+
+    color: var(--text-primary);
+
+    margin-bottom: 3px;
+}
+
+.eh-change-left small {
+    color: var(--text-muted);
+
+    font-size: .78rem;
+}
+
+/* ---------- Status ---------- */
+
+.eh-change-status {
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 6px;
+
+    padding: 6px 10px;
+
+    border-radius: 999px;
+
+    font-size: .8rem;
+
+    font-weight: 600;
+}
+
+.eh-change-status.modified {
+    background: rgba(244, 180, 0, .15);
+
+    color: var(--warning);
+}
+
+.eh-change-status.added {
+    background: rgba(46, 204, 113, .15);
+
+    color: var(--success);
+}
+
+.eh-change-status.deleted {
+    background: rgba(231, 76, 60, .15);
+
+    color: var(--danger);
+}
+
+.eh-change-status.renamed {
+    background: rgba(255, 138, 0, .15);
+
+    color: var(--accent);
+}
+
+/* ---------- Expand ---------- */
+
+.eh-expand-button {
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 8px;
+
+    padding: 10px;
+
+    border: none;
+
+    background: transparent;
+
+    color: var(--accent);
+
+    cursor: pointer;
+
+    font-weight: 500;
+
+    transition: var(--transition);
+}
+
+.eh-expand-button:hover {
+    opacity: .8;
+}
