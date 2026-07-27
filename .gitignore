@@ -2,3 +2,4 @@ backend/node_modules
 backend/.env
 docs
 testing
+echohub_backup.sql

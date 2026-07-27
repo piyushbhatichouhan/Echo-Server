@@ -1,16 +1,50 @@
-import Card from "../../components/common/Card/Card";
-import "./Dashboard.css";
-
+import Card from "../../components/common/card/card";
+import "./dashboard.css";
+import StatCard from "../../components/dashboard/StatCard/StatCard";
+import useDashboard from "../../hooks/useDashboard";
+import RecentProjects from "../../components/dashboard/RecentProjects/RecentProjects";
 export default function Dashboard() {
+  const {
+    dashboard,
+
+    loading,
+  } = useDashboard();
+
+  if (loading) {
+    return <h2>Loading...</h2>;
+  }
+
   return (
     <div className="eh-dashboard">
-      <Card title="Projects">0</Card>
+      <div className="dashboardStats">
+        <StatCard
+          title="Projects"
+          value={dashboard?.overview.projects ?? 0}
+          icon="📁"
+        />
 
-      <Card title="Running Containers">0</Card>
+        <StatCard
+          title="Running"
+          value={dashboard?.overview.running ?? 0}
+          subtitle="Active deployments"
+          icon="🟢"
+        />
 
-      <Card title="Deployments">0</Card>
+        <StatCard
+          title="Deployments"
+          value={dashboard?.overview.deployments ?? 0}
+          subtitle="Total"
+          icon="🚀"
+        />
 
-      <Card title="Recent Activity">Coming Soon</Card>
+        <StatCard
+          title="Storage"
+          value={dashboard?.overview.storage}
+          subtitle="Used"
+          icon="💾"
+        />
+        <RecentProjects projects={dashboard?.projects.recent ?? []} />
+      </div>
     </div>
   );
 }

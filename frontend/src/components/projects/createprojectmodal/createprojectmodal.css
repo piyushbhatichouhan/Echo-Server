@@ -1,0 +1,119 @@
+.createProjectForm {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 28px;
+
+}
+
+.createProjectHero {
+
+    display: flex;
+
+    gap: 18px;
+
+    align-items: center;
+
+    padding: 18px;
+
+    border-radius: 18px;
+
+    background: linear-gradient(135deg,
+            rgba(255, 140, 40, .12),
+            rgba(120, 70, 20, .08));
+
+    border: 1px solid rgba(255, 140, 40, .18);
+
+}
+
+.createProjectIcon {
+
+    width: 64px;
+
+    height: 64px;
+
+    border-radius: 18px;
+
+    display: flex;
+
+    justify-content: center;
+
+    align-items: center;
+
+    font-size: 28px;
+
+    background: rgba(255, 140, 40, .18);
+
+    box-shadow: 0 0 25px rgba(255, 140, 40, .15);
+
+}
+
+.createProjectHero h2 {
+
+    color: white;
+
+    margin-bottom: 6px;
+
+}
+
+.createProjectHero p {
+
+    color: #a89a87;
+
+    line-height: 1.6;
+
+}
+
+.createProjectFields {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 22px;
+
+}
+
+.createProjectInfo {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 12px;
+
+    padding: 18px;
+
+    border-radius: 14px;
+
+    background: rgba(255, 255, 255, .03);
+
+    border: 1px solid rgba(255, 140, 40, .08);
+
+}
+
+.createProjectInfo div {
+
+    display: flex;
+
+    gap: 10px;
+
+    align-items: center;
+
+    color: #b6aa98;
+
+    font-size: 14px;
+
+}
+
+.createProjectButtons {
+
+    display: flex;
+
+    justify-content: flex-end;
+
+    gap: 14px;
+
+}

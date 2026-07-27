@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import "./RepositoryCard.css";
-import Button from "../../common/Button/Button";
+import Button from "../../common/button/button";
+import RepositoryInfoCard from "../repository/info/RepositoryInfoCard";
+import GitStatusCard from "../repository/status/GitStatusCard";
+import { useToast } from "../../../context/ToastContext";
 
 import {
   connectRepository,
@@ -8,6 +11,9 @@ import {
   disconnectRepository,
   cloneRepository,
   commitChanges,
+  pullRepository,
+  pushRepository,
+  fetchRepository,
 } from "../../../services/git.api";
 
 const STATUS_LABELS = {
@@ -38,6 +44,10 @@ const getDirectory = (path) => {
   return parts.join("/");
 };
 
+import RepositoryConnectionCard from "../repository/connection/RepositoryConnectionCard";
+
+import CommitCard from "../repository/commit/CommitCard";
+
 export default function RepositoryCard({
   projectId,
   repository,
@@ -45,7 +55,6 @@ export default function RepositoryCard({
   gitStatus,
   refreshStatus,
 }) {
-  console.log("RepositoryCard projectId:", projectId);
   const [repositoryUrl, setRepositoryUrl] = useState("");
   const [branch, setBranch] = useState("main");
 
@@ -58,9 +67,13 @@ export default function RepositoryCard({
   const [commitMessage, setCommitMessage] = useState("");
 
   const [committing, setCommitting] = useState(false);
+  const [pulling, setPulling] = useState(false);
 
+  const [pushing, setPushing] = useState(false);
+
+  const [fetching, setFetching] = useState(false);
   const changes = gitStatus?.changes ?? [];
-
+  const toast = useToast();
   const summary = {
     modified: 0,
     added: 0,
@@ -101,8 +114,11 @@ export default function RepositoryCard({
     }
   }, [repository]);
 
+  const canCommit = gitStatus && !gitStatus.clean;
+  const canPush = gitStatus && gitStatus.ahead > 0;
+
   return (
-    <div className="eh-repository-card">
+    <div className="eh-repository-page">
       <>
         <div className="eh-field">
           <label>Repository URL</label>
@@ -113,190 +129,146 @@ export default function RepositoryCard({
             placeholder="https://github.com/user/repo.git"
           />
         </div>
+        <div className="eh-repository-top">
+          <RepositoryConnectionCard
+            repositoryUrl={repositoryUrl}
+            setRepositoryUrl={setRepositoryUrl}
+            branch={branch}
+            setBranch={setBranch}
+            repository={repository}
+            validation={validation}
+            validating={validating}
+            connecting={connecting}
+            cloning={cloning}
+            onValidate={async () => {
+              try {
+                setValidating(true);
 
-        <div className="eh-field">
-          <label>Branch</label>
+                const result = await validateRepository(
+                  projectId,
+                  repositoryUrl,
+                  branch,
+                );
 
-          <input
-            value={branch}
-            onChange={(e) => setBranch(e.target.value)}
-            placeholder="main"
+                setValidation(result);
+              } finally {
+                setValidating(false);
+              }
+            }}
+            onConnect={async () => {
+              try {
+                setConnecting(true);
+
+                await connectRepository(projectId, repositoryUrl, branch);
+
+                await refresh();
+              } finally {
+                setConnecting(false);
+              }
+            }}
+            onClone={async () => {
+              try {
+                setCloning(true);
+
+                await cloneRepository(projectId);
+                await refresh();
+                toast.success(
+                  "Repository Cloned Succesfully",
+                  "Whole repository downloaded.",
+                );
+              } finally {
+                setCloning(false);
+              }
+            }}
           />
 
-          <div className="eh-repository-actions">
-            <Button
-              variant="secondary"
-              disabled={!repositoryUrl || validating}
-              loading={validating}
-              onClick={async () => {
-                try {
-                  setValidating(true);
-
-                  const result = await validateRepository(
-                    projectId,
-                    repositoryUrl,
-                    branch,
-                  );
-
-                  setValidation(result);
-                } finally {
-                  setValidating(false);
-                }
-              }}
-            >
-              Validate Repository
-            </Button>
-            {validation && !repository && (
-              <Button
-                variant="primary"
-                loading={connecting}
-                onClick={async () => {
-                  try {
-                    setConnecting(true);
-
-                    await connectRepository(projectId, repositoryUrl, branch);
-
-                    await refresh();
-                  } finally {
-                    setConnecting(false);
-                  }
-                }}
-              >
-                Connect Repository
-              </Button>
-            )}
-
-            {repository && (
-              <Button
-                variant="secondary"
-                loading={cloning}
-                onClick={async () => {
-                  try {
-                    setCloning(true);
-
-                    await cloneRepository(projectId);
-
-                    alert("Repository cloned successfully.");
-                  } finally {
-                    setCloning(false);
-                  }
-                }}
-              >
-                Clone Repository
-              </Button>
-            )}
-          </div>
-          {validation && (
-            <div className="eh-validation">
-              <div>
-                <strong>Name</strong>
-                <span>{validation.name}</span>
-              </div>
-
-              <div>
-                <strong>Owner</strong>
-                <span>{validation.owner}</span>
-              </div>
-
-              <div>
-                <strong>Default Branch</strong>
-                <span>{validation.defaultBranch}</span>
-              </div>
-            </div>
-          )}
-
-          {gitStatus && (
-            <div className="eh-git-status">
-              <h3>Repository Status</h3>
-
-              {gitStatus.clean ? (
-                <div className="eh-status-clean">Repository is up to date.</div>
-              ) : (
-                <>
-                  <div className="eh-status-summary">
-                    <div className="eh-summary modified">
-                      <span>12</span>
-                      <small>Modified</small>
-                    </div>
-
-                    <div className="eh-summary added">
-                      <span>15</span>
-                      <small>Added</small>
-                    </div>
-
-                    <div className="eh-summary deleted">
-                      <span>6</span>
-                      <small>Deleted</small>
-                    </div>
-                  </div>
-
-                  <div className="eh-change-list">
-                    {visibleChanges.map((change) => (
-                      <div key={change.path} className="eh-change-item">
-                        <div
-                          className={`eh-change-badge ${
-                            STATUS_COLORS[change.status]
-                          }`}
-                        >
-                          {STATUS_LABELS[change.status]}
-                        </div>
-
-                        <div className="eh-change-info">
-                          <strong>{getFileName(change.path)}</strong>
-
-                          <small>{getDirectory(change.path)}</small>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {changes.length > 5 && (
-                    <button
-                      className="eh-show-more"
-                      onClick={() => setShowAll(!showAll)}
-                    >
-                      {showAll ? "Show Less" : `Show All (${changes.length})`}
-                    </button>
-                  )}
-                </>
-              )}
-            </div>
-          )}
-
-          <div className="eh-commit-section">
-            <div className="eh-commit-card">
-              <h3>Commit Changes</h3>
-
-              <label>Commit message</label>
-
-              <input
-                placeholder="Commit message"
-                value={commitMessage}
-                onChange={(e) => setCommitMessage(e.target.value)}
-              />
-
-              <Button
-                loading={committing}
-                disabled={gitStatus?.clean || !commitMessage.trim()}
-                onClick={async () => {
-                  try {
-                    setCommitting(true);
-
-                    await commitChanges(projectId, commitMessage);
-
-                    setCommitMessage("");
-
-                    await refreshStatus();
-                  } finally {
-                    setCommitting(false);
-                  }
-                }}
-              >
-                Commit Changes
-              </Button>
-            </div>
-          </div>
+          <RepositoryInfoCard validation={validation} />
         </div>
+
+        <GitStatusCard gitStatus={gitStatus} />
+
+        <CommitCard
+          canPush={canPush}
+          canCommit={canCommit}
+          gitStatus={gitStatus}
+          commitMessage={commitMessage}
+          setCommitMessage={setCommitMessage}
+          committing={committing}
+          onCommit={async () => {
+            if (!canCommit) {
+              toast.info("Nothing to Commit", "There are no modified files.");
+              return;
+            }
+
+            try {
+              setCommitting(true);
+
+              await commitChanges(projectId, commitMessage);
+
+              setCommitMessage("");
+
+              await refreshStatus();
+
+              toast.success("Commit Created", "Changes have been committed.");
+            } finally {
+              setCommitting(false);
+            }
+          }}
+          pulling={pulling}
+          pushing={pushing}
+          fetching={fetching}
+          onPull={async () => {
+            try {
+              setPulling(true);
+
+              await pullRepository(projectId);
+
+              await refresh();
+
+              await refreshStatus();
+              toast.success("Repository Pulled", "Latest changes downloaded.");
+            } finally {
+              setPulling(false);
+            }
+          }}
+          onPush={async () => {
+            if (!canPush) {
+              toast.info(
+                "Nothing to Push",
+                "All local commits are already on GitHub.",
+              );
+              return;
+            }
+
+            try {
+              setPushing(true);
+
+              await pushRepository(projectId);
+
+              await refreshStatus();
+
+              toast.success("Repository Pushed", "Changes uploaded to GitHub.");
+            } finally {
+              setPushing(false);
+            }
+          }}
+          onFetch={async () => {
+            try {
+              setFetching(true);
+
+              await fetchRepository(projectId);
+
+              await refreshStatus();
+
+              toast.success(
+                "Repository Updated",
+                "Fetched latest remote information.",
+              );
+            } finally {
+              setFetching(false);
+            }
+          }}
+        />
       </>
     </div>
   );

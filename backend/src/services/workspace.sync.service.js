@@ -59,22 +59,30 @@ const syncWorkspaceToGit = async (projectId) => {
         continue;
       }
 
-      await fs.copyFile(workspaceEntry, gitEntry);
+      const data = await fs.readFile(workspaceEntry);
+
+      await fs.writeFile(gitEntry, data);
     }
 
     for (const gitEntry of gitEntries) {
+      if (gitEntry.name === ".git" || gitEntry.name === "node_modules") {
+        continue;
+      }
       const exists = entries.find((e) => e.name === gitEntry.name);
 
       if (exists) continue;
 
       const stalePath = path.join(gitPath, gitEntry.name);
-
+      console.log("Deleting:", stalePath);
       await fs.rm(stalePath, {
         recursive: true,
         force: true,
       });
     }
   };
+  console.log("Workspace:", workspaceDirectory);
+  console.log("Git:", gitDirectory);
+
   await syncDirectory(workspaceDirectory, gitDirectory);
 };
 

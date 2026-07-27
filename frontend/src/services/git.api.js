@@ -47,3 +47,21 @@ export const commitChanges = async (projectId, message) => {
 
   return response.data.data;
 };
+
+export const pullRepository = async (projectId) => {
+  const { data } = await api.post(`/${projectId}/pull`);
+
+  return data;
+};
+
+export const pushRepository = async (projectId) => {
+  const { data } = await api.post(`/${projectId}/push`);
+
+  return data;
+};
+
+export const fetchRepository = async (projectId) => {
+  const { data } = await api.post(`/${projectId}/fetch`);
+
+  return data;
+};

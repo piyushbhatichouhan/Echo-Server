@@ -1,6 +1,6 @@
 import "./Projects.css";
 
-import ProjectCard from "../../components/common/ProjectCard/ProjectCard";
+import ProjectCard from "../../components/common/projectcard/projectcard";
 import React, { useState } from "react";
 import useProjects from "../../hooks/useProjects";
 import Button from "../../components/common/button/button";
@@ -24,9 +24,17 @@ export default function Projects() {
   return (
     <div className="eh-projects">
       <div className="eh-projects-header">
-        <h1>Projects</h1>
+        <div className="eh-projects-title">
+          <h1>Projects</h1>
 
-        <Button onClick={() => setOpen(true)}>New Project</Button>
+          <p>
+            {projects.length === 0
+              ? "No projects yet"
+              : `${projects.length} Project${projects.length > 1 ? "s" : ""}`}
+          </p>
+        </div>
+
+        <Button onClick={() => setOpen(true)}>+ New Project</Button>
       </div>
 
       <div className="eh-project-grid">
@@ -34,6 +42,7 @@ export default function Projects() {
           <ProjectCard key={project.id} project={project} />
         ))}
       </div>
+
       <CreateProjectModal
         open={open}
         onClose={() => setOpen(false)}

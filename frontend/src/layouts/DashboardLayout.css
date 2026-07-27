@@ -38,3 +38,13 @@
     }
 
 }
+
+.dashboard-layout {
+    height: 100vh;
+    overflow: hidden;
+}
+
+.dashboard-content {
+    flex: 1;
+    overflow-y: auto;
+}

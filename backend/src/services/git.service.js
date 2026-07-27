@@ -4,7 +4,11 @@ const github = require("../utils/github.api");
 const path = require("path");
 const fs = require("fs/promises");
 const { getProjectFilesDirectory } = require("../storage/storage.manager");
+const os = require("os");
 
+const { v4: uuid } = require("uuid");
+const storageService = require("./storage.service");
+const storageQuotaService = require("./storageQuota.service");
 const {
   syncGitToWorkspace,
   indexWorkspace,
@@ -12,7 +16,23 @@ const {
 } = require("./workspace.sync.service");
 const simpleGit = require("simple-git");
 
+const checkGit = async (projectId, stage) => {
+  const gitDir = path.join(getProjectGitDirectory(projectId), ".git");
+
+  const exists = await fs
+    .access(gitDir)
+    .then(() => true)
+    .catch(() => false);
+
+  console.log(`[${stage}] .git exists:`, exists);
+};
+
 const getRepository = async (projectId, ownerId) => {
+  const {
+    syncGitToWorkspace,
+    indexWorkspace,
+    syncWorkspaceToGit,
+  } = require("./workspace.sync.service");
   const { verifyProjectOwnership } = require("./project.service");
   await verifyProjectOwnership(projectId, ownerId);
 
@@ -29,6 +49,11 @@ const getRepository = async (projectId, ownerId) => {
 };
 
 const validateRepository = async (projectId, ownerId, url, branch) => {
+  const {
+    syncGitToWorkspace,
+    indexWorkspace,
+    syncWorkspaceToGit,
+  } = require("./workspace.sync.service");
   const { verifyProjectOwnership } = require("./project.service");
   await verifyProjectOwnership(projectId, ownerId);
 
@@ -64,6 +89,11 @@ const validateRepository = async (projectId, ownerId, url, branch) => {
   };
 };
 const connectRepository = async (projectId, ownerId, repositoryUrl, branch) => {
+  const {
+    syncGitToWorkspace,
+    indexWorkspace,
+    syncWorkspaceToGit,
+  } = require("./workspace.sync.service");
   console.log({
     projectId,
     ownerId,
@@ -160,6 +190,11 @@ const connectRepository = async (projectId, ownerId, repositoryUrl, branch) => {
 };
 
 const disconnectRepository = async (projectId, ownerId) => {
+  const {
+    syncGitToWorkspace,
+    indexWorkspace,
+    syncWorkspaceToGit,
+  } = require("./workspace.sync.service");
   const { verifyProjectOwnership } = require("./project.service");
   await verifyProjectOwnership(projectId, ownerId);
 
@@ -179,13 +214,35 @@ const getProjectGitDirectory = (projectId) => {
   return path.join(GIT_ROOT, projectId);
 };
 
-const cloneRepository = async (projectId, ownerId) => {
-  const { verifyProjectOwnership } = require("./project.service");
+const pullRepositoryInternal = async (gitDirectory) => {
+  const git = simpleGit(gitDirectory);
 
+  const branch = (await git.branch()).current;
+
+  return await git.pull("origin", branch);
+};
+
+const pushRepositoryInternal = async (gitDirectory) => {
+  const git = simpleGit(gitDirectory);
+
+  const branch = (await git.branch()).current;
+
+  return await git.push("origin", branch);
+};
+
+const fetchRepositoryInternal = async (gitDirectory) => {
+  const git = simpleGit(gitDirectory);
+
+  return await git.fetch("origin");
+};
+
+const cloneRepository = async (projectId, ownerId) => {
   const {
     syncGitToWorkspace,
     indexWorkspace,
+    syncWorkspaceToGit,
   } = require("./workspace.sync.service");
+  const { verifyProjectOwnership } = require("./project.service");
 
   // Verify ownership
   await verifyProjectOwnership(projectId, ownerId);
@@ -206,17 +263,55 @@ const cloneRepository = async (projectId, ownerId) => {
 
   const repository = result.rows[0];
 
-  const gitDirectory = getProjectGitDirectory(projectId);
+  // Temporary Cloning for size check
+
+  const tempDirectory = path.join(os.tmpdir(), "echohub-clones", uuid());
+
+  await fs.mkdir(tempDirectory, {
+    recursive: true,
+  });
 
   await github.cloneRepository(
     repository.clone_url,
     repository.branch,
-    gitDirectory,
+    tempDirectory,
   );
 
+  const cloneSize = await storageService.calculateDirectorySize(tempDirectory);
+
+  await storageQuotaService.checkQuota(ownerId, cloneSize);
+
+  const gitDirectory = getProjectGitDirectory(projectId);
+
+  // IF size check is passed
+
+  await fs.rm(gitDirectory, {
+    recursive: true,
+    force: true,
+  });
+
+  await fs.rename(tempDirectory, gitDirectory);
+
+  await checkGit(projectId, "after clone");
+
   await syncGitToWorkspace(projectId);
+  await checkGit(projectId, "after syncGitToWorkspace");
 
   await indexWorkspace(projectId);
+  await checkGit(projectId, "after indexWorkspace");
+
+  await pool.query(
+    `
+  UPDATE projects
+  SET
+      git_connected = TRUE,
+      git_branch = $2,
+      git_remote_url = $3,
+      updated_at = NOW()
+  WHERE id = $1
+  `,
+    [projectId, repository.branch, repository.clone_url],
+  );
 
   return {
     success: true,
@@ -328,14 +423,75 @@ const commitChanges = async (projectId, ownerId, message) => {
 
   const git = simpleGit(gitDirectory);
 
+  const statusBefore = await git.status();
+
   await git.add(".");
 
   const result = await git.commit(message);
 
+  const statusAfter = await git.status();
+
   return result;
 };
 
+const pullRepository = async (projectId, ownerId) => {
+  const { verifyProjectOwnership } = require("./project.service");
+
+  const {
+    syncGitToWorkspace,
+    indexWorkspace,
+  } = require("./workspace.sync.service");
+
+  await verifyProjectOwnership(projectId, ownerId);
+
+  const gitDirectory = getProjectGitDirectory(projectId);
+
+  await pullRepositoryInternal(gitDirectory);
+
+  await syncGitToWorkspace(projectId);
+
+  await indexWorkspace(projectId);
+
+  return {
+    success: true,
+  };
+};
+
+const pushRepository = async (projectId, ownerId) => {
+  const { verifyProjectOwnership } = require("./project.service");
+
+  await verifyProjectOwnership(projectId, ownerId);
+
+  const gitDirectory = getProjectGitDirectory(projectId);
+
+  await pushRepositoryInternal(gitDirectory);
+
+  return {
+    success: true,
+  };
+};
+
+const fetchRepository = async (projectId, ownerId) => {
+  const { verifyProjectOwnership } = require("./project.service");
+
+  await verifyProjectOwnership(projectId, ownerId);
+
+  const gitDirectory = getProjectGitDirectory(projectId);
+
+  await fetchRepositoryInternal(gitDirectory);
+
+  return {
+    success: true,
+  };
+};
+
 const updateRepository = async (projectId, ownerId) => {
+  const {
+    syncGitToWorkspace,
+    indexWorkspace,
+    syncWorkspaceToGit,
+  } = require("./workspace.sync.service");
+  const { verifyProjectOwnership } = require("./project.service");
   await verifyProjectOwnership(projectId, ownerId);
 
   const repository = await getRepository(projectId, ownerId);
@@ -382,4 +538,10 @@ module.exports = {
   commitChanges,
   copyDirectory,
   updateRepository,
+  pullRepository,
+
+  pushRepository,
+
+  fetchRepository,
+  checkGit,
 };

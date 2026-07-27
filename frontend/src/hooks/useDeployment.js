@@ -22,21 +22,13 @@ export default function useDeployment(projectId) {
   }, [projectId]);
 
   const refreshStatus = useCallback(async () => {
-    console.log("Fetching status...");
-
     const data = await getDeploymentStatus(projectId);
-
-    console.log("Status:", data);
 
     setStatus(data);
   }, [projectId]);
 
   const refreshLogs = useCallback(async () => {
-    console.log("Fetching logs...");
-
     const data = await getLogs(projectId);
-
-    console.log("Logs:", data);
 
     setLogs(data);
   }, [projectId]);

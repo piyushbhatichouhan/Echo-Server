@@ -27,8 +27,9 @@ import { deletePath as deleteWorkspacePath } from "../../services/file.api";
 import Deployments from "../../components/project/deployments/deployments";
 import Settings from "../../components/project/settings/Settings";
 import DeploymentHistory from "../../components/project/overview/deploymentHistory";
-
+import { useToast } from "../../context/ToastContext";
 import Environment from "../../components/project/environment/Environment";
+import projectWorkspace from "../../services/projectWorkspace";
 
 export default function Project() {
   const { id } = useParams();
@@ -60,6 +61,31 @@ export default function Project() {
     refreshStatus();
   });
 
+  const toast = useToast();
+
+  const actionMessages = {
+    deploy: {
+      title: "Project Deployed",
+      message: "Deployment completed successfully.",
+    },
+    redeploy: {
+      title: "Project Redeployed",
+      message: "Project has been Redeployed.",
+    },
+    start: {
+      title: "Project Started",
+      message: "The project is now running.",
+    },
+    stop: {
+      title: "Project Stopped",
+      message: "The project has been Stopped.",
+    },
+    restart: {
+      title: "Project Restarted",
+      message: "The project Restarted successfully.",
+    },
+  };
+
   const runAction = async (action, name) => {
     try {
       setActionLoading(name);
@@ -67,6 +93,11 @@ export default function Project() {
       await action(id);
 
       await Promise.all([refreshStatus(), refreshLogs()]);
+      const { title, message } = actionMessages[name];
+
+      toast.success(title, message);
+    } catch (err) {
+      toast.error("Action Failed", err.response?.data?.message || err.message);
     } finally {
       setActionLoading(null);
     }
@@ -95,26 +126,34 @@ export default function Project() {
   const saveCurrentFile = async () => {
     if (!selectedFile) return;
 
-    await saveFileContent(selectedFile.id, fileContent);
-
-    setDirty(false);
+    try {
+      await saveFileContent(selectedFile.id, fileContent);
+      setDirty(false);
+      toast.success(`${type} Saved`, `${type} saved successfully`);
+    } catch (error) {
+      toast.error("Error", error.message);
+    }
   };
   if (projectLoading || deploymentLoading) {
     return <p>Loading...</p>;
   }
 
   const handleDelete = async (path, type) => {
-    await deleteWorkspacePath(id, path, type);
-
-    if (
-      selectedFile &&
-      type === "file" &&
-      selectedFile.relative_path === path
-    ) {
-      setSelectedFile(null);
+    try {
+      await deleteWorkspacePath(id, path, type);
+      console.log(`id: ${id} , path: ${path}, type: ${type}`);
+      if (
+        selectedFile &&
+        type === "file" &&
+        selectedFile.relative_path === path
+      ) {
+        setSelectedFile(null);
+      }
+      toast.success(`${type} deleted`, `${type} deleted successfully`);
+      refreshFiles();
+    } catch (error) {
+      toast.error("Error", error.message);
     }
-
-    refreshFiles();
   };
 
   const deploymentState = status?.status || "unknown";
@@ -152,12 +191,14 @@ export default function Project() {
           <>
             {!selectedFile ? (
               <FileManager
-                projectId={id}
+                title="Workspace"
                 refresh={refreshFiles}
                 files={files}
                 loading={filesLoading}
                 onOpen={setSelectedFile}
                 onDelete={handleDelete}
+                adapter={projectWorkspace}
+                workspaceId={id}
               />
             ) : (
               <FileEditor

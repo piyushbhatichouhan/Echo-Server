@@ -1,10 +1,15 @@
 const { pool } = require("../config/database");
 const fs = require("fs/promises");
 const path = require("path");
-
+const storageQuotaService = require("./storageQuota.service");
 const { verifyProjectOwnership } = require("./project.service");
 const { getProjectFilesDirectory } = require("../storage/storage.manager");
 const { syncWorkspaceToGit } = require("./workspace.sync.service");
+
+const { getProjectGitDirectory } = require("../services/git.service");
+const filesystem = require("./filesystem.service");
+const workspaceFileService = require("./workspace.file.service");
+
 const saveFile = async (projectId, ownerId, file) => {
   //
   // Verify project ownership
@@ -18,7 +23,8 @@ const saveFile = async (projectId, ownerId, file) => {
   SELECT
       id,
       stored_name,
-      storage_path
+      storage_path,
+      file_size
   FROM files
   WHERE
       project_id = $1
@@ -28,21 +34,22 @@ const saveFile = async (projectId, ownerId, file) => {
     [projectId, file.originalname],
   );
 
-  const projectDirectory = getProjectFilesDirectory(projectId);
+  const replacingBytes =
+    existing.rows.length > 0 ? Number(existing.rows[0].file_size) : 0;
 
-  await fs.mkdir(projectDirectory, {
-    recursive: true,
-  });
+  await storageQuotaService.checkQuota(ownerId, file.size, replacingBytes);
+
+  const workspaceRoot = getProjectFilesDirectory(projectId);
+
+  await filesystem.ensureDirectory(workspaceRoot);
 
   const relativePath = file.relativePath || file.originalname;
 
-  const finalPath = path.join(projectDirectory, relativePath);
-
-  await fs.mkdir(path.dirname(finalPath), {
-    recursive: true,
+  const finalPath = await workspaceFileService.storeUploadedFile({
+    workspaceRoot,
+    uploadedFile: file,
+    relativePath,
   });
-
-  await fs.rename(file.path, finalPath);
   //
   // Save metadata
   //
@@ -51,7 +58,7 @@ const saveFile = async (projectId, ownerId, file) => {
       const oldFile = existing.rows[0];
 
       try {
-        await fs.unlink(oldFile.storage_path);
+        await filesystem.removeDiskFile(oldFile.storage_path);
       } catch {
         // Ignore if file doesn't exist
       }
@@ -115,7 +122,7 @@ RETURNING *
     return result.rows[0];
   } catch (error) {
     try {
-      await fs.unlink(finalPath);
+      await filesystem.removeDiskFile(finalPath);
     } catch {}
 
     throw error;
@@ -252,7 +259,7 @@ const deleteFile = async (fileId, ownerId) => {
         [file.id],
       );
 
-      await fs.unlink(file.storage_path);
+      await filesystem.removeDiskFile(file.storage_path);
     }
 
     await client.query("COMMIT");
@@ -309,7 +316,7 @@ const loadFileContent = async (fileId, ownerId) => {
 
   const file = result.rows[0];
 
-  const content = await fs.readFile(file.storage_path, "utf8");
+  const content = await filesystem.readContent(file.storage_path, "utf8");
 
   return {
     id: file.id,
@@ -323,7 +330,8 @@ const updateFileContent = async (fileId, ownerId, content) => {
   const result = await pool.query(
     `
     SELECT
-        f.storage_path
+        f.storage_path,
+         f.file_size
     FROM files f
     INNER JOIN projects p
         ON p.id = f.project_id
@@ -340,8 +348,44 @@ const updateFileContent = async (fileId, ownerId, content) => {
     error.status = 404;
     throw error;
   }
+  console.log("Saving file:", result.rows[0].storage_path);
 
-  await fs.writeFile(result.rows[0].storage_path, content, "utf8");
+  const project = await pool.query(
+    `
+  SELECT project_id
+  FROM files
+  WHERE id = $1
+  `,
+    [fileId],
+  );
+
+  console.log(
+    "Git directory:",
+    getProjectGitDirectory(project.rows[0].project_id),
+  );
+
+  console.log(
+    "Workspace directory:",
+    getProjectFilesDirectory(project.rows[0].project_id),
+  );
+
+  const oldSize = Number(result.rows[0].file_size);
+
+  const newSize = Buffer.byteLength(content, "utf8");
+
+  await storageQuotaService.checkQuota(ownerId, newSize, oldSize);
+  await filesystem.writeContent(result.rows[0].storage_path, content, "utf8");
+
+  await pool.query(
+    `
+  UPDATE files
+  SET
+      file_size = $2
+  WHERE
+      id = $1
+  `,
+    [fileId, newSize],
+  );
 
   const file = await pool.query(
     `
@@ -353,7 +397,15 @@ const updateFileContent = async (fileId, ownerId, content) => {
   );
 
   await syncWorkspaceToGit(file.rows[0].project_id);
-
+  console.log(
+    ".git exists after sync:",
+    await fs
+      .access(
+        path.join(getProjectGitDirectory(file.rows[0].project_id), ".git"),
+      )
+      .then(() => true)
+      .catch(() => false),
+  );
   return {
     success: true,
   };
@@ -363,16 +415,14 @@ const renamePath = async (projectId, ownerId, oldPath, newPath, type) => {
   const { verifyProjectOwnership } = require("./project.service");
   await verifyProjectOwnership(projectId, ownerId);
 
-  const projectDirectory = getProjectFilesDirectory(projectId);
+  const workspaceRoot = getProjectFilesDirectory(projectId);
 
-  const oldStoragePath = path.join(projectDirectory, oldPath);
-  const newStoragePath = path.join(projectDirectory, newPath);
+  const oldStoragePath = path.join(workspaceRoot, oldPath);
+  const newStoragePath = path.join(workspaceRoot, newPath);
 
-  await fs.mkdir(path.dirname(newStoragePath), {
-    recursive: true,
-  });
+  await filesystem.ensureDirectory(path.dirname(newStoragePath));
 
-  await fs.rename(oldStoragePath, newStoragePath);
+  await filesystem.moveUploadedFile(oldStoragePath, newStoragePath);
 
   if (type === "file") {
     await pool.query(
@@ -413,7 +463,7 @@ const renamePath = async (projectId, ownerId, oldPath, newPath, type) => {
     const updatedRelative =
       newPath + file.relative_path.substring(oldPath.length);
 
-    const updatedStorage = path.join(projectDirectory, updatedRelative);
+    const updatedStorage = path.join(workspaceRoot, updatedRelative);
 
     await pool.query(
       `
@@ -438,13 +488,11 @@ const createFolder = async (projectId, ownerId, relativePath) => {
   const { verifyProjectOwnership } = require("./project.service");
   await verifyProjectOwnership(projectId, ownerId);
 
-  const projectDirectory = getProjectFilesDirectory(projectId);
+  const workspaceRoot = getProjectFilesDirectory(projectId);
 
-  const folderPath = path.join(projectDirectory, relativePath);
+  const folderPath = path.join(workspaceRoot, relativePath);
 
-  await fs.mkdir(folderPath, {
-    recursive: true,
-  });
+  await filesystem.ensureDirectory(folderPath);
 
   await pool.query(
     `
@@ -476,15 +524,13 @@ const createEmptyFile = async (projectId, ownerId, relativePath) => {
   const { verifyProjectOwnership } = require("./project.service");
   await verifyProjectOwnership(projectId, ownerId);
 
-  const projectDirectory = getProjectFilesDirectory(projectId);
+  const workspaceRoot = getProjectFilesDirectory(projectId);
 
-  const fullPath = path.join(projectDirectory, relativePath);
+  const fullPath = path.join(workspaceRoot, relativePath);
 
-  await fs.mkdir(path.dirname(fullPath), {
-    recursive: true,
-  });
+  await filesystem.ensureDirectory(path.dirname(fullPath));
 
-  await fs.writeFile(fullPath, "");
+  await filesystem.writeContent(fullPath, "");
 
   const originalName = path.basename(relativePath);
 
@@ -524,10 +570,16 @@ const createEmptyFile = async (projectId, ownerId, relativePath) => {
 };
 
 const deletePath = async (projectId, ownerId, relativePath, type) => {
+  console.log("Delete request:");
+  console.log({
+    relativePath,
+    type,
+    relativePathType: typeof relativePath,
+  });
   const { verifyProjectOwnership } = require("./project.service");
   await verifyProjectOwnership(projectId, ownerId);
 
-  const projectDirectory = getProjectFilesDirectory(projectId);
+  const workspaceRoot = getProjectFilesDirectory(projectId);
 
   if (type === "file") {
     const file = await pool.query(
@@ -544,7 +596,7 @@ const deletePath = async (projectId, ownerId, relativePath, type) => {
 
     if (file.rows.length === 0) throw new Error("File not found");
 
-    await fs.unlink(file.rows[0].storage_path);
+    await filesystem.removeDiskFile(file.rows[0].storage_path);
 
     await pool.query(
       `
@@ -559,7 +611,7 @@ const deletePath = async (projectId, ownerId, relativePath, type) => {
 
   // folder
 
-  const folderPath = path.join(projectDirectory, relativePath);
+  const folderPath = path.join(workspaceRoot, relativePath);
 
   await fs.rm(folderPath, {
     recursive: true,

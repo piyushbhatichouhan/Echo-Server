@@ -1,7 +1,7 @@
 import "./Sidebar.css";
 
 import NavigationItem from "../NavigationItem/NavigationItem";
-import { Home, FolderKanban, Settings } from "lucide-react";
+import { Home, FolderKanban, Settings, Server, Cloud } from "lucide-react";
 import useAuth from "../../../hooks/useAuth";
 import Button from "../../common/button/button";
 
@@ -28,6 +28,16 @@ export default function Sidebar() {
         <NavigationItem to="/settings" icon={Settings}>
           Settings
         </NavigationItem>
+
+        <NavigationItem to="/cloud-storage" icon={Cloud}>
+          Cloud Storage
+        </NavigationItem>
+
+        {user?.isOwner && (
+          <NavigationItem to="/server" icon={Server}>
+            Server
+          </NavigationItem>
+        )}
       </nav>
 
       <div className="eh-sidebar-footer">

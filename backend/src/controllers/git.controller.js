@@ -5,8 +5,14 @@ const {
   disconnectRepository,
   cloneRepository,
   commitChanges,
+  pullRepository,
+  pushRepository,
+  fetchRepository,
 } = require("../services/git.service");
 const gitService = require("../services/git.service");
+
+const { syncWorkspaceToGit } = require("../services/workspace.sync.service");
+
 const getProjectRepository = async (req, res, next) => {
   try {
     const repository = await getRepository(req.params.id, req.user.id);
@@ -103,6 +109,9 @@ const commitProjectChanges = async (req, res, next) => {
       throw error;
     }
 
+    // ⭐ Synchronize workspace → Git
+    await syncWorkspaceToGit(req.params.id);
+
     const result = await gitService.commitChanges(
       req.params.id,
       req.user.id,
@@ -118,6 +127,45 @@ const commitProjectChanges = async (req, res, next) => {
   }
 };
 
+const pullRepositoryController = async (req, res, next) => {
+  try {
+    const result = await gitService.pullRepository(
+      req.params.projectId,
+      req.user.id,
+    );
+
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+const pushRepositoryController = async (req, res, next) => {
+  try {
+    const result = await gitService.pushRepository(
+      req.params.projectId,
+      req.user.id,
+    );
+
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+const fetchRepositoryController = async (req, res, next) => {
+  try {
+    const result = await gitService.fetchRepository(
+      req.params.projectId,
+      req.user.id,
+    );
+
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getProjectRepository,
   connectProjectRepository,
@@ -126,4 +174,7 @@ module.exports = {
   cloneProjectRepository,
   getProjectGitStatus,
   commitProjectChanges,
+  pullRepositoryController,
+  pushRepositoryController,
+  fetchRepositoryController,
 };

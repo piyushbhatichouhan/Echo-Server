@@ -12,10 +12,17 @@ const {
   cloneProjectRepository,
   getProjectGitStatus,
   commitProjectChanges,
+  pullRepositoryController,
+  pushRepositoryController,
+  fetchRepositoryController,
 } = require("../controllers/git.controller");
 
 router.get("/projects/:id/git", authenticate, getProjectRepository);
+router.post("/:projectId/pull", authenticate, pullRepositoryController);
 
+router.post("/:projectId/push", authenticate, pushRepositoryController);
+
+router.post("/:projectId/fetch", authenticate, fetchRepositoryController);
 router.post(
   "/projects/:id/git/validate",
   authenticate,

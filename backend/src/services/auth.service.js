@@ -33,19 +33,25 @@ const registerUser = async (userData) => {
   INSERT INTO users (
     username,
     email,
-    password_hash
+    password_hash,
+    status,
+    is_owner
   )
-  VALUES ($1, $2, $3)
-  RETURNING id, username, email, created_at
-  `,
+  VALUES ($1,$2,$3,'pending',FALSE)
+
+  RETURNING
+      id,
+      username,
+      email,
+      status,
+      created_at
+`,
     [username, email, passwordHash],
   );
-
   return result.rows[0];
 };
 
 const { generateToken } = require("../utils/jwt");
-const { login } = require("../controllers/auth.controller");
 
 const loginUser = async (loginData) => {
   const { email, password } = loginData;
@@ -54,10 +60,13 @@ const loginUser = async (loginData) => {
   const result = await pool.query(
     `
         SELECT
-            id,
-            username,
-            email,
-            password_hash
+id,
+username,
+email,
+disabled,
+password_hash,
+status,
+is_owner
         FROM users
         WHERE email = $1
         `,
@@ -80,14 +89,42 @@ const loginUser = async (loginData) => {
     throw error;
   }
 
+  if (user.status === "pending") {
+    const error = new Error("Your account is awaiting approval.");
+
+    error.status = 403;
+
+    throw error;
+  }
+
+  if (user.status === "rejected") {
+    const error = new Error("Your registration request was rejected.");
+
+    error.status = 403;
+
+    throw error;
+  }
+
+  if (user.disabled) {
+    const error = new Error("Your account has been disabled.");
+
+    error.status = 403;
+
+    throw error;
+  }
+
   const token = generateToken(user);
 
   return {
     token,
     user: {
       id: user.id,
+
       username: user.username,
+
       email: user.email,
+
+      isOwner: user.is_owner,
     },
   };
 };
@@ -95,11 +132,13 @@ const loginUser = async (loginData) => {
 const getCurrentUser = async (userId) => {
   const result = await pool.query(
     `
-        SELECT
-            id,
-            username,
-            email,
-            created_at
+      SELECT
+id,
+username,
+email,
+status,
+is_owner,
+created_at
         FROM users
         WHERE id = $1
         `,
@@ -112,7 +151,10 @@ const getCurrentUser = async (userId) => {
     throw error;
   }
 
-  return result.rows[0];
+  return {
+    ...result.rows[0],
+    isOwner: result.rows[0].is_owner,
+  };
 };
 
 module.exports = {

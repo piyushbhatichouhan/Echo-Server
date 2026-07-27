@@ -8,6 +8,16 @@ import Project from "../pages/Project/Project";
 import DashboardLayout from "../layouts/DashboardLayout";
 import ProtectedRoute from "./ProtectedRoute";
 import Settings from "../pages/Settings/Settings";
+import Server from "../pages/server/server";
+import PendingUsers from "../pages/server/pendingUsers/pendingUsers";
+import ProjectLayout from "../layouts/ProjectLayout";
+import Deployments from "../components/project/deployments/deployments";
+import Environment from "../components/project/environment/Environment";
+import FileManager from "../components/project/filemanager/FileManager";
+import LogsCard from "../components/project/logscard/logscard";
+import ManageUsers from "../pages/server/manageUsers/ManageUsers";
+import Storage from "../pages/server/storage/Storage";
+import CloudStorage from "../pages/CloudStorage/CloudStorage";
 
 export default function AppRouter() {
   return (
@@ -28,9 +38,13 @@ export default function AppRouter() {
           <Route path="/dashboard" element={<Dashboard />} />
 
           <Route path="/projects" element={<Projects />} />
-
           <Route path="/projects/:id" element={<Project />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/server" element={<Server />} />
+          <Route path="/server/pending-users" element={<PendingUsers />} />
+          <Route path="/server/users" element={<ManageUsers />} />
+          <Route path="/server/storage" element={<Storage />} />
+          <Route path="/cloud-storage" element={<CloudStorage />} />
         </Route>
       </Routes>
     </BrowserRouter>

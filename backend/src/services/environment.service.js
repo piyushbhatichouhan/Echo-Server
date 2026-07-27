@@ -13,14 +13,21 @@ const createEnvironmentVariable = async (
   { key, value },
 ) => {
   await projectService.verifyProjectOwnership(projectId, ownerId);
-
+  console.log({
+    projectId,
+    ownerId,
+    key,
+    value,
+  });
   const existing = await environmentRepository.getEnvironmentVariableByKey(
     projectId,
     key,
   );
 
   if (existing) {
-    throw new Error("Environment variable already exists.");
+    const err = new Error("Environment variable already exists.");
+    err.status = 409;
+    throw err;
   }
 
   return await environmentRepository.createEnvironmentVariable(
