@@ -13,8 +13,6 @@ import {
   Pencil,
 } from "lucide-react";
 
-import { renameFile } from "../../../services/file.api";
-
 export default function FileTreeNode({
   node,
   onOpen,
@@ -28,13 +26,20 @@ export default function FileTreeNode({
   setRenameValue,
   refresh,
   setRenaming,
-  projectId,
+  workspaceId,
+  adapter,
 }) {
+  const { renameFile } = adapter;
+
   const [open, setOpen] = useState(true);
   const finishRename = async () => {
     if (!renaming) return;
 
     let newName = renameValue.trim();
+
+    console.log("=== RENAME START ===");
+    console.log("Renaming:", renaming);
+    console.log("New name:", newName);
 
     if (!newName) {
       setRenaming(null);
@@ -54,18 +59,25 @@ export default function FileTreeNode({
     parts[parts.length - 1] = newName;
 
     const newPath = parts.join("/");
+    console.log("before if workspace ");
 
-    await renameFile(
-      renaming.projectId,
-      renaming.oldPath,
-      newPath,
-      renaming.type,
-    );
+    if (workspaceId) {
+      console.log("after if workspace");
+      await renameFile(
+        renaming.workspaceId,
+        renaming.oldPath,
+        newPath,
+        renaming.type,
+      );
+    } else {
+      await renameFile(renaming.file.id, newName);
+    }
 
     await refresh();
 
     setRenaming(null);
   };
+
   if (node.type === "file") {
     return (
       <div
@@ -98,7 +110,20 @@ export default function FileTreeNode({
             className="eh-tree-action"
             onClick={(e) => {
               e.stopPropagation();
-              onRename(node.path, node.type);
+              console.log(renaming);
+              if (workspaceId) {
+                onRename(node.path, node.type);
+              } else {
+                setRenaming({
+                  workspaceId,
+                  file: node.file,
+                  oldPath: node.path,
+                  type: node.type,
+                });
+                console.log("Clicked rename");
+                console.log(node.file);
+                setRenameValue(node.name);
+              }
             }}
           >
             <Pencil size={14} />
@@ -109,7 +134,11 @@ export default function FileTreeNode({
               e.stopPropagation();
 
               if (window.confirm(`Delete "${node.name}"?`)) {
-                onDelete(node.file);
+                if (workspaceId) {
+                  onDelete(node.path, node.type);
+                } else {
+                  onDelete(node.file);
+                }
               }
             }}
           >
@@ -158,8 +187,20 @@ export default function FileTreeNode({
             className="eh-tree-action"
             onClick={(e) => {
               e.stopPropagation();
-              console.log(node);
-              onRename(node.path, node.type);
+              console.log(renaming);
+              if (workspaceId) {
+                onRename(node.path, node.type);
+              } else {
+                setRenaming({
+                  workspaceId,
+                  file: node.file,
+                  oldPath: node.path,
+                  type: node.type,
+                });
+                console.log("Clicked rename");
+                console.log(node.file);
+                setRenameValue(node.name);
+              }
             }}
           >
             <Pencil size={14} />
@@ -170,7 +211,11 @@ export default function FileTreeNode({
               e.stopPropagation();
 
               if (window.confirm(`Delete "${node.name}"?`)) {
-                onDelete(node.path, node.type);
+                if (workspaceId) {
+                  onDelete(node.path, node.type);
+                } else {
+                  onDelete(node.file);
+                }
               }
             }}
           >
@@ -195,7 +240,8 @@ export default function FileTreeNode({
               setRenameValue={setRenameValue}
               refresh={refresh}
               setRenaming={setRenaming}
-              projectId={projectId}
+              workspaceId={workspaceId}
+              adapter={adapter}
             />
           ))}
         </div>

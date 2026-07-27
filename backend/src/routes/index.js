@@ -9,9 +9,13 @@ const applicationRoutes = require("./application.routes");
 const deploymentRoutes = require("./deployment.routes");
 const gitRoutes = require("./git.routes");
 const projectSettingsRoutes = require("./projectSettings.routes");
+const serverRoutes = require("./server.routes");
+const dashboardRoutes = require("./dashboard.routes");
+const adminRoutes = require("./admin.routes");
+const storageRoutes = require("./storage.routes");
+const cloudRoutes = require("./cloud.routes");
 
 router.use("/webhooks", webhookRoutes);
-
 router.use("/auth", authRoutes);
 router.use("/projects", projectRoutes);
 router.use("/", fileRoutes);
@@ -20,4 +24,10 @@ router.use(applicationRoutes);
 router.use("/", deploymentRoutes);
 router.use(gitRoutes);
 router.use(projectSettingsRoutes);
+router.use("/server", serverRoutes);
+router.use("/dashboard", dashboardRoutes);
+router.use("/admin", adminRoutes);
+router.use("/storage", storageRoutes);
+router.use("/cloud", cloudRoutes);
+
 module.exports = router;

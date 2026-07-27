@@ -17,7 +17,7 @@ const validate = (req, res, next) => {
 
   return res.status(400).json({
     success: false,
-    message: "Validation failed",
+    message: Object.values(errors)[0], // First validation error
     errors,
   });
 };

@@ -1,14 +1,22 @@
 const path = require("path");
 const fs = require("fs/promises");
 
-const STORAGE_ROOT = path.resolve(process.cwd(), "storage", "projects");
+const STORAGE_ROOT = path.resolve(process.cwd(), "storage");
 
 const getProjectPath = (projectId) => {
-  return path.join(STORAGE_ROOT, projectId);
+  return path.join(STORAGE_ROOT, "projects", projectId.toString());
+};
+
+const getCloudPath = (userId) => {
+  return path.join(STORAGE_ROOT, "cloud", userId.toString());
 };
 
 const getFilesPath = (projectId) => {
   return path.join(getProjectPath(projectId), "files");
+};
+
+const getCloudFilesPath = (userId) => {
+  return path.join(getCloudPath(userId), "files");
 };
 
 const getBuildPath = (projectId) => {
@@ -53,6 +61,20 @@ const ensureWorkspace = async (projectId) => {
   };
 };
 
+const ensureCloudWorkspace = async (userId) => {
+  const cloudPath = getCloudPath(userId);
+  const filesPath = getCloudFilesPath(userId);
+
+  await fs.mkdir(filesPath, {
+    recursive: true,
+  });
+
+  return {
+    cloudPath,
+    filesPath,
+  };
+};
+
 const getStorageRoot = () => STORAGE_ROOT;
 
 module.exports = {
@@ -63,4 +85,8 @@ module.exports = {
   getLogsPath,
   ensureWorkspace,
   getStorageRoot,
+
+  getCloudPath,
+  getCloudFilesPath,
+  ensureCloudWorkspace,
 };

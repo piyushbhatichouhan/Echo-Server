@@ -3,10 +3,10 @@ import "./Settings.css";
 
 import Button from "../../common/Button/Button";
 import useProjectSettings from "../../../hooks/useProjectSettings";
-
+import { useToast } from "../../../context/ToastContext";
 export default function Settings({ projectId }) {
   const { settings, loading, save } = useProjectSettings(projectId);
-
+  const toast = useToast();
   const [form, setForm] = useState(null);
   const [saving, setSaving] = useState(false);
 
@@ -119,6 +119,12 @@ export default function Settings({ projectId }) {
                 setSaving(true);
 
                 await save(form);
+
+                toast.success("Sucess", "Settings saved succesfully");
+              } catch (error) {
+                const message = error.response?.data?.message || error.message;
+
+                toast.error("Error", message);
               } finally {
                 setSaving(false);
               }

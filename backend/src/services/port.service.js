@@ -3,18 +3,23 @@ const { pool } = require("../config/database");
 const allocatePort = async () => {
   const result = await pool.query(
     `
-        SELECT MAX(port) AS max_port
-FROM deployments
-        `,
+    SELECT port
+    FROM projects
+    ORDER BY port ASC
+    `,
   );
 
-  const maxPort = result.rows[0].max_port;
+  let port = 3001;
 
-  if (maxPort === null) {
-    return 3001;
+  for (const row of result.rows) {
+    if (row.port !== port) {
+      break;
+    }
+
+    port++;
   }
 
-  return maxPort + 1;
+  return port;
 };
 
 module.exports = {

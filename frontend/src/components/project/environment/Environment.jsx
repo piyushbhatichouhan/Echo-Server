@@ -11,8 +11,10 @@ import useEnvironment from "../../../hooks/useEnvironment";
 import { useState } from "react";
 
 import EnvironmentModal from "./EnvironmentModal";
+import { useToast } from "../../../context/ToastContext";
 
 export default function Environment({ projectId }) {
+  const toast = useToast();
   const { variables, loading, createVariable, updateVariable, removeVariable } =
     useEnvironment(projectId);
   const [modalOpen, setModalOpen] = useState(false);
@@ -60,11 +62,23 @@ export default function Environment({ projectId }) {
                 setModalOpen(true);
               }}
               onDelete={async (variable) => {
-                const confirmed = window.confirm(`Delete "${variable.key}"?`);
+                try {
+                  const confirmed = window.confirm(`Delete "${variable.key}"?`);
 
-                if (!confirmed) return;
+                  if (!confirmed) return;
 
-                await removeVariable(variable.id);
+                  await removeVariable(variable.id);
+
+                  toast.success(
+                    "Variable Deleted",
+                    "Environment Variable Deleted",
+                  );
+                } catch (error) {
+                  const message =
+                    error.response?.data?.message || error.message;
+
+                  toast.error("Error", message);
+                }
               }}
             />
           ))}

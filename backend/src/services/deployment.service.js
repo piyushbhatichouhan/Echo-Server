@@ -258,6 +258,12 @@ const getDeploymentStatus = async (projectId, ownerId) => {
 
   const repository = await gitService.getRepository(projectId, ownerId);
 
+  if (!settings) {
+    return {
+      status: "Not Deployed",
+    };
+  }
+
   return {
     ...status,
 

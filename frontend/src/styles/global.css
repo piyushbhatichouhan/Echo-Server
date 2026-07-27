@@ -16,13 +16,9 @@ body,
 body {
     background: var(--bg-primary);
     color: var(--text-primary);
-
-    font-family:
-        Inter,
-        system-ui,
-        sans-serif;
-
-    overflow: hidden;
+    font-family: Inter, system-ui, sans-serif;
+    overflow-x: hidden;
+    overflow-y: auto;
 }
 
 a {

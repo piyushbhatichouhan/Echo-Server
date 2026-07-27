@@ -264,3 +264,35 @@
     font-size: 0.75rem;
     transition: transform 0.2s ease;
 }
+
+.eh-repository-page {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 24px;
+
+}
+
+.eh-repository-top {
+
+    display: grid;
+
+    grid-template-columns: 1.2fr .8fr;
+
+    gap: 24px;
+
+    align-items: start;
+
+}
+
+@media (max-width: 1100px) {
+
+    .eh-repository-top {
+
+        grid-template-columns: 1fr;
+
+    }
+
+}

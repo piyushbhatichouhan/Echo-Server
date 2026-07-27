@@ -35,16 +35,53 @@ const getProjects = async (ownerId) => {
   const result = await pool.query(
     `
     SELECT
-    id,
-    name,
-    description,
-    port,
-    created_at,
-    updated_at
-        FROM projects
-        WHERE owner_id = $1
-        ORDER BY created_at DESC
-        `,
+
+    p.id,
+
+    p.name,
+
+    p.description,
+
+    p.port,
+
+    p.created_at,
+
+    p.updated_at,
+
+    p.git_connected,
+
+    p.git_branch,
+
+    p.git_remote_url,
+
+    COALESCE(d.status,'Not Deployed') AS status,
+
+    d.updated_at AS last_deployment
+
+FROM projects p
+
+LEFT JOIN LATERAL (
+
+    SELECT
+
+        status,
+
+        updated_at
+
+    FROM deployments
+
+    WHERE project_id = p.id
+
+    ORDER BY updated_at DESC
+
+    LIMIT 1
+
+) d ON TRUE
+
+WHERE p.owner_id = $1
+
+ORDER BY p.updated_at DESC;
+    `,
     [ownerId],
   );
 
@@ -54,16 +91,43 @@ const getProjects = async (ownerId) => {
 const getProjectById = async (projectId, ownerId) => {
   const result = await pool.query(
     `
-     SELECT
-    id,
-    name,
-    description,
-    port,
-    created_at,
-    updated_at
-FROM projects
-WHERE id = $1
-AND owner_id = $2
+  SELECT
+
+    p.id,
+
+    p.name,
+
+    p.description,
+
+    p.port,
+
+    p.created_at,
+
+    p.updated_at,
+
+    p.git_connected,
+
+    p.git_branch,
+
+    p.git_remote_url,
+
+    COALESCE(d.status,'Not Deployed') AS status,
+
+    d.updated_at AS last_deployment
+
+FROM projects p
+
+LEFT JOIN deployments d
+
+ON d.project_id=p.id
+
+WHERE
+
+p.id=$1
+
+AND
+
+p.owner_id=$2
         `,
     [projectId, ownerId],
   );
@@ -113,29 +177,13 @@ const updateProject = async (projectId, ownerId, projectData) => {
 const deleteProject = async (projectId, ownerId) => {
   await verifyProjectOwnership(projectId, ownerId);
 
+  return await deleteProjectInternal(projectId);
+};
+
+const deleteProjectInternal = async (projectId) => {
   await projectCleanupService.cleanupProject(projectId);
 
-  const result = await pool.query(
-    `
-        DELETE FROM projects
-        WHERE
-            id = $1
-        AND
-            owner_id = $2
-        RETURNING
-            id,
-            name
-        `,
-    [projectId, ownerId],
-  );
-
-  if (result.rows.length === 0) {
-    const error = new Error("Project not found");
-    error.status = 404;
-    throw error;
-  }
-
-  return result.rows[0];
+  return await deleteProjectRecord(projectId);
 };
 
 const verifyProjectOwnership = async (projectId, ownerId) => {
@@ -170,6 +218,29 @@ const updateProjectPort = async (projectId, port) => {
   return result.rows[0];
 };
 
+const deleteProjectRecord = async (projectId) => {
+  const result = await pool.query(
+    `
+    DELETE FROM projects
+    WHERE id = $1
+    RETURNING id, name
+    `,
+    [projectId],
+  );
+
+  if (result.rows.length === 0) {
+    throw new Error("Project not found");
+  }
+
+  return result.rows[0];
+};
+
+const deleteProjectCompletelyInternal = async (projectId, client) => {
+  await projectCleanupService.cleanupProject(projectId);
+
+  await projectRepository.deleteProjectRecordTx(client, projectId);
+};
+
 module.exports = {
   createProject,
   getProjects,
@@ -178,4 +249,7 @@ module.exports = {
   deleteProject,
   verifyProjectOwnership,
   updateProjectPort,
+  deleteProjectInternal,
+  deleteProjectRecord,
+  deleteProjectCompletelyInternal,
 };

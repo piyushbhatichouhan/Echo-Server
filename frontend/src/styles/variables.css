@@ -23,7 +23,24 @@
     --stopped: #8A8A8A;
 
     /* Radius */
-    --radius: 12px;
+        --radius-small: 8px;
+        --radius: 12px;
+        --radius-large: 18px;
+        --radius-xl: 24px;
+    
+        /* Shadows */
+        --shadow: 0 8px 24px rgba(0, 0, 0, .35);
+        --shadow-hover: 0 14px 32px rgba(0, 0, 0, .45);
+        --glow: 0 0 12px rgba(255, 138, 0, .35);
+    
+        /* Animation */
+        --transition-fast: .15s ease;
+        --transition: .18s ease;
+        --transition-slow: .3s ease;
+    
+        /* Layer colors */
+        --bg-input: #231812;
+        --bg-hover: #33231a;
 
     /* Shadows */
     --shadow: 0 8px 24px rgba(0, 0, 0, .35);
@@ -31,4 +48,17 @@
 
     /* Animation */
     --transition: .18s ease;
+
+/* Spacing */
+
+    --space-xs: 4px;
+
+    --space-sm: 8px;
+
+    --space-md: 16px;
+
+    --space-lg: 24px;
+
+    --space-xl: 32px;
+    
 }

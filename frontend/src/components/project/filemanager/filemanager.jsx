@@ -6,22 +6,24 @@ import Button from "../../common/Button/Button";
 import { Upload, FolderPlus, FilePlus } from "lucide-react";
 
 import { useRef, useState } from "react";
-import { createFolder } from "../../../services/file.api";
-import { uploadFile } from "../../../services/file.api";
+
 import buildFileTree from "../../../utils/buildFileTree";
 
 import FileTreeNode from "./FileTreeNode";
 
-import { createFile } from "../../../services/file.api";
+import { useToast } from "../../../context/ToastContext";
 
 export default function FileManager({
-  projectId,
+  title,
+  workspaceId,
   refresh,
   files,
   loading,
   onOpen,
   selectedFile,
   onDelete,
+
+  adapter,
 }) {
   const inputRef = useRef(null);
   const [creatingFolder, setCreatingFolder] = useState(false);
@@ -31,11 +33,41 @@ export default function FileManager({
   const [newFileParent, setNewFileParent] = useState("");
   const [renaming, setRenaming] = useState(null);
   const [renameValue, setRenameValue] = useState("");
+  const toast = useToast();
+
+  const {
+    getFiles,
+    uploadFile,
+    deleteFile,
+    renameFile,
+    createFolder,
+    createFile,
+    downloadFile,
+    getFileContent,
+    saveFileContent,
+  } = adapter;
+
   const handleUpload = async (event) => {
     const selectedFiles = Array.from(event.target.files);
 
     for (const file of selectedFiles) {
-      await uploadFile(projectId, file, file.webkitRelativePath || file.name);
+      try {
+        const formData = new FormData();
+
+        formData.append("file", file);
+        formData.append("relativePath", file.webkitRelativePath || file.name);
+
+        if (workspaceId) await uploadFile(workspaceId, formData);
+        else await uploadFile(formData);
+        toast.success("File Uploaded", "File uploaded succesfully");
+      } catch (error) {
+        toast.error(
+          "Upload failed",
+          error.response?.data?.message || error.message,
+        );
+
+        break;
+      }
     }
 
     await refresh();
@@ -44,8 +76,6 @@ export default function FileManager({
   };
 
   const handleCreateFolder = async () => {
-    console.log("Creating folder:", folderName);
-
     const name = folderName.trim();
 
     if (!name) {
@@ -54,9 +84,8 @@ export default function FileManager({
     }
 
     try {
-      await createFolder(projectId, name);
-
-      console.log("Folder created");
+      if (workspaceId) await createFolder(workspaceId, name);
+      else await createFolder(name);
 
       setFolderName("");
       setCreatingFolder(false);
@@ -78,7 +107,11 @@ export default function FileManager({
     const relativePath =
       newFileParent === "" ? name : `${newFileParent}/${name}`;
 
-    await createFile(projectId, relativePath);
+    if (workspaceId) {
+      await createFile(workspaceId, relativePath);
+    } else {
+      await createFile(relativePath);
+    }
 
     setCreatingFile(false);
     setNewFileName("");
@@ -86,7 +119,7 @@ export default function FileManager({
 
     await refresh();
   };
-  console.log(files);
+
   const tree = buildFileTree(files);
 
   return (
@@ -97,13 +130,11 @@ export default function FileManager({
           ref={inputRef}
           type="file"
           multiple
-          webkitdirectory=""
-          directory=""
           onChange={handleUpload}
         />
 
         <div className="eh-files-header">
-          <h2>Workspace</h2>
+          <h2>{title}</h2>
 
           <div className="eh-files-toolbar">
             <Button
@@ -198,11 +229,15 @@ export default function FileManager({
                   setNewFileName("");
                 }}
                 onDelete={(path, type) => {
-                  onDelete(path, type);
+                  if (workspaceId) {
+                    onDelete(node.path, node.type);
+                  } else {
+                    onDelete(node.file);
+                  }
                 }}
                 onRename={(oldPath, type) => {
                   setRenaming({
-                    projectId,
+                    workspaceId,
                     oldPath,
                     type,
                   });
@@ -216,7 +251,8 @@ export default function FileManager({
                 setRenameValue={setRenameValue}
                 refresh={refresh}
                 setRenaming={setRenaming}
-                projectId={projectId}
+                adapter={adapter}
+                workspaceId={workspaceId}
               />
             ))
           )}

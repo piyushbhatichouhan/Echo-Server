@@ -2,11 +2,11 @@ import { useEffect, useState } from "react";
 
 import Modal from "../../common/Modal/Modal";
 import Button from "../../common/Button/Button";
-
+import { useToast } from "../../../context/ToastContext";
 export default function EnvironmentModal({ open, onClose, onSave, variable }) {
   const [key, setKey] = useState("");
   const [value, setValue] = useState("");
-
+  const toast = useToast();
   useEffect(() => {
     if (variable) {
       setKey(variable.key);
@@ -18,14 +18,20 @@ export default function EnvironmentModal({ open, onClose, onSave, variable }) {
   }, [variable, open]);
 
   const handleSave = async () => {
-    if (!key.trim()) return;
+    try {
+      if (!key.trim()) return;
 
-    await onSave({
-      key,
-      value,
-    });
+      await onSave({
+        key,
+        value,
+      });
 
-    onClose();
+      onClose();
+    } catch (error) {
+      const message = error.response?.data?.message || error.message;
+
+      toast.error("Error", message);
+    }
   };
 
   return (

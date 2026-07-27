@@ -14,7 +14,9 @@
 
     justify-content: space-between;
 
-    align-items: center;
+    align-items: flex-start;
+
+    margin-bottom: 40px;
 
 }
 
@@ -39,5 +41,33 @@
         gap: 16px;
 
     }
+
+}
+
+.eh-projects-title {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 8px;
+
+}
+
+.eh-projects-title h1 {
+
+    color: white;
+
+    font-size: 34px;
+
+    font-weight: 700;
+
+}
+
+.eh-projects-title p {
+
+    color: #9b8c78;
+
+    font-size: 15px;
 
 }

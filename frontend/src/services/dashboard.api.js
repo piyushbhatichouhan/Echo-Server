@@ -1,9 +1,6 @@
-import { getProjects } from "./project.api";
+import api from "./api";
 
-export const getDashboardData = async () => {
-  const projects = await getProjects();
-
-  return {
-    projects,
-  };
+export const getDashboard = async () => {
+  const response = await api.get("/dashboard");
+  return response.data.data;
 };

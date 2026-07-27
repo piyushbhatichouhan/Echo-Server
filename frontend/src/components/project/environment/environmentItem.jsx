@@ -3,12 +3,20 @@ import "./EnvironmentItem.css";
 import { Eye, EyeOff, Copy, Pencil, Trash2 } from "lucide-react";
 
 import { useState } from "react";
+import { useToast } from "../../../context/ToastContext";
 
 export default function EnvironmentItem({ variable, onEdit, onDelete }) {
   const [visible, setVisible] = useState(false);
-
+  const toast = useToast();
   const copyValue = async () => {
-    await navigator.clipboard.writeText(variable.value);
+    try {
+      await navigator.clipboard.writeText(variable.value);
+      toast.success(`Variable Copied`, `${variable.key} copied to clipboard.`);
+    } catch (error) {
+      const message = error.response?.data?.message || error.message;
+
+      toast.error("Error", message);
+    }
   };
 
   return (

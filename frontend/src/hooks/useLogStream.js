@@ -10,10 +10,6 @@ export default function useLogStream(projectId, onLog) {
       `http://localhost:3000/api/projects/${projectId}/logs/live?token=${token}`,
     );
 
-    eventSource.onopen = () => {
-      console.log("✅ Connected to log stream");
-    };
-
     eventSource.onmessage = (event) => {
       try {
         const log = JSON.parse(event.data);
