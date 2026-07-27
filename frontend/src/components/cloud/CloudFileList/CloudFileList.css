@@ -1,0 +1,86 @@
+.cloud-list {
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.cloud-header {
+    display: grid;
+    grid-template-columns: 1fr 120px 150px;
+    padding: 12px 16px;
+    font-weight: 600;
+    border-bottom: 1px solid #333;
+}
+
+.cloud-row {
+    display: grid;
+    grid-template-columns: 1fr 120px 150px;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: .15s;
+}
+
+.cloud-row:hover {
+    background: #2d2d2d;
+}
+
+.cloud-name {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.cloud-header {
+    display: grid;
+    grid-template-columns: 1fr 120px 150px 40px;
+}
+
+.cloud-row {
+    display: grid;
+    grid-template-columns: 1fr 120px 150px 40px;
+}
+
+.cloud-actions {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.cloud-more {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 28px;
+    height: 28px;
+
+    border-radius: 6px;
+
+    cursor: pointer;
+}
+
+.cloud-more:hover {
+    background: rgba(255, 255, 255, .08);
+}
+
+.cloud-more {
+    opacity: 0;
+    transition: .15s;
+}
+
+.cloud-row:hover .cloud-more {
+    opacity: 1;
+}
+
+
+.cloud-rename {
+    width: 100%;
+    background: none;
+    border: none;
+    outline: none;
+    color: white;
+    font-size: inherit;
+}

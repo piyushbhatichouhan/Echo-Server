@@ -1,0 +1,105 @@
+.eh-repository-info-card {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 22px;
+
+    padding: 24px;
+
+    background: var(--bg-card);
+
+    border: 1px solid var(--border);
+
+    border-radius: var(--radius);
+
+    box-shadow: var(--shadow);
+
+}
+
+.eh-repository-info-header {
+
+    display: flex;
+
+    gap: 14px;
+
+    align-items: center;
+
+}
+
+.eh-repository-info-header svg {
+
+    color: var(--accent);
+
+}
+
+.eh-repository-info-header h2 {
+
+    font-size: 1.1rem;
+
+    margin-bottom: 4px;
+
+}
+
+.eh-repository-info-header p {
+
+    color: var(--text-secondary);
+
+    font-size: .9rem;
+
+}
+
+.eh-repository-info-grid {
+
+    display: grid;
+
+    grid-template-columns: repeat(3, 1fr);
+
+    gap: 16px;
+
+}
+
+.eh-info-tile {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 10px;
+
+    padding: 18px;
+
+    border-radius: 12px;
+
+    border: 1px solid var(--border);
+
+    background: var(--bg-secondary);
+
+    transition: all var(--transition);
+
+}
+
+.eh-info-tile:hover {
+
+    border-color: var(--accent);
+
+}
+
+.eh-info-tile svg {
+
+    color: var(--accent);
+
+}
+
+.eh-info-tile small {
+
+    color: var(--text-muted);
+
+}
+
+.eh-info-tile strong {
+
+    color: var(--text-primary);
+
+}

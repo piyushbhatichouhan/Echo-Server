@@ -1,0 +1,54 @@
+.eh-breadcrumbs {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+
+    gap: 4px;
+
+    margin-bottom: 16px;
+
+    padding: 10px 14px;
+
+    background: var(--surface-2);
+
+    border: 1px solid var(--border);
+
+    border-radius: 10px;
+}
+
+.eh-breadcrumb-root,
+.eh-breadcrumb-button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    border: none;
+    background: none;
+
+    color: var(--text-primary);
+
+    cursor: pointer;
+
+    padding: 5px 8px;
+
+    border-radius: 6px;
+
+    transition: .15s;
+}
+
+.eh-breadcrumb-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.eh-breadcrumb-root:hover,
+.eh-breadcrumb-button:hover {
+    background: rgba(255, 155, 48, .12);
+    color: var(--accent);
+}
+
+.eh-breadcrumb-item svg {
+    color: var(--text-secondary);
+    opacity: .7;
+}

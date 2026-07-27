@@ -1,0 +1,21 @@
+.pendingUsersPage {
+
+    padding: 40px;
+
+}
+
+.pendingUsersPage h1 {
+
+    color: var(--primary);
+
+    margin-bottom: 10px;
+
+}
+
+.pendingUsersPage p {
+
+    color: var(--muted);
+
+    margin-bottom: 30px;
+
+}
