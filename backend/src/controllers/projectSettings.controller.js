@@ -1,13 +1,12 @@
 const projectSettingsService = require("../services/projectSettings.service");
 
 const getProjectSettings = async (req, res, next) => {
-  console.log("GET PROJECT SETTINGS HIT");
   try {
     const settings = await projectSettingsService.getProjectSettings(
       req.params.id,
       req.user.id,
     );
-    console.log(settings);
+
     res.json({
       success: true,
       data: settings,

@@ -10,7 +10,7 @@ import { createProject } from "../../../services/project.api";
 
 export default function CreateProjectModal({ open, onClose, onCreated }) {
   const [name, setName] = useState("");
-
+  const [applicationType, setApplicationType] = useState("static");
   const [description, setDescription] = useState("");
 
   const [loading, setLoading] = useState(false);
@@ -27,6 +27,8 @@ export default function CreateProjectModal({ open, onClose, onCreated }) {
         name,
 
         description,
+
+        applicationType,
       });
 
       setName("");
@@ -64,7 +66,17 @@ export default function CreateProjectModal({ open, onClose, onCreated }) {
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
+          <div className="formGroup">
+            <label>Application Type</label>
 
+            <select
+              value={applicationType}
+              onChange={(e) => setApplicationType(e.target.value)}
+            >
+              <option value="static">🌐 Static Website</option>
+              <option value="custom">⚙ Custom</option>
+            </select>
+          </div>
           <Input
             label="Description"
             placeholder="REST API for portfolio website"

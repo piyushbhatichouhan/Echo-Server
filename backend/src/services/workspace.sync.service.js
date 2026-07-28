@@ -75,15 +75,13 @@ const syncWorkspaceToGit = async (projectId) => {
       if (exists) continue;
 
       const stalePath = path.join(gitPath, gitEntry.name);
-      console.log("Deleting:", stalePath);
+
       await fs.rm(stalePath, {
         recursive: true,
         force: true,
       });
     }
   };
-  console.log("Workspace:", workspaceDirectory);
-  console.log("Git:", gitDirectory);
 
   await syncDirectory(workspaceDirectory, gitDirectory);
 };

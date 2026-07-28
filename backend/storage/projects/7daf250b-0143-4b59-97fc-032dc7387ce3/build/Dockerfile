@@ -5,8 +5,8 @@ WORKDIR /app
 
 COPY . .
 
-RUN npm run build
+RUN npm install
 
 EXPOSE 3000
 
-CMD ["sh", "-c", "npm start"]
+CMD ["sh", "-c", "node index.js"]

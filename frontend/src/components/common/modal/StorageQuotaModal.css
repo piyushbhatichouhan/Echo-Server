@@ -1,0 +1,385 @@
+.modalOverlay {
+    position: fixed;
+    inset: 0;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    background: rgba(0, 0, 0, .65);
+    backdrop-filter: blur(8px);
+
+    z-index: 5000;
+
+    animation: fadeIn .2s ease;
+}
+
+.storageQuotaModal {
+
+    width: 460px;
+    max-width: calc(100vw - 40px);
+
+    background: #24170f;
+
+    border: 1px solid #5a3920;
+
+    border-radius: 22px;
+
+    padding: 28px;
+
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+
+    box-shadow:
+        0 20px 70px rgba(0, 0, 0, .55),
+        inset 0 1px 0 rgba(255, 255, 255, .03);
+
+    animation: modalPop .22s ease;
+}
+
+/* ---------------- HEADER ---------------- */
+
+.quotaHeader h2 {
+
+    margin: 0;
+
+    font-size: 1.55rem;
+
+    color: #fff3e4;
+
+    font-weight: 700;
+}
+
+.quotaHeader p {
+
+    margin-top: 8px;
+
+    color: #bfa892;
+
+    font-size: .92rem;
+
+    line-height: 1.45;
+}
+
+/* ---------------- USER CARD ---------------- */
+
+.quotaUserCard {
+
+    display: flex;
+    align-items: center;
+    gap: 18px;
+
+    padding: 18px;
+
+    background: #2b1c12;
+
+    border: 1px solid #4a311b;
+
+    border-radius: 18px;
+}
+
+.quotaAvatar {
+
+    width: 58px;
+    height: 58px;
+
+    border-radius: 50%;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    background: linear-gradient(135deg,
+            #ff8a00,
+            #ffb347);
+
+    color: white;
+
+    font-size: 1.35rem;
+
+    font-weight: bold;
+
+    flex-shrink: 0;
+}
+
+.quotaUserInfo {
+
+    display: flex;
+    flex-direction: column;
+}
+
+.quotaUserInfo h3 {
+
+    margin: 0;
+
+    color: #ffe3b7;
+
+    font-size: 1rem;
+}
+
+.quotaUserInfo span {
+
+    margin-top: 4px;
+
+    color: #bca895;
+
+    font-size: .9rem;
+
+    word-break: break-word;
+}
+
+/* ---------------- INPUT ---------------- */
+
+.quotaField {
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 12px;
+}
+
+.quotaField label {
+
+    font-weight: 600;
+
+    color: #d8c4b0;
+}
+
+.storageInputGroup {
+
+    display: flex;
+
+    gap: 14px;
+}
+
+.storageInputGroup input {
+
+    flex: 1;
+
+    padding: 14px 16px;
+
+    border-radius: 14px;
+
+    border: 1px solid #6b4523;
+
+    background: #312116;
+
+    color: white;
+
+    font-size: 1rem;
+
+    transition: .2s;
+}
+
+.storageInputGroup input:focus {
+
+    outline: none;
+
+    border-color: #ff8a00;
+
+    box-shadow:
+        0 0 0 3px rgba(255, 138, 0, .18);
+}
+
+.storageInputGroup select {
+
+    width: 95px;
+
+    padding: 14px;
+
+    border-radius: 14px;
+
+    border: 1px solid #6b4523;
+
+    background: #312116;
+
+    color: white;
+
+    font-size: .95rem;
+
+    cursor: pointer;
+
+    transition: .2s;
+}
+
+.storageInputGroup select:focus {
+
+    outline: none;
+
+    border-color: #ff8a00;
+
+    box-shadow:
+        0 0 0 3px rgba(255, 138, 0, .18);
+}
+
+.storageInputGroup input:disabled,
+.storageInputGroup select:disabled {
+
+    opacity: .55;
+
+    cursor: not-allowed;
+}
+
+/* ---------------- INFO BOX ---------------- */
+
+.quotaHint {
+
+    padding: 14px 16px;
+
+    background: rgba(255, 138, 0, .08);
+
+    border: 1px solid rgba(255, 138, 0, .18);
+
+    border-radius: 14px;
+
+    color: #cbb49e;
+
+    font-size: .9rem;
+
+    line-height: 1.45;
+}
+
+.quotaHint strong {
+
+    color: #ffb347;
+}
+
+/* ---------------- BUTTONS ---------------- */
+
+.quotaButtons {
+
+    display: flex;
+    justify-content: flex-end;
+
+    gap: 12px;
+
+    margin-top: 6px;
+}
+
+.cancelButton,
+.saveButton {
+
+    min-width: 130px;
+
+    padding: 13px 20px;
+
+    border-radius: 12px;
+
+    font-size: .95rem;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition: .18s;
+}
+
+.cancelButton {
+
+    border: 1px solid #5a3920;
+
+    background: transparent;
+
+    color: #d4c0ab;
+}
+
+.cancelButton:hover {
+
+    background: rgba(255, 255, 255, .05);
+}
+
+.saveButton {
+
+    border: none;
+
+    color: white;
+
+    background: linear-gradient(135deg,
+            #ff8a00,
+            #ffb347);
+}
+
+.saveButton:hover:not(:disabled) {
+
+    transform: translateY(-1px);
+
+    box-shadow:
+        0 8px 20px rgba(255, 138, 0, .28);
+}
+
+.saveButton:disabled,
+.cancelButton:disabled {
+
+    opacity: .5;
+
+    cursor: not-allowed;
+
+    transform: none;
+
+    box-shadow: none;
+}
+
+/* ---------------- ANIMATIONS ---------------- */
+
+@keyframes fadeIn {
+
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes modalPop {
+
+    from {
+
+        opacity: 0;
+
+        transform:
+            translateY(10px) scale(.97);
+    }
+
+    to {
+
+        opacity: 1;
+
+        transform: none;
+    }
+}
+
+/* ---------------- MOBILE ---------------- */
+
+@media (max-width:600px) {
+
+    .storageQuotaModal {
+
+        padding: 22px;
+
+        gap: 20px;
+    }
+
+    .storageInputGroup {
+
+        flex-direction: column;
+    }
+
+    .storageInputGroup select {
+
+        width: 100%;
+    }
+
+    .quotaButtons {
+
+        flex-direction: column-reverse;
+    }
+
+    .cancelButton,
+    .saveButton {
+
+        width: 100%;
+    }
+}

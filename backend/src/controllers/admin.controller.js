@@ -1,4 +1,5 @@
 const adminService = require("../services/admin.service");
+const storageAllocationService = require("../services/storageAllocation.service");
 
 const getUsers = async (req, res, next) => {
   try {
@@ -64,20 +65,28 @@ const restoreUser = async (req, res, next) => {
   }
 };
 
-const updateStorageLimit = async (req, res, next) => {
+const updateUserQuota = async (req, res, next) => {
   try {
-    const user = await adminService.updateStorageLimit(
+    const quota = Number(req.body.quota);
+
+    if (Number.isNaN(quota) || quota < 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid quota.",
+      });
+    }
+
+    const user = await storageAllocationService.changeUserQuota(
       req.params.id,
-      req.body.storageLimit,
+      quota,
     );
 
     res.json({
       success: true,
-      message: "Storage limit updated successfully.",
       data: user,
     });
-  } catch (err) {
-    next(err);
+  } catch (error) {
+    next(error);
   }
 };
 
@@ -87,5 +96,6 @@ module.exports = {
   enableUser,
   deleteUser,
   restoreUser,
-  updateStorageLimit,
+
+  updateUserQuota,
 };

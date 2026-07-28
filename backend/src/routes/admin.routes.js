@@ -5,6 +5,8 @@ const requireAdmin = require("../middleware/requireOwner");
 
 const controller = require("../controllers/admin.controller");
 
+const serverSettingsController = require("../controllers/serverSettings.controller");
+
 router.use(authenticate);
 router.use(requireAdmin);
 
@@ -21,6 +23,10 @@ router.post(
   controller.restoreUser,
 );
 
-router.patch("/users/:id/storage-limit", controller.updateStorageLimit);
+router.get("/storage", serverSettingsController.getStorageOverview);
+router.put(
+  "/users/:id/quota",
 
+  controller.updateUserQuota,
+);
 module.exports = router;

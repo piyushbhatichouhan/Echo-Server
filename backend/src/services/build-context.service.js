@@ -46,7 +46,7 @@ WORKDIR /app
 
 COPY . .
 
-RUN ${buildCommand}
+${buildCommand ? `RUN ${buildCommand}` : ""}
 
 EXPOSE 3000
 

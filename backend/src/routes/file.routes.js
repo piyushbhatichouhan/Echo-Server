@@ -33,16 +33,12 @@ router.post(
   authenticate,
 
   (req, res, next) => {
-    console.log("BEFORE");
-    console.log(req.headers["content-type"]);
     next();
   },
 
   upload.single("file"),
 
   (req, res, next) => {
-    console.log("AFTER");
-    console.log(req.file);
     next();
   },
 

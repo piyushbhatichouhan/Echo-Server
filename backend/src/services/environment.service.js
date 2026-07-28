@@ -13,12 +13,7 @@ const createEnvironmentVariable = async (
   { key, value },
 ) => {
   await projectService.verifyProjectOwnership(projectId, ownerId);
-  console.log({
-    projectId,
-    ownerId,
-    key,
-    value,
-  });
+
   const existing = await environmentRepository.getEnvironmentVariableByKey(
     projectId,
     key,

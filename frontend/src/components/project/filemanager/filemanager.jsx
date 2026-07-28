@@ -62,8 +62,7 @@ export default function FileManager({
         toast.success("File Uploaded", "File uploaded succesfully");
       } catch (error) {
         toast.error(
-          "Upload failed",
-          error.response?.data?.message || error.message,
+          error.response?.data?.message ?? error.message ?? "Unknown error",
         );
 
         break;

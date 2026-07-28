@@ -26,17 +26,7 @@ deletion_scheduled_at
 const getUserById = async (userId) => {
   const result = await pool.query(
     `
-    SELECT
-      id,
-      username,
-      email,
-      disabled,
-      pending_deletion,
-      deletion_due_at,
-      deletion_scheduled_at,
-      created_at,
-      storage_limit,
-      updated_at
+    SELECT *
     FROM users
     WHERE id = $1
     `,
@@ -139,25 +129,6 @@ const deleteUserTx = async (client, userId) => {
   );
 };
 
-const updateStorageLimit = async (userId, storageLimit) => {
-  const result = await pool.query(
-    `
-    UPDATE users
-    SET
-        storage_limit = $2,
-        updated_at = NOW()
-    WHERE id = $1
-    RETURNING
-        id,
-        username,
-        storage_limit
-    `,
-    [userId, storageLimit],
-  );
-
-  return result.rows[0];
-};
-
 const getUsersForStorage = async () => {
   const result = await pool.query(
     `
@@ -165,7 +136,8 @@ const getUsersForStorage = async () => {
       id,
       username,
       email,
-      storage_limit,
+      quota_bytes,
+      used_bytes,
       disabled,
       pending_deletion
     FROM users
@@ -177,6 +149,43 @@ const getUsersForStorage = async () => {
   return result.rows;
 };
 
+const updateUserQuota = async (userId, quotaBytes) => {
+  console.log("Updating quota:", userId, quotaBytes);
+  const result = await pool.query(
+    `
+    UPDATE users
+    SET quota_bytes = $2
+    WHERE id = $1
+    RETURNING *
+    `,
+    [userId, quotaBytes],
+  );
+  console.log(result.rows);
+  return result.rows[0];
+};
+
+const incrementUsedBytes = async (userId, bytes) => {
+  await pool.query(
+    `
+        UPDATE users
+        SET used_bytes = used_bytes + $2
+        WHERE id = $1
+        `,
+    [userId, bytes],
+  );
+};
+
+const decrementUsedBytes = async (userId, bytes) => {
+  await pool.query(
+    `
+        UPDATE users
+        SET used_bytes = GREATEST(0, used_bytes - $2)
+        WHERE id = $1
+        `,
+    [userId, bytes],
+  );
+};
+
 module.exports = {
   getUsers,
   getUserById,
@@ -186,6 +195,9 @@ module.exports = {
   restoreUser,
   getExpiredUsers,
   deleteUserTx,
-  updateStorageLimit,
+
   getUsersForStorage,
+  updateUserQuota,
+  incrementUsedBytes,
+  decrementUsedBytes,
 };

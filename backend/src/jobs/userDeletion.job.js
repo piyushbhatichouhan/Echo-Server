@@ -7,8 +7,6 @@ const projectCleanupService = require("../services/project-cleanup.service");
 
 const runUserDeletionJob = async () => {
   try {
-    console.log("[UserDeletion] Checking for expired users...");
-
     const users = await userRepository.getExpiredUsers();
 
     for (const user of users) {
