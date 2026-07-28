@@ -119,7 +119,7 @@ export default function FileManager({
 
     await refresh();
   };
-
+  console.log(files);
   const tree = buildFileTree(files);
 
   return (

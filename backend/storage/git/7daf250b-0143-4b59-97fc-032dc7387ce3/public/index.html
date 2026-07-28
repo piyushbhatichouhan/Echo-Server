@@ -1,0 +1,2386 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>zinko's automation</title>
+    <link
+      class="favicon"
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='none'><circle cx='50' cy='50' r='40' fill='%231E90FF' opacity='0.15'/><circle cx='50' cy='50' r='38' stroke='%23182025' stroke-width='4'/><circle cx='50' cy='50' r='38' stroke='%231E90FF' stroke-width='4' stroke-dasharray='180 60'/><path d='M32 32H68L32 68H68' stroke='%231E90FF' stroke-width='10' stroke-linecap='round' stroke-linejoin='round'/><circle cx='50' cy='50' r='6' fill='%2300bd6b'/></svg>"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="https://i.ibb.co/3ykbMv6/zinko-logo.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="192x192"
+      href="https://i.ibb.co/3ykbMv6/zinko-logo.png"
+    />
+
+    <meta name="theme-color" content="#121212" />
+    <script src="https://unpkg.com/mqtt@4.3.7/dist/mqtt.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      [data-theme="dark"] {
+        --bg-dark: #121212;
+        --card-bg: #181818;
+        --accent-blue: #1e90ff;
+        --accent-green: #00bd6b;
+        --accent-red: #ff3555;
+        --accent-orange: #f97316;
+        --accent-teal: #0ea9ae;
+        --text-main: #f8fafc;
+        --text-muted: #94a3b8;
+        --row-bg: #182025;
+        --input-bg: #0f192a;
+        --sidebar-bg: #181818;
+      }
+      [data-theme="light"] {
+        --bg-dark: #f1f5f9;
+        --card-bg: #ffffff;
+        --accent-blue: #0284c7;
+        --accent-green: #16a34a;
+        --accent-red: #dc2626;
+        --accent-orange: #ea580c;
+        --accent-teal: #0d979c;
+        --text-main: #0f172a;
+        --text-muted: #64748b;
+        --row-bg: #e2e8f0;
+        --input-bg: #f8fafc;
+        --sidebar-bg: #ffffff;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background-color: var(--bg-dark);
+        color: var(--text-main);
+        margin: 0;
+        padding: 0;
+        display: flex;
+        height: 100vh;
+        overflow: hidden;
+        transition:
+          background-color 0.3s,
+          color 0.3s;
+      }
+
+      .sidebar {
+        width: 260px;
+        background-color: var(--sidebar-bg);
+        display: flex;
+        flex-direction: column;
+        border-right: 1px solid var(--row-bg);
+        padding: 20px;
+        box-sizing: border-box;
+        justify-content: space-between;
+        transition:
+          transform 0.3s ease,
+          width 0.3s ease;
+        flex-shrink: 0;
+        z-index: 1000;
+      }
+      .sidebar-brand {
+        font-size: 1.4rem;
+        font-weight: bold;
+        color: var(--accent-blue);
+        margin-bottom: 30px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .sidebar-menu {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+      .menu-item {
+        padding: 14px 18px;
+        border-radius: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        color: var(--text-muted);
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        text-decoration: none;
+        white-space: nowrap;
+      }
+      .menu-item:hover,
+      .menu-item.active {
+        background-color: var(--row-bg);
+        color: var(--text-main);
+      }
+      .menu-item.active {
+        border-left: 4px solid var(--accent-blue);
+      }
+
+      .mobile-menu-trigger {
+        display: none;
+        background: var(--card-bg);
+        border: 1px solid var(--row-bg);
+        color: var(--text-main);
+        font-size: 1.5rem;
+        padding: 10px;
+        border-radius: 8px;
+        cursor: pointer;
+        position: fixed;
+        top: 15px;
+        left: 15px;
+        z-index: 1100;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+      .sidebar-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 950;
+        backdrop-filter: blur(2px);
+      }
+
+      .main-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        overflow-y: auto;
+        padding: 30px;
+        box-sizing: border-box;
+        position: relative;
+      }
+      .app-page {
+        display: none;
+        width: 100%;
+        max-width: 950px;
+        margin: 0 auto;
+      }
+      .app-page.active-page {
+        display: block;
+        animation: fadeIn 0.25s ease-in-out;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(5px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+        width: 100%;
+        gap: 15px;
+        flex-wrap: wrap;
+      }
+      h1 {
+        margin: 0;
+        font-size: 2rem;
+      }
+      .header-controls {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      .btn-utility {
+        padding: 8px 16px;
+        border-radius: 20px;
+        border: none;
+        font-weight: bold;
+        font-size: 0.85rem;
+        cursor: pointer;
+        background: var(--row-bg);
+        color: var(--text-main);
+        transition: background 0.2s;
+      }
+      .btn-utility.active-silent {
+        background-color: var(--accent-red);
+        color: white;
+      }
+      .btn-utility.active-night {
+        background-color: var(--accent-teal);
+        color: white;
+        box-shadow: 0 0 10px var(--accent-teal);
+      }
+      .btn-utility.active-const {
+        background-color: var(--accent-orange);
+        color: white;
+        box-shadow: 0 0 10px var(--accent-orange);
+      }
+      .status-badge {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        background-color: var(--accent-red);
+        color: white;
+      }
+      .status-badge.connected {
+        background-color: var(--accent-green);
+      }
+
+      .global-dismiss-panel {
+        width: 100%;
+        padding: 16px;
+        border-radius: 12px;
+        background-color: var(--accent-red);
+        color: white;
+        font-weight: bold;
+        font-size: 1.1rem;
+        border: none;
+        cursor: pointer;
+        margin-bottom: 20px;
+        text-align: center;
+        display: none;
+      }
+
+      /* RESTRENGTHENED LAYOUT MATRIX ENGINE RULES */
+      .grid-two-col {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+        margin-bottom: 20px;
+      }
+      .grid-three-col {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+        margin-bottom: 30px;
+      }
+
+      .card {
+        background-color: var(--card-bg);
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        word-wrap: break-word;
+      }
+      .card.center {
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+      }
+
+      .card h2 {
+        margin: 0 0 15px 0;
+        font-size: 1.1rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        text-align: center;
+        width: 100%;
+      }
+      .value {
+        font-size: 2.8rem;
+        font-weight: bold;
+        color: var(--accent-blue);
+        text-align: center;
+        width: 100%;
+      }
+      .value.large-metric {
+        font-size: 3.6rem;
+        color: var(--accent-teal);
+      }
+      .unit {
+        font-size: 1.2rem;
+        color: var(--text-muted);
+        font-weight: 500;
+      }
+
+      .btn-switch {
+        width: 110px;
+        height: 110px;
+        border-radius: 50%;
+        border: none;
+        background-color: var(--row-bg);
+        color: var(--text-muted);
+        font-size: 1.2rem;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.2s;
+        box-shadow: 0 0 0 4px #475569;
+        margin-top: 5px;
+        flex-shrink: 0;
+      }
+      .btn-switch.on {
+        background-color: var(--accent-green);
+        color: white;
+        box-shadow: 0 0 20px var(--accent-green);
+      }
+
+      .switch {
+        position: relative;
+        display: inline-block;
+        width: 46px;
+        height: 24px;
+        flex-shrink: 0;
+      }
+      .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+      .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #475569;
+        transition: 0.3s;
+        border-radius: 24px;
+      }
+      .slider:before {
+        position: absolute;
+        content: "";
+        height: 18px;
+        width: 18px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: 0.3s;
+        border-radius: 50%;
+      }
+      .switch input:checked + .slider {
+        background-color: var(--accent-blue);
+      }
+      .switch input:checked + .slider:before {
+        transform: translateX(22px);
+      }
+
+      .table-wrapper {
+        width: 100%;
+        max-height: 280px;
+        overflow-y: auto;
+        overflow-x: hidden;
+        background: var(--input-bg);
+        border-radius: 12px;
+        border: 1px solid var(--row-bg);
+        margin-top: 15px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+        table-layout: fixed;
+      }
+      th,
+      td {
+        padding: 12px 14px;
+        font-size: 0.95rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      th {
+        background-color: var(--row-bg);
+        color: var(--text-main);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
+      tr:not(:last-child) {
+        border-bottom: 1px solid var(--row-bg);
+      }
+      td.status-on {
+        color: var(--accent-green);
+        font-weight: bold;
+      }
+      td.status-off {
+        color: var(--accent-red);
+        font-weight: bold;
+      }
+
+      .alarm-inline-panel {
+        background-color: var(--input-bg);
+        border-radius: 12px;
+        padding: 20px;
+        display: none;
+        flex-direction: column;
+        gap: 15px;
+        border: 1px solid var(--row-bg);
+        margin-bottom: 15px;
+      }
+      .inline-time-picker {
+        width: 100%;
+        padding: 12px;
+        border-radius: 8px;
+        border: 1px solid var(--text-muted);
+        background-color: var(--bg-dark);
+        color: var(--text-main);
+        font-size: 1.5rem;
+        text-align: center;
+        box-sizing: border-box;
+      }
+      .toggle-row-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        width: 100%;
+      }
+      .days-selector-row {
+        display: none;
+        justify-content: space-between;
+        gap: 6px;
+        width: 100%;
+        flex-wrap: wrap;
+      }
+      .day-bubble {
+        flex: 1;
+        min-width: 35px;
+        text-align: center;
+        padding: 10px 0;
+        border-radius: 8px;
+        background: var(--row-bg);
+        font-size: 0.85rem;
+        font-weight: bold;
+        color: var(--text-muted);
+        cursor: pointer;
+        user-select: none;
+      }
+      .day-bubble.selected {
+        background: var(--accent-blue);
+        color: var(--bg-dark);
+      }
+      .form-action-grid {
+        display: flex;
+        gap: 12px;
+      }
+      .btn-form-action {
+        flex: 1;
+        padding: 12px;
+        border-radius: 8px;
+        border: none;
+        font-size: 1rem;
+        font-weight: bold;
+        cursor: pointer;
+      }
+      .btn-form-save {
+        background-color: var(--accent-green);
+        color: white;
+      }
+      .btn-form-cancel {
+        background-color: #475569;
+        color: white;
+      }
+      .alarm-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 15px;
+      }
+      .alarm-tile {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: var(--row-bg);
+        padding: 14px 20px;
+        border-radius: 12px;
+        gap: 10px;
+      }
+
+      .timer-config-view {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .time-display-box {
+        background-color: var(--input-bg);
+        padding: 15px;
+        border-radius: 10px;
+        font-size: 2.2rem;
+        font-weight: bold;
+        color: var(--accent-blue);
+        display: flex;
+        justify-content: center;
+        gap: 5px;
+        border: 1px solid var(--row-bg);
+      }
+      .pad-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+      }
+      .btn-pad {
+        background: var(--row-bg);
+        border: none;
+        color: var(--text-main);
+        padding: 12px 0;
+        font-weight: 600;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+      .timer-running-view {
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        position: relative;
+      }
+      .progress-ring {
+        transform: rotate(-90deg);
+        transform-origin: 50% 50%;
+      }
+      .timer-text-overlay {
+        position: absolute;
+        font-size: 1.8rem;
+        font-weight: bold;
+        top: 38%;
+      }
+
+      .chart-container {
+        position: relative;
+        width: 100%;
+        height: 320px;
+        margin-bottom: 25px;
+      }
+
+      @media (max-width: 768px) {
+        body {
+          flex-direction: column;
+        }
+        .sidebar {
+          position: fixed;
+          top: 0;
+          left: 0;
+          height: 100vh;
+          width: 260px;
+          transform: translateX(-100%);
+          transition: transform 0.3s ease-in-out;
+          box-shadow: 4px 0 15px rgba(0, 0, 0, 0.5);
+          z-index: 1005;
+        }
+        .sidebar.drawer-open {
+          transform: translateX(0);
+        }
+        .mobile-menu-trigger {
+          display: block;
+        }
+        .main-content {
+          padding: 75px 15px 15px 15px;
+          height: 100vh;
+        }
+        header {
+          margin-bottom: 20px;
+          flex-direction: column;
+          align-items: flex-start;
+        }
+        h1 {
+          font-size: 1.6rem;
+          margin-left: 50px;
+        }
+        .header-controls {
+          width: 100%;
+          justify-content: space-between;
+          gap: 6px;
+          margin-top: 10px;
+        }
+        .btn-utility {
+          padding: 8px 10px;
+          font-size: 0.72rem;
+          flex: 1;
+          text-align: center;
+        }
+        .grid-two-col,
+        .grid-three-col {
+          grid-template-columns: 1fr;
+          gap: 15px;
+        }
+        .value {
+          font-size: 2.1rem;
+        }
+        .value.large-metric {
+          font-size: 2.6rem;
+        }
+        .card {
+          padding: 16px;
+        }
+        th,
+        td {
+          padding: 10px 8px;
+          font-size: 0.82rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <button class="mobile-menu-trigger" onclick="toggleMobileSidebar(true)">
+      ☰
+    </button>
+    <div
+      class="sidebar-overlay"
+      id="drawer-shadow-mask"
+      onclick="toggleMobileSidebar(false)"
+    ></div>
+
+    <div class="sidebar" id="app-navigation-sidebar">
+      <div>
+        <div class="sidebar-brand">
+          <svg
+            width="32"
+            height="32"
+            viewBox="0 0 100 100"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            style="vertical-align: middle; margin-right: 2px"
+          >
+            <circle cx="50" cy="50" r="40" fill="#1E90FF" opacity="0.15" />
+            <circle cx="50" cy="50" r="38" stroke="#182025" stroke-width="4" />
+            <circle
+              cx="50"
+              cy="50"
+              r="38"
+              stroke="#1E90FF"
+              stroke-width="4"
+              stroke-dasharray="180 60"
+            />
+            <path
+              d="M32 32H68L32 68H68"
+              stroke="#1E90FF"
+              stroke-width="10"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+            <circle cx="50" cy="50" r="6" fill="#00bd6b" />
+          </svg>
+          zinko's hub
+        </div>
+        <nav class="sidebar-menu">
+          <a
+            href="#"
+            class="menu-item active"
+            onclick="switchPage('home', this)"
+            >🏠 Home</a
+          >
+          <a href="#" class="menu-item" onclick="switchPage('relay', this)"
+            >🔌 Relay Switch</a
+          >
+          <a href="#" class="menu-item" onclick="switchPage('utilities', this)"
+            >⏱️ Time Utility</a
+          >
+          <a href="#" class="menu-item" onclick="switchPage('analytics', this)"
+            >📈 Data Analysis</a
+          >
+        </nav>
+      </div>
+      <div id="connection-badge" class="status-badge">Connecting Hub...</div>
+    </div>
+
+    <div class="main-content">
+      <header>
+        <h1 id="page-title">Overview Home</h1>
+        <div class="header-controls">
+          <button
+            id="main-const-toggle"
+            class="btn-utility"
+            onclick="toggleConstantAlarmShortcut()"
+          >
+            ⏳ Const Alarm: OFF
+          </button>
+          <button
+            id="main-night-toggle"
+            class="btn-utility"
+            onclick="toggleNightModeGlobal()"
+          >
+            🌙 Night Mode: OFF
+          </button>
+          <button
+            id="theme-toggle-btn"
+            class="btn-utility"
+            onclick="toggleThemeConfig()"
+          >
+            🌓 Light Mode
+          </button>
+          <button
+            id="silent-toggle-btn"
+            class="btn-utility"
+            onclick="toggleSilentModeConfig()"
+          >
+            🔊 Sound: ON
+          </button>
+        </div>
+      </header>
+
+      <button
+        id="global-dismiss-banner"
+        class="global-dismiss-panel"
+        onclick="sendRemoteAlarmDismiss()"
+      >
+        🚨 ALERT ACTIVE: CLICK TO DISMISS
+      </button>
+
+      <div id="page-home" class="app-page active-page">
+        <div class="grid-two-col">
+          <div class="card center">
+            <h2>Feels Like Temperature</h2>
+            <div id="home-feels-like" class="value large-metric">
+              --<span class="unit">°C</span>
+            </div>
+          </div>
+          <div class="card center">
+            <h2>Relay Switch</h2>
+            <button
+              id="home-relay-btn"
+              class="btn-switch"
+              onclick="toggleRelay()"
+            >
+              OFF
+            </button>
+          </div>
+        </div>
+
+        <div class="grid-three-col">
+          <div class="card center">
+            <h2>Actual Temperature</h2>
+            <div id="home-temp" class="value">
+              --<span class="unit">°C</span>
+            </div>
+          </div>
+          <div class="card center">
+            <h2>Relative Humidity</h2>
+            <div id="home-hum" class="value">--<span class="unit">%</span></div>
+          </div>
+          <div class="card">
+            <h2>Function Status Matrix</h2>
+            <div
+              style="
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                margin-top: 5px;
+                font-size: 0.95rem;
+              "
+            >
+              <h2
+                style="
+                  margin: 0;
+                  text-align: left;
+                  font-size: 0.9rem;
+                  color: var(--text-muted);
+                "
+              >
+                TIMER:
+                <span
+                  id="home-live-timer-lbl"
+                  style="color: var(--accent-blue); font-weight: bold"
+                  >Inactive</span
+                >
+              </h2>
+              <h2
+                style="
+                  margin: 0;
+                  text-align: left;
+                  font-size: 0.9rem;
+                  color: var(--text-muted);
+                "
+              >
+                STOPWATCH:
+                <span
+                  id="home-live-sw-lbl"
+                  style="color: var(--accent-teal); font-weight: bold"
+                  >00:00:00.000</span
+                >
+              </h2>
+              <h2
+                style="
+                  margin: 0;
+                  text-align: left;
+                  font-size: 0.9rem;
+                  color: var(--text-muted);
+                "
+              >
+                CONSTANT ALARM:
+                <span
+                  id="home-live-const-lbl"
+                  style="color: var(--accent-orange); font-weight: bold"
+                  >Disabled</span
+                >
+              </h2>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-two-col">
+          <div class="card">
+            <h2>System Diagnostics</h2>
+            <p style="margin: 5px 0; color: var(--text-muted)">
+              Last Data Sync:
+              <span
+                id="diag-time"
+                style="color: var(--text-main); font-weight: bold"
+                >--:--</span
+              >
+            </p>
+            <p style="margin: 5px 0; color: var(--text-muted)">
+              SWITCH SCHEDULE:
+              <span
+                id="diag-sched"
+                style="color: var(--text-main); font-weight: bold"
+                >0 Configured</span
+              >
+            </p>
+          </div>
+          <div class="card">
+            <h2>Active Alarms</h2>
+            <div
+              id="home-alarms-mini-grid"
+              style="
+                font-size: 0.85rem;
+                max-height: 85px;
+                overflow-y: auto;
+                color: var(--text-muted);
+              "
+            >
+              No active alarms configured.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="page-relay" class="app-page">
+        <div class="grid-two-col">
+          <div class="card center">
+            <h2>TOGGLE SWITCH</h2>
+            <button id="relay-btn" class="btn-switch" onclick="toggleRelay()">
+              OFF
+            </button>
+          </div>
+          <div class="card">
+            <h2>Add Schedule Rule</h2>
+            <div
+              style="
+                display: flex;
+                gap: 10px;
+                margin-bottom: 10px;
+                flex-wrap: wrap;
+              "
+            >
+              <select
+                id="sched-type-selector"
+                class="btn-utility"
+                style="flex: 1; min-width: 120px"
+                onchange="toggleScheduleFormFields()"
+              >
+                <option value="WEEKLY">Weekly Repeat</option>
+                <option value="ONETIME">Calendar Event</option>
+              </select>
+              <select id="sched-action" class="btn-utility">
+                <option value="ON">ON</option>
+                <option value="OFF">OFF</option>
+              </select>
+            </div>
+
+            <div
+              id="sched-weekly-box"
+              style="display: flex; flex-direction: column; gap: 10px"
+            >
+              <input
+                type="time"
+                id="sched-time-weekly"
+                class="btn-utility"
+                value="12:00"
+                style="font-size: 1.1rem; text-align: center"
+              />
+              <div class="days-selector-row" style="display: flex">
+                <div
+                  class="day-bubble d-sched-bubble"
+                  data-sday="1"
+                  onclick="this.classList.toggle('selected')"
+                >
+                  M
+                </div>
+                <div
+                  class="day-bubble d-sched-bubble"
+                  data-sday="2"
+                  onclick="this.classList.toggle('selected')"
+                >
+                  T
+                </div>
+                <div
+                  class="day-bubble d-sched-bubble"
+                  data-sday="3"
+                  onclick="this.classList.toggle('selected')"
+                >
+                  W
+                </div>
+                <div
+                  class="day-bubble d-sched-bubble"
+                  data-sday="4"
+                  onclick="this.classList.toggle('selected')"
+                >
+                  T
+                </div>
+                <div
+                  class="day-bubble d-sched-bubble"
+                  data-sday="5"
+                  onclick="this.classList.toggle('selected')"
+                >
+                  F
+                </div>
+                <div
+                  class="day-bubble d-sched-bubble"
+                  data-sday="6"
+                  onclick="this.classList.toggle('selected')"
+                >
+                  S
+                </div>
+                <div
+                  class="day-bubble d-sched-bubble"
+                  data-sday="0"
+                  onclick="this.classList.toggle('selected')"
+                >
+                  S
+                </div>
+              </div>
+            </div>
+
+            <div id="sched-onetime-box" style="display: none">
+              <input
+                type="datetime-local"
+                id="sched-time-onetime"
+                class="btn-utility"
+                style="
+                  width: 100%;
+                  box-sizing: border-box;
+                  font-size: 1rem;
+                  padding: 10px;
+                  text-align: center;
+                "
+              />
+            </div>
+
+            <button
+              class="btn-utility"
+              style="
+                background: var(--accent-green);
+                color: white;
+                width: 100%;
+                padding: 12px;
+                border-radius: 8px;
+                margin-top: 12px;
+                font-weight: bold;
+              "
+              onclick="processNewAutomationRule()"
+            >
+              COMPILE AUTOMATION RULE
+            </button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom: 20px">
+          <h2>Night Mode Configuration</h2>
+          <div
+            style="
+              display: flex;
+              gap: 15px;
+              align-items: center;
+              margin-bottom: 5px;
+              flex-wrap: wrap;
+            "
+          >
+            <div style="display: flex; gap: 10px; align-items: center">
+              <input
+                type="time"
+                id="night-start-time"
+                class="btn-utility"
+                value="22:00"
+                onchange="saveNightScheduleTimes()"
+              />
+              <span style="color: var(--text-muted)">to</span>
+              <input
+                type="time"
+                id="night-end-time"
+                class="btn-utility"
+                value="06:00"
+                onchange="saveNightScheduleTimes()"
+              />
+            </div>
+            <div class="toggle-row-wrapper" style="width: auto; gap: 8px">
+              <span
+                style="
+                  font-size: 0.95rem;
+                  font-weight: 600;
+                  color: var(--text-main);
+                "
+                >Silent Mode</span
+              >
+              <label class="switch">
+                <input
+                  type="checkbox"
+                  id="night-silent-checkbox"
+                  onchange="saveNightScheduleTimes()"
+                />
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom: 20px">
+          <h2>Switch Schedules</h2>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 25%">SCHEDULE Type</th>
+                  <th style="width: 45%">TIME (+DATE)</th>
+                  <th style="width: 15%">Action</th>
+                  <th style="width: 15%">Ops</th>
+                </tr>
+              </thead>
+              <tbody id="schedules-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Switch Activity Logs</h2>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 40%">Timestamps</th>
+                  <th style="width: 20%">Shift</th>
+                  <th style="width: 40%">Trigger Context</th>
+                </tr>
+              </thead>
+              <tbody id="relay-logs-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div id="page-utilities" class="app-page">
+        <div class="grid-two-col">
+          <div class="card">
+            <h2>Alarm Configuration</h2>
+            <button
+              class="btn-trigger-modal"
+              style="
+                background: var(--accent-green);
+                color: white;
+                border: none;
+                padding: 12px;
+                font-weight: bold;
+                width: 100%;
+                border-radius: 8px;
+                cursor: pointer;
+              "
+              id="btn-toggle-panel"
+              onclick="toggleAlarmPanel(true)"
+            >
+              + ADD ALARM
+            </button>
+
+            <div id="inline-alarm-panel" class="alarm-inline-panel">
+              <input
+                type="time"
+                id="form-time"
+                class="inline-time-picker"
+                value="07:00"
+              />
+              <div class="toggle-row-wrapper" style="margin-bottom: 5px">
+                <span style="font-size: 1.05rem">Weekly Cycle</span>
+                <label class="switch">
+                  <input
+                    type="checkbox"
+                    id="form-repeat"
+                    onchange="toggleInlineDaysRow()"
+                  />
+                  <span class="slider"></span>
+                </label>
+              </div>
+              <div id="inline-days-row" class="days-selector-row">
+                <div
+                  class="day-bubble"
+                  data-day="1"
+                  onclick="this.classList.toggle('selected')"
+                >
+                  M
+                </div>
+                <div
+                  class="day-bubble"
+                  data-day="2"
+                  onclick="this.classList.toggle('selected')"
+                >
+                  T
+                </div>
+                <div
+                  class="day-bubble"
+                  data-day="3"
+                  onclick="this.classList.toggle('selected')"
+                >
+                  W
+                </div>
+                <div
+                  class="day-bubble"
+                  data-day="4"
+                  onclick="this.classList.toggle('selected')"
+                >
+                  T
+                </div>
+                <div
+                  class="day-bubble"
+                  data-day="5"
+                  onclick="this.classList.toggle('selected')"
+                >
+                  F
+                </div>
+                <div
+                  class="day-bubble"
+                  data-day="6"
+                  onclick="this.classList.toggle('selected')"
+                >
+                  S
+                </div>
+                <div
+                  class="day-bubble"
+                  data-day="0"
+                  onclick="this.classList.toggle('selected')"
+                >
+                  S
+                </div>
+              </div>
+              <div class="form-action-grid">
+                <button
+                  class="btn-form-action btn-form-save"
+                  onclick="saveAlarmInline()"
+                >
+                  SAVE
+                </button>
+                <button
+                  class="btn-form-action btn-form-cancel"
+                  onclick="toggleAlarmPanel(false)"
+                >
+                  CANCEL
+                </button>
+              </div>
+            </div>
+            <div id="alarms-container" class="alarm-list"></div>
+          </div>
+
+          <div class="card">
+            <h2>TIMER</h2>
+            <div id="timer-setup-ui" class="timer-config-view">
+              <div class="time-display-box">
+                <span id="pad-hr-text">00</span
+                ><span
+                  style="
+                    font-size: 1.2rem;
+                    color: var(--text-muted);
+                    align-self: end;
+                    margin-right: 5px;
+                  "
+                  >h</span
+                >
+                <span id="pad-min-text">00</span
+                ><span
+                  style="
+                    font-size: 1.2rem;
+                    color: var(--text-muted);
+                    align-self: end;
+                  "
+                  >m</span
+                >
+              </div>
+              <div class="pad-grid">
+                <button class="btn-pad" onclick="adjustPadTime(0, 1)">
+                  +1m
+                </button>
+                <button class="btn-pad" onclick="adjustPadTime(0, 5)">
+                  +5m
+                </button>
+                <button class="btn-pad" onclick="adjustPadTime(0, 10)">
+                  +10m
+                </button>
+                <button class="btn-pad" onclick="adjustPadTime(1, 1)">
+                  +1h
+                </button>
+                <button class="btn-pad" onclick="adjustPadTime(1, 2)">
+                  +2h
+                </button>
+                <button class="btn-pad" onclick="adjustPadTime(1, 5)">
+                  +5h
+                </button>
+              </div>
+              <div style="display: flex; gap: 10px">
+                <button
+                  class="btn-form-action btn-form-save"
+                  style="width: 100%"
+                  onclick="sendTimerStartCommand()"
+                >
+                  START
+                </button>
+                <button
+                  class="btn-form-action btn-form-cancel"
+                  onclick="clearPadTime()"
+                >
+                  RESET
+                </button>
+              </div>
+            </div>
+
+            <div id="timer-active-ui" class="timer-running-view">
+              <svg width="150" height="150">
+                <circle
+                  cx="75"
+                  cy="75"
+                  r="65"
+                  stroke="#334155"
+                  stroke-width="6"
+                  fill="transparent"
+                />
+                <circle
+                  id="timer-progress-circle"
+                  class="progress-ring"
+                  cx="75"
+                  cy="75"
+                  r="65"
+                  stroke="#38bdf8"
+                  stroke-width="6"
+                  fill="transparent"
+                  stroke-dasharray="408.4"
+                  stroke-dashoffset="0"
+                />
+              </svg>
+              <div id="timer-countdown-text" class="timer-text-overlay">
+                00:00
+              </div>
+              <button
+                class="btn-form-action"
+                style="
+                  background: var(--accent-red);
+                  color: white;
+                  margin-top: 15px;
+                  width: 100%;
+                "
+                onclick="sendTimerCancelCommand()"
+              >
+                CANCEL TIMER
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-two-col" style="margin-top: 20px">
+          <div class="card" style="grid-column: span 2">
+            <h2 style="text-align: left">Constant Alarm Config Framework</h2>
+            <div
+              style="
+                display: flex;
+                gap: 20px;
+                flex-wrap: wrap;
+                margin-bottom: 15px;
+              "
+            >
+              <div
+                style="
+                  flex: 1;
+                  min-width: 280px;
+                  display: flex;
+                  flex-direction: column;
+                  gap: 12px;
+                "
+              >
+                <label
+                  style="
+                    font-size: 0.9rem;
+                    color: var(--text-muted);
+                    font-weight: 600;
+                    text-transform: uppercase;
+                    letter-spacing: 0.05em;
+                  "
+                  >Interval Duration (Minutes)</label
+                >
+                <div
+                  style="
+                    display: flex;
+                    gap: 10px;
+                    align-items: center;
+                    height: 48px;
+                  "
+                >
+                  <input
+                    type="number"
+                    id="const-alarm-interval"
+                    class="btn-utility"
+                    value="40"
+                    min="1"
+                    max="1440"
+                    style="
+                      font-size: 1.1rem;
+                      width: 100px;
+                      text-align: center;
+                      border-radius: 8px;
+                      height: 100%;
+                      box-sizing: border-box;
+                    "
+                  />
+                  <span style="color: var(--text-main); font-weight: 600"
+                    >Minutes</span
+                  >
+                </div>
+              </div>
+
+              <div
+                style="
+                  flex: 1;
+                  min-width: 280px;
+                  display: flex;
+                  flex-direction: column;
+                  gap: 12px;
+                "
+              >
+                <div
+                  class="toggle-row-wrapper"
+                  style="
+                    background: var(--input-bg);
+                    padding: 10px 12px;
+                    border-radius: 10px;
+                    border: 1px solid var(--row-bg);
+                    height: 48px;
+                    box-sizing: border-box;
+                  "
+                >
+                  <span
+                    style="
+                      font-weight: bold;
+                      color: var(--text-main);
+                      font-size: 0.95rem;
+                    "
+                    >Enable Feature Quiet Hours</span
+                  >
+                  <label class="switch">
+                    <input type="checkbox" id="const-night-toggle" />
+                    <span class="slider"></span>
+                  </label>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 8px">
+                  <label
+                    style="
+                      font-size: 0.9rem;
+                      color: var(--text-muted);
+                      font-weight: 600;
+                      text-transform: uppercase;
+                      letter-spacing: 0.05em;
+                    "
+                    >Mute Window Duration</label
+                  >
+                  <div style="display: flex; gap: 10px; align-items: center">
+                    <input
+                      type="time"
+                      id="const-night-start"
+                      class="btn-utility"
+                      value="22:00"
+                    />
+                    <span style="color: var(--text-muted)">to</span>
+                    <input
+                      type="time"
+                      id="const-night-end"
+                      class="btn-utility"
+                      value="09:00"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <button
+              class="btn-utility"
+              style="
+                background: var(--accent-green);
+                color: white;
+                width: 100%;
+                padding: 14px;
+                border-radius: 8px;
+                font-weight: bold;
+                font-size: 1rem;
+                letter-spacing: 0.03em;
+              "
+              onclick="saveUnifiedConstantAlarmSettings()"
+            >
+              SAVE CONSTANT ALARM SETTINGS
+            </button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top: 20px">
+          <h2>Stopwatch</h2>
+          <div id="sw-clock-display" style="text-align: center" class="value">
+            00:00:00.000
+          </div>
+          <div
+            style="
+              display: flex;
+              gap: 10px;
+              max-width: 400px;
+              margin: 15px auto 0 auto;
+              width: 100%;
+            "
+          >
+            <button
+              id="sw-start-stop-btn"
+              class="btn-form-action btn-form-save"
+              onclick="toggleStopwatch()"
+            >
+              START
+            </button>
+            <button
+              class="btn-form-action btn-form-cancel"
+              onclick="resetStopwatch()"
+            >
+              RESET
+            </button>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 40%">Flag Metric Line</th>
+                  <th style="width: 60%">Saved Capture Duration</th>
+                </tr>
+              </thead>
+              <tbody id="stopwatch-logs-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div id="page-analytics" class="app-page">
+        <div class="card" style="margin-bottom: 25px">
+          <h2>Historical Signal Multi-Axis Analysis Plot</h2>
+          <div class="chart-container">
+            <canvas id="telemetryChart"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Raw Telemetry Sensor Logging Streams</h2>
+          <div class="table-wrapper" style="max-height: 400px">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 50%">Timestamps</th>
+                  <th style="width: 25%">Temperature</th>
+                  <th style="width: 25%">Humidity</th>
+                </tr>
+              </thead>
+              <tbody id="raw-telemetry-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const CLUSTER_HOST =
+        "753b9d2d09ba40c5a3d6bae3020b4256.s1.eu.hivemq.cloud";
+      const WEBSOCKET_PORT = 8884;
+      const MQTT_USER = "zinkohere";
+      const MQTT_PASS = "Helloworldd@1";
+
+      const firebaseConfig = {
+        databaseURL:
+          "https://zinko-automation-default-rtdb.asia-southeast1.firebasedatabase.app/",
+      };
+      firebase.initializeApp(firebaseConfig);
+      const db = firebase.database();
+
+      const TOPIC_CONTROL = "device/fan/control";
+      const TOPIC_STATUS = "device/status";
+      const TOPIC_ALARMS = "device/alarms/config";
+      const TOPIC_TIMECTL = "device/timer/control";
+      const TOPIC_TIMESTAT = "device/timer/status";
+      const TOPIC_SWCTL = "device/stopwatch/control";
+      const TOPIC_SWSTAT = "device/stopwatch/status";
+      const TOPIC_SILENT = "device/silent/control";
+      const TOPIC_BRIGHT = "device/brightness";
+      const TOPIC_ALMSTAT = "device/alarm/status";
+      const TOPIC_CONST_CFG = "device/constant_alarm/config";
+      const TOPIC_CONST_NGT = "device/constant_alarm/night";
+
+      let currentRelayState = false,
+        isSilentModeActive = false,
+        isNightModeGlobalActive = false,
+        isConstantAlarmActive = false;
+      let alarmsArray = [],
+        padHours = 0,
+        padMinutes = 0;
+      let swState = "IDLE",
+        swBaseTime = 0,
+        swRunningStartTime = 0,
+        swLiveIntervalTimer = null,
+        totalLapsCounter = 0;
+      let chartInstance = null;
+      let nightExecutionMuteActive = false;
+
+      function toggleMobileSidebar(open) {
+        const sidebar = document.getElementById("app-navigation-sidebar");
+        const mask = document.getElementById("drawer-shadow-mask");
+        if (open) {
+          sidebar.classList.add("drawer-open");
+          mask.style.display = "block";
+        } else {
+          sidebar.classList.remove("drawer-open");
+          mask.style.display = "none";
+        }
+      }
+
+      function switchPage(pageId, element) {
+        document
+          .querySelectorAll(".app-page")
+          .forEach((p) => p.classList.remove("active-page"));
+        document
+          .querySelectorAll(".menu-item")
+          .forEach((m) => m.classList.remove("active"));
+        document.getElementById("page-" + pageId).classList.add("active-page");
+        element.classList.add("active");
+
+        let baseName = element.innerText.replace(/[^\w\s]/g, "").trim();
+        if (baseName === "Home") baseName = "Overview Home";
+        if (baseName === "Relay Switch") baseName = "Relay Systems";
+        if (baseName === "Time Utility") baseName = "Time Control";
+        if (baseName === "Data Analysis") baseName = "Data Analytics";
+        document.getElementById("page-title").innerText = baseName;
+
+        toggleMobileSidebar(false);
+        if (pageId === "analytics") {
+          setTimeout(initializeTelemetryChart, 100);
+        }
+      }
+
+      function toggleScheduleFormFields() {
+        const type = document.getElementById("sched-type-selector").value;
+        document.getElementById("sched-weekly-box").style.display =
+          type === "WEEKLY" ? "flex" : "none";
+        document.getElementById("sched-onetime-box").style.display =
+          type === "ONETIME" ? "block" : "none";
+      }
+
+      const client = mqtt.connect(
+        `wss://${CLUSTER_HOST}:${WEBSOCKET_PORT}/mqtt`,
+        {
+          username: MQTT_USER,
+          password: MQTT_PASS,
+          clientId:
+            "WebDashboardSPA_V6_Responsive_" +
+            Math.random().toString(16).substr(2, 8),
+          path: "/mqtt",
+        },
+      );
+
+      client.on("connect", () => {
+        const badge = document.getElementById("connection-badge");
+        badge.innerText = "Online Linked";
+        badge.classList.add("connected");
+        client.subscribe(TOPIC_STATUS);
+        client.subscribe(TOPIC_TIMESTAT);
+        client.subscribe(TOPIC_SWSTAT);
+        client.subscribe(TOPIC_ALMSTAT);
+        syncFirebaseInitialData();
+      });
+
+      client.on("message", (topic, payload) => {
+        const msgStr = payload.toString();
+        const parseObj = JSON.parse(msgStr);
+
+        if (topic === TOPIC_STATUS) {
+          if (parseObj.temp !== undefined) {
+            document.getElementById("home-temp").innerHTML =
+              `${parseObj.temp.toFixed(1)}<span class="unit">°C</span>`;
+            document.getElementById("home-hum").innerHTML =
+              `${parseObj.humidity.toFixed(0)}<span class="unit">%</span>`;
+
+            // Route live MQTT feels-like value cleanly
+            let flVal =
+              parseObj.feelsLike !== undefined
+                ? parseObj.feelsLike
+                : parseObj.temp;
+            document.getElementById("home-feels-like").innerHTML =
+              `${flVal.toFixed(1)}<span class="unit">°C</span>`;
+
+            currentRelayState = parseObj.relay === "ON";
+            updateButtonUI();
+
+            document.getElementById("diag-time").innerText =
+              new Date().toLocaleTimeString("en-IN", {
+                hour: "2-digit",
+                minute: "2-digit",
+              });
+          }
+        } else if (topic === TOPIC_TIMESTAT) {
+          handleTimerRealtimeSync(parseObj);
+        } else if (topic === TOPIC_SWSTAT) {
+          handleStopwatchIncomingNetworkSync(parseObj);
+        } else if (topic === TOPIC_ALMSTAT) {
+          const banner = document.getElementById("global-dismiss-banner");
+          if (parseObj.state === "RINGING") {
+            banner.style.display = "block";
+            executeTargetedAlarmDeletion(parseObj.hr, parseObj.min);
+          } else {
+            banner.style.display = "none";
+          }
+        }
+      });
+
+      function processNewAutomationRule() {
+        const type = document.getElementById("sched-type-selector").value;
+        const action = document.getElementById("sched-action").value;
+        const id = Date.now();
+
+        if (type === "WEEKLY") {
+          const time = document.getElementById("sched-time-weekly").value;
+          if (!time) return;
+          let mask = 0;
+          document.querySelectorAll(".d-sched-bubble.selected").forEach((b) => {
+            mask |= 1 << parseInt(b.getAttribute("data-sday"));
+          });
+          db.ref("automations/" + id).set({
+            id: id,
+            type: type,
+            time: time,
+            mask: mask,
+            action: action,
+          });
+        } else {
+          const datetimeVal =
+            document.getElementById("sched-time-onetime").value;
+          if (!datetimeVal) return;
+          db.ref("automations/" + id).set({
+            id: id,
+            type: type,
+            targetEpoch: new Date(datetimeVal).getTime(),
+            dateLabel: datetimeVal.replace("T", " "),
+            action: action,
+          });
+        }
+        document
+          .querySelectorAll(".d-sched-bubble")
+          .forEach((b) => b.classList.remove("selected"));
+      }
+
+      function removeAutomationRule(id) {
+        db.ref("automations/" + id).remove();
+      }
+
+      function syncFirebaseInitialData() {
+        db.ref("alarms").on("value", (snapshot) => {
+          const data = snapshot.val();
+          if (data) {
+            alarmsArray = Object.values(data);
+          } else {
+            alarmsArray = [];
+          }
+          renderAlarmsUI();
+        });
+
+        db.ref("automations").on("value", (snapshot) => {
+          const data = snapshot.val() || {};
+          const tbody = document.getElementById("schedules-table-body");
+          tbody.innerHTML = "";
+          const list = Object.values(data);
+          document.getElementById("diag-sched").innerText =
+            `${list.length} Rules Engine Active`;
+
+          let dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+          list.forEach((s) => {
+            let typeLabel = "",
+              ruleLabel = "";
+            if (s.type === "WEEKLY") {
+              typeLabel = "Weekly";
+              let activeDays = [];
+              for (let d = 0; d < 7; d++) {
+                if (s.mask & (1 << d)) activeDays.push(dayNames[d]);
+              }
+              ruleLabel = `At ${s.time} (${activeDays.length === 7 ? "Everyday" : activeDays.length === 0 ? "Once" : activeDays.join(", ")})`;
+            } else {
+              typeLabel = "Calendar";
+              ruleLabel = s.dateLabel;
+            }
+
+            const row = document.createElement("tr");
+            row.innerHTML = `<td><strong>${typeLabel}</strong></td><td style="text-overflow:ellipsis; overflow:hidden;">${ruleLabel}</td><td style="font-weight:bold; color:${s.action === "ON" ? "var(--accent-green)" : "var(--accent-red)"}">${s.action}</td><td><button class="btn-utility" style="background:var(--accent-red);color:white;padding:4px 8px;font-size:0.75rem;" onclick="removeAutomationRule(${s.id})">Remove</button></td>`;
+            tbody.appendChild(row);
+          });
+        });
+
+        db.ref("logs/relay_history")
+          .limitToLast(15)
+          .on("value", (snapshot) => {
+            const data = snapshot.val() || {};
+            const tbody = document.getElementById("relay-logs-table-body");
+            tbody.innerHTML = "";
+            Object.values(data)
+              .reverse()
+              .forEach((log) => {
+                const row = document.createElement("tr");
+                row.innerHTML = `<td>${new Date(log.timestamp).toLocaleString("en-IN")}</td><td class="${log.event === "ON" ? "status-on" : "status-off"}">${log.event}</td><td>${log.source}</td>`;
+                tbody.appendChild(row);
+              });
+          });
+
+        db.ref("logs/stopwatch_history").on("value", (snapshot) => {
+          const data = snapshot.val() || {};
+          const tbody = document.getElementById("stopwatch-logs-body");
+          tbody.innerHTML = "";
+          Object.values(data)
+            .reverse()
+            .forEach((log) => {
+              const row = document.createElement("tr");
+              row.innerHTML = `<td>Flag Metric Run #${log.runId}</td><td>${log.duration}</td>`;
+              tbody.appendChild(row);
+            });
+        });
+
+        db.ref("settings/night_mode").on("value", (snapshot) => {
+          const val = snapshot.val();
+          if (val) {
+            isNightModeGlobalActive = val.active || false;
+            document.getElementById("night-start-time").value =
+              val.start || "22:00";
+            document.getElementById("night-end-time").value =
+              val.end || "06:00";
+            document.getElementById("night-silent-checkbox").checked =
+              val.forceMute || false;
+            updateNightModeUI();
+          }
+        });
+
+        db.ref("settings/constant_alarm").on("value", (snapshot) => {
+          const val = snapshot.val();
+          if (val) {
+            isConstantAlarmActive = val.enabled || false;
+            document.getElementById("const-alarm-interval").value =
+              val.interval || 40;
+            document.getElementById("home-live-const-lbl").innerText =
+              isConstantAlarmActive ? `Every ${val.interval}m` : "Disabled";
+            document.getElementById("home-live-const-lbl").style.color =
+              isConstantAlarmActive
+                ? "var(--accent-green)"
+                : "var(--accent-orange)";
+            updateConstantAlarmShortcutUI();
+          }
+        });
+
+        db.ref("settings/constant_alarm_night").on("value", (snapshot) => {
+          const val = snapshot.val();
+          if (val) {
+            document.getElementById("const-night-toggle").checked =
+              val.nightEnabled || false;
+            document.getElementById("const-night-start").value =
+              val.start || "22:00";
+            document.getElementById("const-night-end").value =
+              val.end || "09:00";
+          }
+        });
+      }
+
+      setInterval(() => {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString("en-IN", {
+          hour12: false,
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+        const currentEpochValue = now.getTime();
+        const currentDay = now.getDay();
+
+        db.ref("automations").once("value", (snapshot) => {
+          const automations = snapshot.val() || {};
+          Object.values(automations).forEach((s) => {
+            if (s.type === "WEEKLY" && s.time === timeString) {
+              if ((s.mask === 0 || s.mask & (1 << currentDay)) && !s.executed) {
+                toggleRelay(s.action);
+                db.ref("automations/" + s.id + "/executed").set(true);
+                setTimeout(
+                  () => db.ref("automations/" + s.id + "/executed").remove(),
+                  61000,
+                );
+              }
+            } else if (
+              s.type === "ONETIME" &&
+              currentEpochValue >= s.targetEpoch &&
+              !s.executed
+            ) {
+              toggleRelay(s.action);
+              db.ref("automations/" + s.id + "/executed").set(true);
+              setTimeout(() => removeAutomationRule(s.id), 2000);
+            }
+          });
+        });
+
+        const startVal = document.getElementById("night-start-time").value;
+        const endVal = document.getElementById("night-end-time").value;
+        const forceMuteChecked = document.getElementById(
+          "night-silent-checkbox",
+        ).checked;
+
+        if (isNightModeGlobalActive && startVal && endVal) {
+          let isInsideNightFrame = false;
+          if (startVal <= endVal) {
+            isInsideNightFrame = timeString >= startVal && timeString <= endVal;
+          } else {
+            isInsideNightFrame = timeString >= startVal || timeString <= endVal;
+          }
+
+          if (isInsideNightFrame) {
+            if (!nightExecutionMuteActive) {
+              nightExecutionMuteActive = true;
+              client.publish(TOPIC_BRIGHT, "DIM", { retain: true });
+              if (forceMuteChecked) {
+                client.publish(TOPIC_SILENT, "ON", { retain: true });
+              }
+            }
+          } else {
+            if (nightExecutionMuteActive) {
+              nightExecutionMuteActive = false;
+              client.publish(TOPIC_BRIGHT, "BRIGHT", { retain: true });
+              if (forceMuteChecked) {
+                client.publish(TOPIC_SILENT, "OFF", { retain: true });
+              }
+            }
+          }
+        }
+      }, 10000);
+
+      function toggleConstantAlarmShortcut() {
+        isConstantAlarmActive = !isConstantAlarmActive;
+        const intervalVal =
+          parseInt(document.getElementById("const-alarm-interval").value) || 40;
+
+        const payload = {
+          enabled: isConstantAlarmActive,
+          interval: intervalVal,
+        };
+        client.publish(TOPIC_CONST_CFG, JSON.stringify(payload), {
+          qos: 1,
+          retain: true,
+        });
+        db.ref("settings/constant_alarm").set(payload);
+        updateConstantAlarmShortcutUI();
+      }
+
+      function updateConstantAlarmShortcutUI() {
+        const btn = document.getElementById("main-const-toggle");
+        if (btn) {
+          btn.innerText = isConstantAlarmActive
+            ? "⏳ Const Alarm: ON"
+            : "⏳ Const Alarm: OFF";
+          btn.classList.toggle("active-const", isConstantAlarmActive);
+        }
+      }
+
+      function saveUnifiedConstantAlarmSettings() {
+        const intervalVal =
+          parseInt(document.getElementById("const-alarm-interval").value) || 40;
+        const isNightEnabled =
+          document.getElementById("const-night-toggle").checked;
+        const startStr = document.getElementById("const-night-start").value;
+        const endStr = document.getElementById("const-night-end").value;
+
+        const [startHr, startMin] = startStr.split(":").map(Number);
+        const [endHr, endMin] = endStr.split(":").map(Number);
+
+        const cfgPayload = {
+          enabled: isConstantAlarmActive,
+          interval: intervalVal,
+        };
+        client.publish(TOPIC_CONST_CFG, JSON.stringify(cfgPayload), {
+          qos: 1,
+          retain: true,
+        });
+        db.ref("settings/constant_alarm").set(cfgPayload);
+
+        const nightPayload = {
+          nightEnabled: isNightEnabled,
+          start: startStr,
+          end: endStr,
+          startHr: startHr,
+          startMin: startMin,
+          endHr: endHr,
+          endMin: endMin,
+        };
+        client.publish(TOPIC_CONST_NGT, JSON.stringify(nightPayload), {
+          qos: 1,
+          retain: true,
+        });
+        db.ref("settings/constant_alarm_night").set(nightPayload);
+      }
+
+      function toggleRelay(forcedState = null) {
+        const targetState =
+          forcedState !== null
+            ? forcedState
+            : !currentRelayState
+              ? "ON"
+              : "OFF";
+        client.publish(TOPIC_CONTROL, targetState, { qos: 1 });
+        const ts = Date.now();
+        db.ref("logs/relay_history/" + ts).set({
+          timestamp: ts,
+          event: targetState,
+          source:
+            forcedState !== null
+              ? "Automated Scheduler Engine"
+              : "Dashboard UI Interaction Matrix",
+        });
+      }
+
+      function updateButtonUI() {
+        const btns = [
+          document.getElementById("relay-btn"),
+          document.getElementById("home-relay-btn"),
+        ];
+        btns.forEach((btn) => {
+          if (!btn) return;
+          btn.innerText = currentRelayState ? "ON" : "OFF";
+          btn.classList.toggle("on", currentRelayState);
+        });
+      }
+
+      function toggleNightModeGlobal() {
+        isNightModeGlobalActive = !isNightModeGlobalActive;
+        saveNightScheduleTimes();
+      }
+      function saveNightScheduleTimes() {
+        db.ref("settings/night_mode").set({
+          active: isNightModeGlobalActive,
+          start: document.getElementById("night-start-time").value,
+          end: document.getElementById("night-end-time").value,
+          forceMute: document.getElementById("night-silent-checkbox").checked,
+        });
+      }
+      function updateNightModeUI() {
+        const btn = document.getElementById("main-night-toggle");
+        btn.innerText = isNightModeGlobalActive
+          ? "🌙 Night Active"
+          : "🌙 Night Off";
+        btn.classList.toggle("active-night", isNightModeGlobalActive);
+      }
+
+      function toggleThemeConfig() {
+        const el = document.documentElement;
+        const target =
+          el.getAttribute("data-theme") === "dark" ? "light" : "dark";
+        el.setAttribute("data-theme", target);
+        document.getElementById("theme-toggle-btn").innerText =
+          target === "dark" ? "🌓 Light Mode" : "🌓 Dark Mode";
+      }
+      function toggleSilentModeConfig() {
+        isSilentModeActive = !isSilentModeActive;
+        client.publish(TOPIC_SILENT, isSilentModeActive ? "ON" : "OFF", {
+          qos: 1,
+          retain: true,
+        });
+        document.getElementById("silent-toggle-btn").innerText =
+          isSilentModeActive ? "🔇 Silent Active" : "🔊 Sound ON";
+        document
+          .getElementById("silent-toggle-btn")
+          .classList.toggle("active-silent", isSilentModeActive);
+      }
+      function sendRemoteAlarmDismiss() {
+        client.publish(TOPIC_CONTROL, "DISMISS", { qos: 1 });
+        document.getElementById("global-dismiss-banner").style.display = "none";
+      }
+
+      function toggleAlarmPanel(show) {
+        document.getElementById("inline-alarm-panel").style.display = show
+          ? "flex"
+          : "none";
+      }
+      function toggleInlineDaysRow() {
+        document.getElementById("inline-days-row").style.display =
+          document.getElementById("form-repeat").checked ? "flex" : "none";
+      }
+
+      function saveAlarmInline() {
+        const timeVal = document.getElementById("form-time").value;
+        if (!timeVal) return;
+        const [hours, minutes] = timeVal.split(":").map(Number),
+          isRepeating = document.getElementById("form-repeat").checked;
+        let mask = 0,
+          dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+          displayDaysString = "Once";
+
+        if (isRepeating) {
+          const selectedBubbles = document.querySelectorAll(
+            ".day-bubble.selected",
+          );
+          let arr = [];
+          selectedBubbles.forEach((b) => {
+            const d = parseInt(b.getAttribute("data-day"));
+            mask |= 1 << d;
+            arr.push(d);
+          });
+          arr.sort((a, b) => a - b);
+          displayDaysString = arr.map((d) => dayNames[d]).join(", ");
+        }
+
+        const newAlarmId = Date.now();
+        const newAlarmObj = {
+          id: newAlarmId,
+          hr: hours,
+          min: minutes,
+          days: mask,
+          rawTime: timeVal,
+          dayText: displayDaysString,
+        };
+
+        db.ref("alarms/" + newAlarmId).set(newAlarmObj, (error) => {
+          if (!error) {
+            const cleanMqttPayload = [...alarmsArray, newAlarmObj].map((a) => ({
+              id: a.id,
+              hr: a.hr,
+              min: a.min,
+              days: a.days,
+            }));
+            client.publish(TOPIC_ALARMS, JSON.stringify(cleanMqttPayload), {
+              qos: 1,
+              retain: true,
+            });
+          }
+        });
+        toggleAlarmPanel(false);
+      }
+
+      function deleteAlarm(id) {
+        db.ref("alarms/" + id).remove((error) => {
+          if (!error) {
+            const remainingAlarms = alarmsArray.filter((a) => a.id !== id);
+            const cleanMqttPayload = remainingAlarms.map((a) => ({
+              id: a.id,
+              hr: a.hr,
+              min: a.min,
+              days: a.days,
+            }));
+            client.publish(TOPIC_ALARMS, JSON.stringify(cleanMqttPayload), {
+              qos: 1,
+              retain: true,
+            });
+          }
+        });
+      }
+
+      function executeTargetedAlarmDeletion(h, m) {
+        alarmsArray.forEach((alarm) => {
+          if (
+            alarm.hr === parseInt(h) &&
+            alarm.min === parseInt(m) &&
+            alarm.days === 0
+          ) {
+            db.ref("alarms/" + alarm.id).remove((error) => {
+              if (!error) {
+                const remainingAlarms = alarmsArray.filter(
+                  (a) => a.id !== alarm.id,
+                );
+                const cleanMqttPayload = remainingAlarms.map((a) => ({
+                  id: a.id,
+                  hr: a.hr,
+                  min: a.min,
+                  days: a.days,
+                }));
+                client.publish(TOPIC_ALARMS, JSON.stringify(cleanMqttPayload), {
+                  qos: 1,
+                  retain: true,
+                });
+              }
+            });
+          }
+        });
+      }
+
+      function renderAlarmsUI() {
+        const container = document.getElementById("alarms-container");
+        container.innerHTML = "";
+        const miniHomeFeedContainer = document.getElementById(
+          "home-alarms-mini-grid",
+        );
+        miniHomeFeedContainer.innerHTML = "";
+
+        if (alarmsArray.length === 0) {
+          miniHomeFeedContainer.innerText = "No active alarms configured.";
+        }
+
+        alarmsArray.forEach((alarm) => {
+          const tile = document.createElement("div");
+          tile.className = "alarm-tile";
+          tile.innerHTML = `<div><strong>${alarm.rawTime}</strong> <small style="color:var(--text-muted);margin-left:10px;">${alarm.dayText}</small></div><button class="btn-utility" style="background:var(--accent-red);color:white" onclick="deleteAlarm(${alarm.id})">🗑️</button>`;
+          container.appendChild(tile);
+
+          const miniRowItem = document.createElement("div");
+          miniRowItem.style.cssText =
+            "display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid #222;";
+          miniRowItem.innerHTML = `<span>⏰ ${alarm.rawTime}</span><span style="font-size:0.75rem; color:var(--accent-blue); font-weight:600;">(${alarm.dayText})</span>`;
+          miniHomeFeedContainer.appendChild(miniRowItem);
+        });
+      }
+
+      function adjustPadTime(type, amt) {
+        if (type === 1) padHours = (padHours + amt) % 13;
+        else {
+          padMinutes += amt;
+          if (padMinutes >= 60) {
+            padHours = (padHours + 1) % 13;
+            padMinutes %= 60;
+          }
+        }
+        document.getElementById("pad-hr-text").innerText = padHours
+          .toString()
+          .padStart(2, "0");
+        document.getElementById("pad-min-text").innerText = padMinutes
+          .toString()
+          .padStart(2, "0");
+      }
+      function clearPadTime() {
+        padHours = 0;
+        padMinutes = 0;
+        document.getElementById("pad-hr-text").innerText = "00";
+        document.getElementById("pad-min-text").innerText = "00";
+      }
+      function sendTimerStartCommand() {
+        if (padHours === 0 && padMinutes === 0) return;
+        client.publish(
+          TOPIC_TIMECTL,
+          JSON.stringify({ action: "START", hr: padHours, min: padMinutes }),
+          { qos: 1 },
+        );
+        clearPadTime();
+      }
+      function sendTimerCancelCommand() {
+        client.publish(TOPIC_TIMECTL, JSON.stringify({ action: "CANCEL" }), {
+          qos: 1,
+        });
+      }
+
+      function handleTimerRealtimeSync(data) {
+        const setupUI = document.getElementById("timer-setup-ui"),
+          activeUI = document.getElementById("timer-active-ui");
+        const banner = document.getElementById("global-dismiss-banner");
+        const homeFeedTimerLabel = document.getElementById(
+          "home-live-timer-lbl",
+        );
+
+        if (data.state === "RUNNING") {
+          setupUI.style.display = "none";
+          activeUI.style.display = "flex";
+          const s = data.remaining,
+            hrs = Math.floor(s / 3600),
+            mins = Math.floor((s % 3600) / 60),
+            secs = s % 60;
+          const clockOutputString =
+            hrs > 0
+              ? `${hrs.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
+              : `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+
+          document.getElementById("timer-countdown-text").innerText =
+            clockOutputString;
+          const circle = document.getElementById("timer-progress-circle"),
+            circumference = 408.4;
+          circle.style.strokeDashoffset =
+            circumference - (data.remaining / data.total) * circumference;
+
+          homeFeedTimerLabel.innerText = `${clockOutputString} remaining`;
+          homeFeedTimerLabel.style.color = "var(--accent-green)";
+        } else if (data.state === "ENDED") {
+          setupUI.style.display = "flex";
+          activeUI.style.display = "none";
+          banner.style.display = "block";
+          homeFeedTimerLabel.innerText = "ALARM DISMISS TRIGGER REQ";
+          homeFeedTimerLabel.style.color = "var(--accent-red)";
+        } else {
+          setupUI.style.display = "flex";
+          activeUI.style.display = "none";
+          homeFeedTimerLabel.innerText = "Inactive";
+          homeFeedTimerLabel.style.color = "var(--text-main)";
+        }
+      }
+
+      function toggleStopwatch() {
+        client.publish(TOPIC_SWCTL, swState !== "RUNNING" ? "START" : "STOP", {
+          qos: 1,
+        });
+      }
+      function resetStopwatch() {
+        client.publish(TOPIC_SWCTL, "RESET", { qos: 1 });
+      }
+      function formatTimeFromMillis(msTotal) {
+        const hrs = Math.floor(msTotal / 3600000),
+          mins = Math.floor((msTotal % 3600000) / 60000),
+          secs = Math.floor((msTotal % 60000) / 1000),
+          ms = Math.floor(msTotal % 1000);
+        return `${hrs.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}.${ms.toString().padStart(3, "0")}`;
+      }
+      function handleStopwatchIncomingNetworkSync(data) {
+        const btn = document.getElementById("sw-start-stop-btn");
+        swState = data.state;
+        const homeFeedStopwatchLabel =
+          document.getElementById("home-live-sw-lbl");
+
+        if (data.state === "RUNNING") {
+          btn.innerText = "STOP";
+          btn.style.backgroundColor = "var(--accent-red)";
+          swBaseTime = data.elapsed;
+          swRunningStartTime = Date.now();
+          clearInterval(swLiveIntervalTimer);
+          swLiveIntervalTimer = setInterval(() => {
+            const realSnapshotText = formatTimeFromMillis(
+              swBaseTime + (Date.now() - swRunningStartTime),
+            );
+            document.getElementById("sw-clock-display").innerText =
+              realSnapshotText;
+
+            homeFeedStopwatchLabel.innerText = realSnapshotText;
+            homeFeedStopwatchLabel.style.color = "var(--accent-green)";
+          }, 30);
+        } else if (data.state === "STOPPED") {
+          btn.innerText = "START";
+          btn.style.backgroundColor = "var(--accent-green)";
+          clearInterval(swLiveIntervalTimer);
+          const precisionSnapshot = formatTimeFromMillis(data.elapsed);
+          document.getElementById("sw-clock-display").innerText =
+            precisionSnapshot;
+          totalLapsCounter++;
+          db.ref("logs/stopwatch_history/" + Date.now()).set({
+            runId: totalLapsCounter,
+            duration: precisionSnapshot,
+          });
+
+          homeFeedStopwatchLabel.innerText = `${precisionSnapshot} (Paused)`;
+          homeFeedStopwatchLabel.style.color = "var(--accent-orange)";
+        } else {
+          btn.innerText = "START";
+          btn.style.backgroundColor = "var(--accent-green)";
+          clearInterval(swLiveIntervalTimer);
+          document.getElementById("sw-clock-display").innerText =
+            "00:00:00.000";
+          db.ref("logs/stopwatch_history").remove();
+          totalLapsCounter = 0;
+
+          homeFeedStopwatchLabel.innerText = "00:00:00.000";
+          homeFeedStopwatchLabel.style.color = "var(--text-main)";
+        }
+      }
+
+      function initializeTelemetryChart() {
+        db.ref("sensor_history")
+          .limitToLast(60)
+          .once("value", (snapshot) => {
+            const rawObj = snapshot.val() || {};
+            const dataEntries = Object.values(rawObj);
+            const tableBody = document.getElementById(
+              "raw-telemetry-table-body",
+            );
+            tableBody.innerHTML = "";
+
+            const labels = [],
+              tempSet = [],
+              humSet = [];
+            dataEntries.reverse().forEach((entry) => {
+              if (
+                entry.temperature === undefined ||
+                entry.humidity === undefined
+              )
+                return;
+
+              const timestampMs = entry.timestamp
+                ? entry.timestamp * 1000
+                : Date.now();
+              const timeString = new Date(timestampMs).toLocaleString("en-IN");
+
+              labels.push(
+                new Date(timestampMs).toLocaleTimeString("en-IN", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                }),
+              );
+              tempSet.push(entry.temperature);
+              humSet.push(entry.humidity);
+
+              const row = document.createElement("tr");
+              row.innerHTML = `<td>${timeString}</td><td style="color:var(--accent-blue);font-weight:bold">${entry.temperature.toFixed(1)}°C</td><td style="color:var(--accent-green);font-weight:bold">${entry.humidity.toFixed(0)}%</td>`;
+              tableBody.appendChild(row);
+            });
+
+            labels.reverse();
+            tempSet.reverse();
+            humSet.reverse();
+
+            if (chartInstance) {
+              chartInstance.destroy();
+            }
+            const ctx = document
+              .getElementById("telemetryChart")
+              .getContext("2d");
+            chartInstance = new Chart(ctx, {
+              type: "line",
+              data: {
+                labels: labels,
+                datasets: [
+                  {
+                    label: "Temperature (°C)",
+                    data: tempSet,
+                    borderColor: "#38bdf8",
+                    tension: 0.15,
+                    yAxisID: "y",
+                  },
+                  {
+                    label: "Humidity (%)",
+                    data: humSet,
+                    borderColor: "#10b981",
+                    tension: 0.15,
+                    yAxisID: "y1",
+                  },
+                ],
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                  y: {
+                    type: "linear",
+                    display: true,
+                    position: "left",
+                    grid: { color: "rgba(148, 163, 184, 0.08)" },
+                  },
+                  y1: {
+                    type: "linear",
+                    display: true,
+                    position: "right",
+                    grid: { drawOnChartArea: false },
+                  },
+                },
+              },
+            });
+          });
+      }
+    </script>
+  </body>
+</html>
