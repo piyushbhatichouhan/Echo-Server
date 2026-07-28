@@ -1,13 +1,26 @@
 import "./Projects.css";
 
 import ProjectCard from "../../components/common/projectcard/projectcard";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import useProjects from "../../hooks/useProjects";
 import Button from "../../components/common/button/button";
 import Modal from "../../components/common/modal/modal";
 import CreateProjectModal from "../../components/projects/createprojectmodal/createprojectmodal";
+import StorageStats from "../../components/cloud/StorageStats/StorageStats";
+import cloudWorkspace from "../../services/cloudWorkspace";
 export default function Projects() {
   const [open, setOpen] = useState(false);
+
+  const [stats, setStats] = useState(null);
+
+  const refreshStats = async () => {
+    const statsData = await cloudWorkspace.getStats();
+    setStats(statsData);
+  };
+
+  useEffect(() => {
+    refreshStats();
+  }, []);
 
   const {
     projects,
@@ -23,6 +36,7 @@ export default function Projects() {
 
   return (
     <div className="eh-projects">
+      <StorageStats stats={stats} />
       <div className="eh-projects-header">
         <div className="eh-projects-title">
           <h1>Projects</h1>
@@ -46,7 +60,10 @@ export default function Projects() {
       <CreateProjectModal
         open={open}
         onClose={() => setOpen(false)}
-        onCreated={refresh}
+        onCreated={async () => {
+          await refresh();
+          await refreshStats();
+        }}
       />
     </div>
   );

@@ -63,12 +63,18 @@ const getUserStorageStats = async (userId) => {
   }
   const used = projectsUsed + cloudUsed;
 
-  const limit = user.storage_limit;
+  const limit = user.quota_bytes == null ? 0 : Number(user.quota_bytes);
 
-  const free = limit == null ? null : Math.max(0, limit - used);
+  const free = Math.max(0, limit - used);
 
   const projects = await projectRepository.getProjectsByOwner(userId);
-
+  console.log("USER STORAGE", {
+    user: user.username,
+    projectsUsed,
+    cloudUsed,
+    used,
+    quota: limit,
+  });
   return {
     used,
     limit,
@@ -92,24 +98,17 @@ const getUsersStorage = async () => {
   const result = [];
 
   for (const user of users) {
-    const used = await getUserStorageUsage(user.id);
-
+    const stats = await getUserStorageStats(user.id);
+    console.log("USERS PAGE STATS", user.username, stats);
     result.push({
       id: user.id,
       username: user.username,
       email: user.email,
 
-      used,
-
-      storageLimit: user.storage_limit,
-
-      percentage:
-        user.storage_limit == null
-          ? null
-          : Math.min(100, Math.round((used / user.storage_limit) * 100)),
+      quotaBytes: stats.limit,
+      usedBytes: stats.used,
 
       disabled: user.disabled,
-
       pendingDeletion: user.pending_deletion,
     });
   }
@@ -136,8 +135,8 @@ const getProjectsStorage = async () => {
   return result;
 };
 
-const updateUserQuota = async (userId, storageLimit) => {
-  return await userRepository.updateStorageLimit(userId, storageLimit);
+const updateUserQuota = async (userId, quotaBytes) => {
+  return await userRepository.updateUserQuota(userId, quotaBytes);
 };
 
 module.exports = {

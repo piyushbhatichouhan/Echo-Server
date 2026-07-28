@@ -2,12 +2,12 @@ const path = require("path");
 const { pool } = require("../config/database");
 const workspace = require("./workspace.service");
 const workspaceFileService = require("./workspace.file.service");
-const storageQuotaService = require("./storageQuota.service");
 const cloudRepository = require("../repositories/cloud.repository");
 const { getCloudRoot } = require("../storage/cloud.storage.manager");
 const filesystem = require("../services/filesystem.service");
 const storageService = require("./storage.service");
 const fs = require("fs/promises");
+const storageAllocation = require("./storageAllocation.service");
 
 const uploadCloudFile = async (
   ownerId,
@@ -34,7 +34,9 @@ const uploadCloudFile = async (
 
   const replacingBytes = existing ? Number(existing.file_size) : 0;
 
-  await storageQuotaService.checkQuota(ownerId, file.size, replacingBytes);
+  const growth = Math.max(0, file.size - replacingBytes);
+
+  await storageAllocation.checkQuota(ownerId, growth);
 
   const { filesPath } = await workspace.ensureCloudWorkspace(ownerId);
 
@@ -55,11 +57,25 @@ const uploadCloudFile = async (
     isDirectory: false,
   };
 
-  if (existing) {
-    return await cloudRepository.updateCloudFile(existing.id, data);
+  if (file.size > replacingBytes) {
+    await storageAllocation.reserveStorage(ownerId, file.size - replacingBytes);
+  } else if (file.size < replacingBytes) {
+    await storageAllocation.releaseStorage(ownerId, replacingBytes - file.size);
   }
 
-  return await cloudRepository.createCloudFile(data);
+  try {
+    if (existing) {
+      return await cloudRepository.updateCloudFile(existing.id, data);
+    }
+
+    return await cloudRepository.createCloudFile(data);
+
+    // success
+  } catch (err) {
+    await storageAllocation.releaseStorage(ownerId, file.size);
+
+    throw err;
+  }
 };
 
 const getCloudFiles = async (ownerId) => {
@@ -189,9 +205,14 @@ const updateFileContent = async (fileId, ownerId, content) => {
   const oldSize = Number(result.rows[0].file_size);
   const newSize = Buffer.byteLength(content, "utf8");
 
-  await storageQuotaService.checkQuota(ownerId, newSize, oldSize);
+  const growth = Math.max(0, newSize - oldSize);
+
+  await storageAllocation.checkQuota(ownerId, growth);
 
   await filesystem.writeContent(result.rows[0].storage_path, content, "utf8");
+
+  if (newSize > oldSize) reserveStorage(newSize - oldSize);
+  else if (newSize < oldSize) releaseStorage(oldSize - newSize);
 
   await pool.query(
     `
@@ -258,6 +279,8 @@ const deleteFile = async (fileId, ownerId) => {
 
   await filesystem.removeDiskFile(file.storage_path);
 
+  await storageAllocation.releaseStorage(ownerId, file.file_size);
+
   await pool.query(
     `
     DELETE FROM cloud_files
@@ -272,12 +295,6 @@ const deleteFile = async (fileId, ownerId) => {
 };
 
 const renameFile = async (fileId, ownerId, newName) => {
-  console.log("=== CLOUD RENAME SERVICE ===");
-  console.log({
-    fileId,
-    ownerId,
-    newName,
-  });
   const result = await pool.query(
     `
     SELECT *
@@ -348,6 +365,7 @@ const deleteFolder = async (ownerId, folderPath) => {
         path.dirname(file.storage_path),
         filesPath,
       );
+      await storageAllocation.releaseStorage(ownerId, file.file_size);
     } catch (err) {
       console.warn("Could not delete:", file.storage_path);
       console.warn(err);

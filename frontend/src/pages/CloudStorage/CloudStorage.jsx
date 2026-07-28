@@ -79,18 +79,44 @@ export default function CloudStorage() {
       const relativePath =
         item.relativePath || actualFile.webkitRelativePath || actualFile.name;
 
-      await cloudWorkspace.uploadFile(currentFolder, actualFile, relativePath);
+      try {
+        await cloudWorkspace.uploadFile(
+          currentFolder,
+          actualFile,
+          relativePath,
+        );
+        toast.success(
+          "File Uploaded",
+          `${file.original_name} uploaded succesfully`,
+        );
+      } catch (error) {
+        toast.error(
+          error.response?.data?.message ?? error.message ?? "Unknown error",
+        );
+      }
     }
 
     refresh();
   };
 
   const handleUpload = (e) => {
-    uploadFiles([...e.target.files]);
+    try {
+      uploadFiles([...e.target.files]);
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message ?? error.message ?? "Unknown error",
+      );
+    }
   };
 
   const handleDroppedFiles = (files) => {
-    uploadFiles(files);
+    try {
+      uploadFiles(files);
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message ?? error.message ?? "Unknown error",
+      );
+    }
   };
 
   const createFolder = async () => {

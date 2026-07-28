@@ -15,15 +15,7 @@ export const getProjects = async () => {
   return res.data.data;
 };
 
-export const updateStorageLimit = async (userId, storageLimit) => {
-  const res = await api.patch(`/admin/users/${userId}/storage-limit`, {
-    storageLimit,
-  });
-
-  return res.data.data;
-};
-
-export const updateQuota = (userId, storageLimit) =>
-  api.patch(`/storage/users/${userId}/quota`, {
-    storageLimit,
+export const updateQuota = (userId, quota) =>
+  api.put(`/admin/users/${userId}/quota`, {
+    quota,
   });

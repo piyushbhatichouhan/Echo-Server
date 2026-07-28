@@ -4,7 +4,6 @@ const clients = new Map();
  * Register a client
  */
 const subscribe = (projectId, res) => {
-  console.log("Client subscribed:", projectId);
   if (!clients.has(projectId)) {
     clients.set(projectId, new Set());
   }
@@ -31,16 +30,11 @@ const unsubscribe = (projectId, res) => {
  * Send a message to every connected browser
  */
 const broadcast = (projectId, message) => {
-  console.log("Broadcast called:", projectId, message);
-
   const set = clients.get(projectId);
 
   if (!set) {
-    console.log("No clients subscribed");
     return;
   }
-
-  console.log("Clients:", set.size);
 
   for (const res of set) {
     res.write(

@@ -13,7 +13,7 @@ const buildImage = async (projectId, settings, log) => {
   const buildPath = await buildContext.prepareBuildContext(projectId, settings);
 
   console.log("Build context:", buildPath);
-  await log("Build context:", buildPath);
+  await log(`Build context: ${buildPath}`);
   const tarStream = tar.pack(buildPath, {
     ignore: (name) => {
       console.log("Packing:", name);
@@ -24,10 +24,11 @@ const buildImage = async (projectId, settings, log) => {
   const imageName = getImageName(projectId);
 
   console.log("Building image:", imageName);
-  await log("Building image:", imageName);
+
+  await log(`Building image: ${imageName}`);
   const fs = require("fs/promises");
 
-  console.log("Build files:", await fs.readdir(buildPath));
+  await log(`Build files: ${JSON.stringify(await fs.readdir(buildPath))}`);
   await log("Build files:", await fs.readdir(buildPath));
 
   const stream = await docker.buildImage(tarStream, {
@@ -36,27 +37,34 @@ const buildImage = async (projectId, settings, log) => {
 
   console.log("Docker build started");
   await log("Docker build started");
+
   await new Promise((resolve, reject) => {
     docker.modem.followProgress(
       stream,
+
       (err, output) => {
         if (err) {
-          console.error("Docker build failed:", err);
-
-          reject(err);
-        } else {
-          console.log("Docker build completed");
-
-          resolve(output);
+          return reject(err);
         }
+
+        const buildError = output.find((event) => event.error);
+
+        if (buildError) {
+          return reject(new Error(buildError.error));
+        }
+
+        resolve(output);
       },
+
       async (event) => {
         console.log(JSON.stringify(event));
 
-        if (log) return;
-
-        if (event.stream) {
+        if (log && event.stream) {
           await log(event.stream.trim());
+        }
+
+        if (log && event.error) {
+          await log(`ERROR: ${event.error}`);
         }
 
         if (event.error) {

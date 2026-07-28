@@ -1,13 +1,17 @@
 import "./Users.css";
-import { useState } from "react";
-import StorageLimitModal from "../../../../components/common/modal/StorageLimitModal";
+import { useMemo, useState } from "react";
+import StorageQuotaModal from "../../../../components/common/modal/StorageQuotaModal";
 
-import { useStorage } from "../../../../hooks/useStorage";
-export default function Users({ users, loading }) {
+export default function Users({ users, loading, refresh, updateQuota }) {
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [quotaModalOpen, setQuotaModalOpen] = useState(false);
+  const [savingQuota, setSavingQuota] = useState(false);
+  const [search, setSearch] = useState("");
+
   const formatBytes = (bytes = 0) => {
     const units = ["B", "KB", "MB", "GB", "TB"];
 
-    let value = bytes;
+    let value = Number(bytes);
     let unit = 0;
 
     while (value >= 1024 && unit < units.length - 1) {
@@ -18,11 +22,13 @@ export default function Users({ users, loading }) {
     return `${value.toFixed(value >= 10 ? 0 : 1)} ${units[unit]}`;
   };
 
-  const { refresh, updateQuota } = useStorage();
-
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [quotaModalOpen, setQuotaModalOpen] = useState(false);
-  const [savingQuota, setSavingQuota] = useState(false);
+  const filteredUsers = useMemo(() => {
+    return users.filter(
+      (u) =>
+        u.username.toLowerCase().includes(search.toLowerCase()) ||
+        u.email.toLowerCase().includes(search.toLowerCase()),
+    );
+  }, [users, search]);
 
   if (loading) {
     return <div className="storageLoading">Loading users...</div>;
@@ -33,27 +39,40 @@ export default function Users({ users, loading }) {
       <div className="usersStorageHeader">
         <div>
           <h2>User Storage</h2>
-
-          <p>Configure storage quotas and monitor usage.</p>
+          <p>Manage user storage quotas.</p>
         </div>
 
-        <input placeholder="Search users..." className="usersSearch" />
+        <input
+          className="usersSearch"
+          placeholder="Search users..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
       </div>
 
       <div className="usersTable">
         <div className="usersTableHead">
           <span>User</span>
           <span>Used</span>
-          <span>Limit</span>
+          <span>Quota</span>
           <span>Usage</span>
           <span></span>
         </div>
 
-        {users.map((user) => {
+        {filteredUsers.map((user) => {
+          const used = Number(user.usedBytes);
+          const quota = Number(user.quotaBytes);
+
+          const available = Math.max(0, quota - used);
+
           const percentage =
-            user.storageLimit == null
-              ? null
-              : Math.min(100, (user.used / user.storageLimit) * 100);
+            quota === 0 ? 0 : Math.min(100, (used / quota) * 100);
+
+          let barClass = "quotaFill";
+
+          if (percentage >= 90) barClass += " danger";
+          else if (percentage >= 70) barClass += " warning";
+          else barClass += " success";
 
           return (
             <div className="usersRow" key={user.id}>
@@ -64,36 +83,31 @@ export default function Users({ users, loading }) {
 
                 <div>
                   <strong>{user.username}</strong>
-
                   <small>{user.email}</small>
                 </div>
               </div>
 
-              <span>{formatBytes(user.used)}</span>
+              <div className="usersMetric">
+                <strong>{formatBytes(used)}</strong>
+              </div>
 
-              <span>
-                {user.storageLimit == null
-                  ? "Unlimited"
-                  : formatBytes(user.storageLimit)}
-              </span>
+              <div className="usersMetric quotaInfo">
+                <strong>{formatBytes(quota)}</strong>
 
-              <div>
-                {user.storageLimit == null ? (
-                  <span className="unlimitedBadge">Unlimited</span>
-                ) : (
-                  <>
-                    <div className="quotaBar">
-                      <div
-                        className="quotaFill"
-                        style={{
-                          width: `${percentage}%`,
-                        }}
-                      />
-                    </div>
+                <small>{formatBytes(available)} free</small>
+              </div>
 
-                    <small>{percentage.toFixed(0)}%</small>
-                  </>
-                )}
+              <div className="usageCell">
+                <div className="quotaBar">
+                  <div
+                    className={barClass}
+                    style={{
+                      width: `${percentage}%`,
+                    }}
+                  />
+                </div>
+
+                <span>{percentage.toFixed(0)}%</span>
               </div>
 
               <button
@@ -103,13 +117,14 @@ export default function Users({ users, loading }) {
                   setQuotaModalOpen(true);
                 }}
               >
-                Edit Limit
+                Edit
               </button>
             </div>
           );
         })}
       </div>
-      <StorageLimitModal
+
+      <StorageQuotaModal
         open={quotaModalOpen}
         user={selectedUser}
         loading={savingQuota}
@@ -122,7 +137,6 @@ export default function Users({ users, loading }) {
 
           try {
             await updateQuota(selectedUser.id, limit);
-
             await refresh();
 
             setQuotaModalOpen(false);

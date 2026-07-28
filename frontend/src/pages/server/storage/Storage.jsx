@@ -3,9 +3,9 @@ import { useState } from "react";
 
 import Overview from "./tabs/Overview";
 import Users from "./tabs/Users";
-import Projects from "./tabs/Projects";
-import Cleanup from "./tabs/Cleanup";
+
 import { useStorage } from "../../../hooks/useStorage";
+
 export default function Storage() {
   const [activeTab, setActiveTab] = useState("overview");
   const {
@@ -45,24 +45,6 @@ export default function Storage() {
           onClick={() => setActiveTab("users")}
         >
           Users
-        </button>
-
-        <button
-          className={`storageTab ${
-            activeTab === "projects" ? "storageTab--active" : ""
-          }`}
-          onClick={() => setActiveTab("projects")}
-        >
-          Projects
-        </button>
-
-        <button
-          className={`storageTab ${
-            activeTab === "cleanup" ? "storageTab--active" : ""
-          }`}
-          onClick={() => setActiveTab("cleanup")}
-        >
-          Cleanup
         </button>
       </div>
       <div className="storageContent">

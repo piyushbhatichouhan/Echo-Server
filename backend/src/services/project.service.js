@@ -3,29 +3,31 @@ const portService = require("./port.service");
 const projectCleanupService = require("./project-cleanup.service");
 
 const createProject = async (ownerId, projectData) => {
-  const { name, description } = projectData;
+  const { name, description, applicationType } = projectData;
 
   const port = await portService.allocatePort();
 
   const result = await pool.query(
     `
-       INSERT INTO projects
-(
-    owner_id,
-    name,
-    description,
-    port
-)
-       VALUES
-(
-    $1,
-    $2,   
-    $3,
-    $4
-)
-        RETURNING *
-        `,
-    [ownerId, name, description || null, port],
+    INSERT INTO projects
+    (
+        owner_id,
+        name,
+        application_type,
+        description,
+        port
+    )
+    VALUES
+    (
+        $1,
+        $2,
+        $3,
+        $4,
+        $5
+    )
+    RETURNING *
+    `,
+    [ownerId, name, applicationType, description || null, port],
   );
 
   return result.rows[0];
@@ -41,6 +43,8 @@ const getProjects = async (ownerId) => {
     p.name,
 
     p.description,
+
+    p.application_type,
 
     p.port,
 
@@ -98,6 +102,8 @@ const getProjectById = async (projectId, ownerId) => {
     p.name,
 
     p.description,
+
+    p.application_type,
 
     p.port,
 

@@ -8,13 +8,14 @@ const os = require("os");
 const filesystem = require("./filesystem.service");
 const { v4: uuid } = require("uuid");
 const storageService = require("./storage.service");
-const storageQuotaService = require("./storageQuota.service");
+
 const {
   syncGitToWorkspace,
   indexWorkspace,
   syncWorkspaceToGit,
 } = require("./workspace.sync.service");
 const simpleGit = require("simple-git");
+const storageAllocation = require("./storageAllocation.service");
 
 const checkGit = async (projectId, stage) => {
   const gitDir = path.join(getProjectGitDirectory(projectId), ".git");
@@ -23,8 +24,6 @@ const checkGit = async (projectId, stage) => {
     .access(gitDir)
     .then(() => true)
     .catch(() => false);
-
-  console.log(`[${stage}] .git exists:`, exists);
 };
 
 const getRepository = async (projectId, ownerId) => {
@@ -94,12 +93,7 @@ const connectRepository = async (projectId, ownerId, repositoryUrl, branch) => {
     indexWorkspace,
     syncWorkspaceToGit,
   } = require("./workspace.sync.service");
-  console.log({
-    projectId,
-    ownerId,
-    repositoryUrl,
-    branch,
-  });
+
   const { verifyProjectOwnership } = require("./project.service");
   await verifyProjectOwnership(projectId, ownerId);
 
@@ -277,38 +271,43 @@ const cloneRepository = async (projectId, ownerId) => {
     tempDirectory,
   );
 
-  const cloneSize = await filesystem.calculateDirectorySize(tempDirectory);
+  let reserved = false;
+  let cloneSize = 0;
 
-  await storageQuotaService.checkQuota(ownerId, cloneSize);
+  try {
+    cloneSize = await filesystem.calculateDirectorySize(tempDirectory);
 
-  const gitDirectory = getProjectGitDirectory(projectId);
+    // for try
 
-  // IF size check is passed
+    const gitDirectory = getProjectGitDirectory(projectId);
 
-  await fs.rm(gitDirectory, {
-    recursive: true,
-    force: true,
-  });
+    await storageAllocation.checkQuota(ownerId, cloneSize);
+    // IF size check is passed
 
-  await fs.cp(tempDirectory, gitDirectory, {
-    recursive: true,
-  });
+    await fs.rm(gitDirectory, {
+      recursive: true,
+      force: true,
+    });
 
-  await fs.rm(tempDirectory, {
-    recursive: true,
-    force: true,
-  });
+    await fs.cp(tempDirectory, gitDirectory, {
+      recursive: true,
+    });
 
-  await checkGit(projectId, "after clone");
+    await fs.rm(tempDirectory, {
+      recursive: true,
+      force: true,
+    });
+    await storageAllocation.reserveStorage(ownerId, cloneSize);
+    await checkGit(projectId, "after clone");
 
-  await syncGitToWorkspace(projectId);
-  await checkGit(projectId, "after syncGitToWorkspace");
+    await syncGitToWorkspace(projectId);
+    await checkGit(projectId, "after syncGitToWorkspace");
 
-  await indexWorkspace(projectId);
-  await checkGit(projectId, "after indexWorkspace");
+    await indexWorkspace(projectId);
+    await checkGit(projectId, "after indexWorkspace");
 
-  await pool.query(
-    `
+    await pool.query(
+      `
   UPDATE projects
   SET
       git_connected = TRUE,
@@ -317,12 +316,19 @@ const cloneRepository = async (projectId, ownerId) => {
       updated_at = NOW()
   WHERE id = $1
   `,
-    [projectId, repository.branch, repository.clone_url],
-  );
+      [projectId, repository.branch, repository.clone_url],
+    );
 
-  return {
-    success: true,
-  };
+    return {
+      success: true,
+    };
+  } catch (error) {
+    if (reserved) {
+      await storageAllocation.releaseStorage(ownerId, cloneSize);
+    }
+
+    throw error;
+  }
 };
 
 const copyDirectory = async (source, destination) => {
@@ -511,15 +517,9 @@ const updateRepository = async (projectId, ownerId) => {
 
   const git = simpleGit(gitDirectory);
 
-  console.log("Fetching latest changes...");
-
   await git.fetch("origin");
 
-  console.log("Resetting to latest commit...");
-
   await git.reset(["--hard", `origin/${repository.branch}`]);
-
-  console.log("Cleaning untracked files...");
 
   await git.clean("f", ["-d"]);
 

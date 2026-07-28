@@ -72,21 +72,10 @@ const restoreUser = async (userId) => {
   };
 };
 
-const updateStorageLimit = async (userId, storageLimit) => {
-  const user = await userRepository.getUserById(userId);
-
-  if (!user) {
-    throw new Error("User not found");
-  }
-
-  return await userRepository.updateStorageLimit(userId, storageLimit);
-};
-
 module.exports = {
   getUsers,
   disableUser,
   enableUser,
   deleteUser,
   restoreUser,
-  updateStorageLimit,
 };

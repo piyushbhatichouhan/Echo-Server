@@ -1,7 +1,6 @@
 const { pool } = require("../config/database");
 const fs = require("fs/promises");
 const path = require("path");
-const storageQuotaService = require("./storageQuota.service");
 const { verifyProjectOwnership } = require("./project.service");
 const { getProjectFilesDirectory } = require("../storage/storage.manager");
 const { syncWorkspaceToGit } = require("./workspace.sync.service");
@@ -9,6 +8,7 @@ const { syncWorkspaceToGit } = require("./workspace.sync.service");
 const { getProjectGitDirectory } = require("../services/git.service");
 const filesystem = require("./filesystem.service");
 const workspaceFileService = require("./workspace.file.service");
+const storageAllocation = require("./storageAllocation.service");
 
 const saveFile = async (projectId, ownerId, file) => {
   //
@@ -37,7 +37,9 @@ const saveFile = async (projectId, ownerId, file) => {
   const replacingBytes =
     existing.rows.length > 0 ? Number(existing.rows[0].file_size) : 0;
 
-  await storageQuotaService.checkQuota(ownerId, file.size, replacingBytes);
+  const growth = Math.max(0, file.size - replacingBytes);
+
+  await storageAllocation.checkQuota(ownerId, growth);
 
   const workspaceRoot = getProjectFilesDirectory(projectId);
 
@@ -50,6 +52,10 @@ const saveFile = async (projectId, ownerId, file) => {
     uploadedFile: file,
     relativePath,
   });
+
+  if (file.size > replacingBytes) reserveStorage(file.size - replacingBytes);
+  else if (file.size < replacingBytes)
+    releaseStorage(replacingBytes - file.size);
   //
   // Save metadata
   //
@@ -261,6 +267,7 @@ const deleteFile = async (fileId, ownerId) => {
       );
 
       await filesystem.removeDiskFile(file.storage_path);
+      await storageAllocation.releaseStorage(userId, file.file_size);
     }
 
     await client.query("COMMIT");
@@ -349,7 +356,6 @@ const updateFileContent = async (fileId, ownerId, content) => {
     error.status = 404;
     throw error;
   }
-  console.log("Saving file:", result.rows[0].storage_path);
 
   const project = await pool.query(
     `
@@ -360,22 +366,18 @@ const updateFileContent = async (fileId, ownerId, content) => {
     [fileId],
   );
 
-  console.log(
-    "Git directory:",
-    getProjectGitDirectory(project.rows[0].project_id),
-  );
-
-  console.log(
-    "Workspace directory:",
-    getProjectFilesDirectory(project.rows[0].project_id),
-  );
-
   const oldSize = Number(result.rows[0].file_size);
 
   const newSize = Buffer.byteLength(content, "utf8");
 
-  await storageQuotaService.checkQuota(ownerId, newSize, oldSize);
+  const growth = Math.max(0, newSize - oldSize);
+
+  await storageAllocation.checkQuota(ownerId, growth);
+
   await filesystem.writeContent(result.rows[0].storage_path, content, "utf8");
+
+  if (newSize > oldSize) reserveStorage(newSize - oldSize);
+  else if (newSize < oldSize) releaseStorage(oldSize - newSize);
 
   await pool.query(
     `
@@ -398,15 +400,7 @@ const updateFileContent = async (fileId, ownerId, content) => {
   );
 
   await syncWorkspaceToGit(file.rows[0].project_id);
-  console.log(
-    ".git exists after sync:",
-    await fs
-      .access(
-        path.join(getProjectGitDirectory(file.rows[0].project_id), ".git"),
-      )
-      .then(() => true)
-      .catch(() => false),
-  );
+
   return {
     success: true,
   };
@@ -571,40 +565,40 @@ const createEmptyFile = async (projectId, ownerId, relativePath) => {
 };
 
 const deletePath = async (projectId, ownerId, relativePath, type) => {
-  console.log("Delete request:");
-  console.log({
-    relativePath,
-    type,
-    relativePathType: typeof relativePath,
-  });
   const { verifyProjectOwnership } = require("./project.service");
   await verifyProjectOwnership(projectId, ownerId);
 
   const workspaceRoot = getProjectFilesDirectory(projectId);
 
   if (type === "file") {
-    const file = await pool.query(
+    const result = await pool.query(
       `
-      SELECT *
-      FROM files
-      WHERE
-          project_id=$1
-      AND
-          relative_path=$2
-      `,
+  SELECT *
+  FROM files
+  WHERE
+      project_id=$1
+  AND
+      relative_path=$2
+  `,
       [projectId, relativePath],
     );
 
-    if (file.rows.length === 0) throw new Error("File not found");
+    if (result.rows.length === 0) {
+      throw new Error("File not found");
+    }
 
-    await filesystem.removeDiskFile(file.rows[0].storage_path);
+    const file = result.rows[0];
+
+    await storageAllocation.releaseStorage(ownerId, Number(file.file_size));
+
+    await filesystem.removeDiskFile(file.storage_path);
 
     await pool.query(
       `
-      DELETE FROM files
-      WHERE id=$1
-      `,
-      [file.rows[0].id],
+  DELETE FROM files
+  WHERE id=$1
+  `,
+      [file.id],
     );
 
     return;
@@ -614,6 +608,13 @@ const deletePath = async (projectId, ownerId, relativePath, type) => {
 
   const folderPath = path.join(workspaceRoot, relativePath);
 
+  // Calculate total folder size first
+  const folderSize = await filesystem.calculateDirectorySize(folderPath);
+
+  // Release quota
+  await storageAllocation.releaseStorage(ownerId, folderSize);
+
+  // Now delete
   await fs.rm(folderPath, {
     recursive: true,
     force: true,

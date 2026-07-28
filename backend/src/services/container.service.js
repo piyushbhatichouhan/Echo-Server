@@ -15,7 +15,7 @@ const createContainer = async (
     ({ key, value }) => `${key}=${value}`,
   );
 
-  dockerEnvironment.push("PORT=3000");
+  dockerEnvironment.push(`PORT=${projectPort}`);
 
   const containerOptions = {
     Image: imageName,
@@ -25,7 +25,7 @@ const createContainer = async (
     Env: dockerEnvironment,
 
     ExposedPorts: {
-      "3000/tcp": {},
+      [`${projectPort}/tcp`]: {},
     },
 
     HostConfig: {
@@ -34,7 +34,7 @@ const createContainer = async (
       },
 
       PortBindings: {
-        "3000/tcp": [
+        [`${projectPort}/tcp`]: [
           {
             HostPort: String(projectPort),
           },

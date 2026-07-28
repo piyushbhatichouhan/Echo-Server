@@ -20,7 +20,7 @@ export const useStorage = () => {
         storageApi.getUsers(),
         storageApi.getProjects(),
       ]);
-
+      console.log("Fetched users:", usersData);
       setOverview(overviewData);
       setUsers(usersData);
       setProjects(projectsData);
@@ -40,7 +40,6 @@ export const useStorage = () => {
     loading,
     refresh,
 
-    updateStorageLimit: storageApi.updateStorageLimit,
     updateQuota: storageApi.updateQuota,
   };
 };

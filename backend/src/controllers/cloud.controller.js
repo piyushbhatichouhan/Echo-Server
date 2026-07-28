@@ -125,11 +125,6 @@ const deleteFile = async (req, res, next) => {
 };
 
 const renameFile = async (req, res, next) => {
-  console.log("=== CLOUD RENAME CONTROLLER ===");
-  console.log("params:", req.params);
-  console.log("body:", req.body);
-  console.log("user:", req.user.id);
-
   try {
     const result = await cloudService.renameFile(
       req.params.id,

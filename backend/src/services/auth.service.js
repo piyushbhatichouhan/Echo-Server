@@ -1,7 +1,12 @@
 const { pool } = require("../config/database");
 const bcrypt = require("bcrypt");
+const storageAllocation = require("./storageAllocation.service");
 
 const registerUser = async (userData) => {
+  const defaultQuota = await storageAllocation.getDefaultQuota();
+
+  const assignedQuota = await storageAllocation.allocateQuota(defaultQuota);
+
   const { username, email, password } = userData;
 
   const existingUser = await pool.query(
@@ -35,18 +40,22 @@ const registerUser = async (userData) => {
     email,
     password_hash,
     status,
-    is_owner
+    is_owner,
+    quota_bytes,
+    used_bytes
   )
-  VALUES ($1,$2,$3,'pending',FALSE)
+  VALUES ($1,$2,$3,'pending',FALSE,$4,0)
 
   RETURNING
       id,
       username,
       email,
       status,
+      quota_bytes,
+      used_bytes,
       created_at
 `,
-    [username, email, passwordHash],
+    [username, email, passwordHash, assignedQuota],
   );
   return result.rows[0];
 };
