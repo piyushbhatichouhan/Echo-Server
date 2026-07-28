@@ -5,7 +5,7 @@ const path = require("path");
 const fs = require("fs/promises");
 const { getProjectFilesDirectory } = require("../storage/storage.manager");
 const os = require("os");
-
+const filesystem = require("./filesystem.service");
 const { v4: uuid } = require("uuid");
 const storageService = require("./storage.service");
 const storageQuotaService = require("./storageQuota.service");
@@ -277,7 +277,7 @@ const cloneRepository = async (projectId, ownerId) => {
     tempDirectory,
   );
 
-  const cloneSize = await storageService.calculateDirectorySize(tempDirectory);
+  const cloneSize = await filesystem.calculateDirectorySize(tempDirectory);
 
   await storageQuotaService.checkQuota(ownerId, cloneSize);
 
@@ -290,7 +290,14 @@ const cloneRepository = async (projectId, ownerId) => {
     force: true,
   });
 
-  await fs.rename(tempDirectory, gitDirectory);
+  await fs.cp(tempDirectory, gitDirectory, {
+    recursive: true,
+  });
+
+  await fs.rm(tempDirectory, {
+    recursive: true,
+    force: true,
+  });
 
   await checkGit(projectId, "after clone");
 

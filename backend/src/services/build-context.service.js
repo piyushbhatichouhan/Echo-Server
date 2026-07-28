@@ -4,7 +4,7 @@ const path = require("path");
 const workspace = require("./workspace.service");
 const fileService = require("./file.service");
 
-const prepareBuildContext = async (projectId, application) => {
+const prepareBuildContext = async (projectId, settings) => {
   const filesPath = workspace.getFilesPath(projectId);
   const buildPath = workspace.getBuildPath(projectId);
 
@@ -22,17 +22,22 @@ const prepareBuildContext = async (projectId, application) => {
   const files = await fileService.getProjectFilesForBuild(projectId);
 
   for (const file of files) {
-    await fs.copyFile(
-      path.join(filesPath, file.stored_name),
-      path.join(buildPath, file.original_name),
-    );
+    if (file.is_directory) continue;
+
+    const destination = path.join(buildPath, file.relative_path);
+
+    await fs.mkdir(path.dirname(destination), {
+      recursive: true,
+    });
+
+    await fs.copyFile(file.storage_path, destination);
   }
 
   const dockerfilePath = path.join(buildPath, "Dockerfile");
 
-  const buildCommand = application.buildCommand || "npm install";
-  const startCommand =
-    application.startCommand || `node ${application.entryFile}`;
+  const buildCommand = settings.build_command || "npm install";
+
+  const startCommand = settings.start_command || "npm start";
 
   const dockerfile = `
 FROM node:22-alpine

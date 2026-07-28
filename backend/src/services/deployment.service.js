@@ -32,17 +32,13 @@ const deployProject = async (projectId, ownerId) => {
 
     const project = await projectService.getProjectById(projectId, ownerId);
     console.log("PROJECT:", project);
-    const application = await applicationService.getApplication(
-      projectId,
-      ownerId,
-    );
-    console.log(application);
-    const environment = await environmentService.getEnvironmentVariables(
+
+    const settings = await projectSettingsService.getProjectSettings(
       projectId,
       ownerId,
     );
 
-    const settings = await projectSettingsService.getProjectSettings(
+    const environment = await environmentService.getEnvironmentVariables(
       projectId,
       ownerId,
     );
@@ -79,7 +75,7 @@ const deployProject = async (projectId, ownerId) => {
 
     const imageName = await imageService.buildImage(
       projectId,
-      application,
+      settings,
       async (message) => {
         if (deployment) {
           await deploymentLogService.addLog(deployment.id, message);

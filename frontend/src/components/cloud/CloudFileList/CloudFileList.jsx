@@ -23,7 +23,7 @@ export default function CloudFileList({
 
   const [renaming, setRenaming] = useState(null);
   const [renameValue, setRenameValue] = useState("");
-
+  console.log(files);
   const tree = buildFileTree(files);
 
   function getFolderChildren(tree, folderPath) {

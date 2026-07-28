@@ -4,6 +4,8 @@ const { pool } = require("../config/database");
 const fs = require("fs/promises");
 const path = require("path");
 
+const normalizeRelativePath = (p) => p.split(path.sep).join("/");
+
 const syncGitToWorkspace = async (projectId) => {
   const gitDirectory = getProjectGitDirectory(projectId);
 
@@ -109,9 +111,11 @@ const indexWorkspace = async (projectId) => {
 
       const absolutePath = path.join(absoluteDirectory, entry.name);
 
-      const relativePath = relativeDirectory
-        ? path.join(relativeDirectory, entry.name)
-        : entry.name;
+      const relativePath = normalizeRelativePath(
+        relativeDirectory
+          ? path.join(relativeDirectory, entry.name)
+          : entry.name,
+      );
 
       if (entry.isDirectory()) {
         await pool.query(

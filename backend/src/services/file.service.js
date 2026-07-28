@@ -165,6 +165,7 @@ const getProjectFilesForBuild = async (projectId) => {
     storage_path
     FROM files
     WHERE project_id = $1
+    AND is_directory = FALSE
     `,
     [projectId],
   );

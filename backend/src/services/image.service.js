@@ -7,13 +7,10 @@ const getImageName = (projectId) => {
   return `echohub-${projectId}`;
 };
 
-const buildImage = async (projectId, application, log) => {
+const buildImage = async (projectId, settings, log) => {
   console.log("Starting build...");
 
-  const buildPath = await buildContext.prepareBuildContext(
-    projectId,
-    application,
-  );
+  const buildPath = await buildContext.prepareBuildContext(projectId, settings);
 
   console.log("Build context:", buildPath);
   await log("Build context:", buildPath);
