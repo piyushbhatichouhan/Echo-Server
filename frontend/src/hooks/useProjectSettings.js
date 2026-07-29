@@ -6,6 +6,7 @@ import {
 } from "../services/projectSettings.api";
 
 export default function useProjectSettings(projectId) {
+  const [project, setProject] = useState(null);
   const [settings, setSettings] = useState(null);
 
   const [loading, setLoading] = useState(true);
@@ -16,7 +17,8 @@ export default function useProjectSettings(projectId) {
 
       const data = await getProjectSettings(projectId);
 
-      setSettings(data);
+      setProject(data.project);
+      setSettings(data.settings);
     } finally {
       setLoading(false);
     }
@@ -37,6 +39,7 @@ export default function useProjectSettings(projectId) {
   }, [projectId]);
 
   return {
+    project,
     settings,
     loading,
     refresh,

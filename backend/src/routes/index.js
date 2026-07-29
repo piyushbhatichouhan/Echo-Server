@@ -14,6 +14,7 @@ const dashboardRoutes = require("./dashboard.routes");
 const adminRoutes = require("./admin.routes");
 const storageRoutes = require("./storage.routes");
 const cloudRoutes = require("./cloud.routes");
+const runtimeRoutes = require("./runtime.routes");
 
 router.use("/webhooks", webhookRoutes);
 router.use("/auth", authRoutes);
@@ -29,5 +30,5 @@ router.use("/dashboard", dashboardRoutes);
 router.use("/admin", adminRoutes);
 router.use("/storage", storageRoutes);
 router.use("/cloud", cloudRoutes);
-
+router.use(runtimeRoutes);
 module.exports = router;

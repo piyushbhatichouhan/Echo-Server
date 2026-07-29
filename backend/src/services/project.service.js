@@ -2,10 +2,20 @@ const { pool } = require("../config/database");
 const portService = require("./port.service");
 const projectCleanupService = require("./project-cleanup.service");
 
+const { getRuntimePreset } = require("../config/runtimePresets");
+
+const projectSettingsRepository = require("../repositories/projectSettings.repository");
+
 const createProject = async (ownerId, projectData) => {
   const { name, description, applicationType } = projectData;
 
   const port = await portService.allocatePort();
+
+  const preset = getRuntimePreset(applicationType);
+
+  if (!preset) {
+    throw new Error("Invalid application type.");
+  }
 
   const result = await pool.query(
     `
@@ -30,7 +40,14 @@ const createProject = async (ownerId, projectData) => {
     [ownerId, name, applicationType, description || null, port],
   );
 
-  return result.rows[0];
+  const project = result.rows[0];
+
+  await projectSettingsRepository.createProjectSettings(project.id, {
+    ...preset,
+    port,
+  });
+
+  return project;
 };
 
 const getProjects = async (ownerId) => {
