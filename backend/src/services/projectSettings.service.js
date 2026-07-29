@@ -4,7 +4,7 @@ const { verifyProjectOwnership } = require("./project.service");
 const getProjectSettings = async (projectId, ownerId) => {
   await verifyProjectOwnership(projectId, ownerId);
 
-  let result = await pool.query(
+  const result = await pool.query(
     `
     SELECT *
     FROM project_settings
@@ -14,32 +14,7 @@ const getProjectSettings = async (projectId, ownerId) => {
   );
 
   if (result.rows.length === 0) {
-    result = await pool.query(
-      `
-      INSERT INTO project_settings
-      (
-        project_id,
-        runtime,
-        working_directory,
-        install_command,
-        build_command,
-        start_command,
-        port
-      )
-      VALUES
-      (
-        $1,
-        'node',
-        '',
-        'npm install',
-        '',
-        'npm start',
-        3000
-      )
-      RETURNING *
-      `,
-      [projectId],
-    );
+    throw new Error("Project settings not found.");
   }
 
   return result.rows[0];
