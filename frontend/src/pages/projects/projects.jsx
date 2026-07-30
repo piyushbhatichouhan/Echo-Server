@@ -7,14 +7,14 @@ import Button from "../../components/common/button/button";
 import Modal from "../../components/common/modal/modal";
 import CreateProjectModal from "../../components/projects/createprojectmodal/createprojectmodal";
 import StorageStats from "../../components/cloud/StorageStats/StorageStats";
-import cloudWorkspace from "../../services/cloudWorkspace";
+import projectWorkspace from "../../services/projectWorkspace";
 export default function Projects() {
   const [open, setOpen] = useState(false);
 
   const [stats, setStats] = useState(null);
 
   const refreshStats = async () => {
-    const statsData = await cloudWorkspace.getStats();
+    const statsData = await projectWorkspace.getStats();
     setStats(statsData);
   };
 

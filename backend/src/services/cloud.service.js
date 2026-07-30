@@ -211,8 +211,10 @@ const updateFileContent = async (fileId, ownerId, content) => {
 
   await filesystem.writeContent(result.rows[0].storage_path, content, "utf8");
 
-  if (newSize > oldSize) reserveStorage(newSize - oldSize);
-  else if (newSize < oldSize) releaseStorage(oldSize - newSize);
+  if (newSize > oldSize)
+    storageAllocation.reserveStorage(ownerId, newSize - oldSize);
+  else if (newSize < oldSize)
+    storageAllocation.releaseStorage(ownerId, oldSize - newSize);
 
   await pool.query(
     `

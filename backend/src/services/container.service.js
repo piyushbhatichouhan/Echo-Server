@@ -144,7 +144,10 @@ const streamContainerLogs = async (container, deploymentId) => {
 
   logStream.on("data", async (chunk) => {
     try {
-      const message = chunk.toString("utf8").replace(/\0/g, "").trim();
+      const message = chunk
+        .toString("utf8")
+        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "")
+        .trim();
 
       if (!message) return;
 

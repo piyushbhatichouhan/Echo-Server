@@ -16,9 +16,9 @@ import {
 import DeploymentCard from "../../components/project/deploymentcard/deploymentcard";
 import useLogStream from "../../hooks/useLogStream";
 import ProjectTabs from "../../components/project/projecttabs/ProjectTabs";
-import FileManager from "../../components/project/filemanager/FileManager";
+
 import useFiles from "../../hooks/useFiles";
-import FileEditor from "../../components/project/fileeditor/FileEditor";
+import FileEditor from "../../components/files/fileviewer/fileeditor";
 import { getFileContent } from "../../services/file.api";
 import { useEffect } from "react";
 import { saveFileContent, downloadFile } from "../../services/file.api";
@@ -29,6 +29,8 @@ import Settings from "../../components/project/settings/Settings";
 import DeploymentHistory from "../../components/project/overview/deploymentHistory";
 import { useToast } from "../../context/ToastContext";
 import Environment from "../../components/project/environment/Environment";
+import FileBrowser from "../../components/files/FileBrowser/FileBrowser";
+import FileViewer from "../../components/files/fileviewer/FileViewer";
 import projectWorkspace from "../../services/projectWorkspace";
 
 export default function Project() {
@@ -188,30 +190,7 @@ export default function Project() {
           </>
         )}
         {activeTab === "files" && (
-          <>
-            {!selectedFile ? (
-              <FileManager
-                title="Workspace"
-                refresh={refreshFiles}
-                files={files}
-                loading={filesLoading}
-                onOpen={setSelectedFile}
-                onDelete={handleDelete}
-                adapter={projectWorkspace}
-                workspaceId={id}
-              />
-            ) : (
-              <FileEditor
-                file={selectedFile}
-                content={fileContent}
-                onChange={handleEditorChange}
-                onSave={saveCurrentFile}
-                onDownload={() => downloadFile(selectedFile.id)}
-                onBack={() => setSelectedFile(null)}
-                dirty={dirty}
-              />
-            )}
-          </>
+          <FileBrowser adapter={projectWorkspace} workspaceId={id} />
         )}
         {activeTab === "deployments" && (
           <>

@@ -38,7 +38,11 @@ build_command=$5,
 
 start_command=$6,
 
-port=$7,
+ output_directory = $7,
+
+port=$8,
+
+dockerfile=$9,
 
 updated_at=NOW()
 
@@ -59,7 +63,11 @@ RETURNING *
 
       settings.start_command,
 
+      settings.output_directory,
+
       settings.port,
+
+      settings.dockerfile,
     ],
   );
 

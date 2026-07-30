@@ -10,7 +10,10 @@ const getImageName = (projectId) => {
 const buildImage = async (projectId, settings, log) => {
   console.log("Starting build...");
 
-  const buildPath = await buildContext.prepareBuildContext(projectId, settings);
+  const buildPath = await buildContext.prepareBuildContext(
+    projectId,
+    settings.dockerfile,
+  );
 
   console.log("Build context:", buildPath);
   await log(`Build context: ${buildPath}`);

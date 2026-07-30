@@ -43,7 +43,7 @@ export default function LogsCard({ logs, onClear }) {
     <Card>
       <div className="eh-logs-card">
         <div className="eh-logs-header">
-          <div>
+          <div className="eh-logs-title">
             <h3>Deployment Logs</h3>
 
             <p className="eh-log-subtitle">

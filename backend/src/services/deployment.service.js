@@ -1,239 +1,141 @@
 const applicationService = require("./application.service");
 const environmentService = require("./environment.service");
 const { verifyProjectOwnership } = require("./project.service");
-const imageService = require("./image.service");
-const containerService = require("./container.service");
-const deploymentRepository = require("../repositories/deployment.repository");
-
-const deploymentLogService = require("./deployment-log.service");
 const { getRuntime } = require("../runtime");
-
 const projectService = require("./project.service");
 const workspaceService = require("./workspace.service");
 const path = require("path");
 const fs = require("fs/promises");
 const { pool } = require("../config/database");
-const gitService = require("./git.service");
-
+const runtimeResolver = require("./deployment/runtimeResolver");
 const projectSettingsService = require("./projectSettings.service");
+const deploymentRepository = require("./deployment/infrastructure/deployment.infrastructure");
+const infrastructure = require("./deployment/infrastructure");
+
+const {
+  deployment,
+  logger,
+  docker,
+  container,
+  git,
+  publisher,
+  nginx,
+  verification,
+  process: processInfrastructure,
+} = infrastructure;
 
 const deployProject = async (projectId, ownerId) => {
-  let deployment;
-  let container;
+  await projectService.verifyProjectOwnership(projectId, ownerId);
 
-  try {
-    await projectService.verifyProjectOwnership(projectId, ownerId);
+  const repository = await git.getRepository(projectId, ownerId);
 
-    const repository = await gitService.getRepository(projectId, ownerId);
-
-    if (repository) {
-      await gitService.updateRepository(projectId, ownerId);
-    }
-
-    const project = await projectService.getProjectById(projectId, ownerId);
-    console.log("PROJECT:", project);
-
-    const settings = await projectSettingsService.getProjectSettings(
-      projectId,
-      ownerId,
-    );
-
-    const environment = await environmentService.getEnvironmentVariables(
-      projectId,
-      ownerId,
-    );
-
-    const port = settings.port;
-
-    if (!port) {
-      throw new Error("Project has no assigned port.");
-    }
-
-    try {
-      await imageService.removeImage(imageService.getImageName(projectId));
-    } catch {}
-    const containerName = containerService.getContainerName(projectId);
-
-    await deploymentRepository.stopDeployments(projectId);
-
-    deployment = await deploymentRepository.createDeployment(
-      projectId,
-      null, // image doesn't exist yet
-      containerName,
-      port,
-    );
-
-    await deploymentRepository.updateDeploymentStatus(
-      deployment.id,
-      "building",
-    );
-
-    await deploymentLogService.addLog(
-      deployment.id,
-      "Building Docker image...",
-    );
-
-    const imageName = await imageService.buildImage(
-      projectId,
-      settings,
-      async (message) => {
-        if (deployment) {
-          await deploymentLogService.addLog(deployment.id, message);
-        }
-      },
-    );
-    await deploymentRepository.updateDeploymentImage(deployment.id, imageName);
-    await deploymentLogService.addLog(deployment.id, "Deployment started.");
-    await containerService.stopContainerByProject(projectId);
-
-    await containerService.removeContainerByProject(projectId);
-
-    console.log({
-      projectPort: project.port,
-      portVariable: port,
-    });
-
-    await deploymentRepository.updateDeploymentStatus(
-      deployment.id,
-      "creating_container",
-    );
-
-    await deploymentLogService.addLog(deployment.id, "Creating container...");
-
-    container = await containerService.createContainer(
-      projectId,
-      imageName,
-      port,
-      environment,
-    );
-    await deploymentLogService.addLog(deployment.id, "Starting container...");
-    await deploymentRepository.updateDeploymentStatus(
-      deployment.id,
-      "starting_container",
-    );
-    await deploymentRepository.markStoppedByUser(projectId, false);
-    await containerService.startContainer(container, deployment.id);
-
-    await deploymentLogService.addLog(
-      deployment.id,
-      "Container started successfully.",
-    );
-
-    await deploymentRepository.updateDeploymentStatus(deployment.id, "running");
-
-    await deploymentLogService.addLog(deployment.id, "Container is running.");
-
-    await deploymentLogService.addLog(
-      deployment.id,
-      "Deployment completed successfully.",
-    );
-
-    return deployment;
-  } catch (error) {
-    if (deployment) {
-      await deploymentLogService.addLog(
-        deployment.id,
-        `Deployment failed: ${error.message}`,
-      );
-    }
-
-    if (deployment) {
-      await deploymentRepository.updateDeploymentStatus(
-        deployment.id,
-        "failed",
-      );
-    }
-
-    if (container) {
-      await containerService.removeContainer(container);
-      try {
-        await imageService.removeImage(imageService.getImageName(projectId));
-      } catch {}
-    }
-
-    throw error;
+  if (repository) {
+    await git.updateRepository(projectId, ownerId);
   }
+
+  const project = await projectService.getProjectById(projectId, ownerId);
+
+  const settings = await projectSettingsService.getProjectSettings(
+    projectId,
+    ownerId,
+  );
+
+  const environment = await environmentService.getEnvironmentVariables(
+    projectId,
+    ownerId,
+  );
+
+  const runtime = runtimeResolver.getRuntimeHandler(settings.runtime);
+
+  const deploymentContext = {
+    project,
+    settings,
+    environment,
+    infrastructure,
+  };
+
+  return await runtime.deploy(deploymentContext);
 };
 
 const stopProject = async (projectId, ownerId) => {
-  await verifyProjectOwnership(projectId, ownerId);
+  await projectService.verifyProjectOwnership(projectId, ownerId);
 
-  const deployment = await deploymentRepository.getLatestDeployment(projectId);
+  const project = await projectService.getProjectById(projectId, ownerId);
 
-  if (!deployment) {
-    throw new Error("No deployment found.");
-  }
-
-  await deploymentLogService.addLog(deployment.id, "Stopping container...");
-  await deploymentRepository.markStoppedByUser(projectId, true);
-  await containerService.stopContainer(projectId);
-
-  await deploymentLogService.addLog(
-    deployment.id,
-    "Container stopped successfully.",
+  const settings = await projectSettingsService.getProjectSettings(
+    projectId,
+    ownerId,
   );
 
-  await deploymentRepository.updateDeploymentStatus(deployment.id, "stopped");
+  const environment = await environmentService.getEnvironmentVariables(
+    projectId,
+    ownerId,
+  );
 
-  await deploymentLogService.addLog(deployment.id, "Project is now offline.");
+  const runtime = runtimeResolver.getRuntimeHandler(settings.runtime);
 
-  return {
-    message: "Project stopped successfully",
+  const context = {
+    project,
+    settings,
+    environment,
+    infrastructure,
   };
+
+  return await runtime.stop(context);
 };
 
 const startProject = async (projectId, ownerId) => {
-  await verifyProjectOwnership(projectId, ownerId);
+  await projectService.verifyProjectOwnership(projectId, ownerId);
 
-  const deployment = await deploymentRepository.getLatestDeployment(projectId);
+  const project = await projectService.getProjectById(projectId, ownerId);
 
-  if (!deployment) {
-    throw new Error("No deployment found.");
-  }
-
-  await deploymentLogService.addLog(deployment.id, "Starting container...");
-  await deploymentRepository.markStoppedByUser(projectId, false);
-  await containerService.startContainerByProject(projectId, deployment.id);
-
-  await deploymentLogService.addLog(
-    deployment.id,
-    "Container started successfully.",
+  const settings = await projectSettingsService.getProjectSettings(
+    projectId,
+    ownerId,
   );
 
-  await deploymentRepository.updateDeploymentStatus(deployment.id, "running");
+  const environment = await environmentService.getEnvironmentVariables(
+    projectId,
+    ownerId,
+  );
 
-  await deploymentLogService.addLog(deployment.id, "Project is now online.");
+  const runtime = runtimeResolver.getRuntimeHandler(settings.runtime);
 
-  return {
-    message: "Project started successfully",
+  const context = {
+    project,
+    settings,
+    environment,
+    infrastructure,
   };
+
+  return await runtime.start(context);
 };
 
 const restartProject = async (projectId, ownerId) => {
-  await verifyProjectOwnership(projectId, ownerId);
+  await projectService.verifyProjectOwnership(projectId, ownerId);
 
-  const deployment = await deploymentRepository.getLatestDeployment(projectId);
+  const project = await projectService.getProjectById(projectId, ownerId);
 
-  if (!deployment) {
-    throw new Error("No deployment found.");
-  }
-
-  await deploymentLogService.addLog(deployment.id, "Restarting container...");
-  await deploymentRepository.markStoppedByUser(projectId, false);
-  await containerService.restartContainer(projectId, deployment.id);
-
-  await deploymentLogService.addLog(
-    deployment.id,
-    "Container restarted successfully.",
+  const settings = await projectSettingsService.getProjectSettings(
+    projectId,
+    ownerId,
   );
 
-  await deploymentRepository.updateDeploymentStatus(deployment.id, "running");
+  const environment = await environmentService.getEnvironmentVariables(
+    projectId,
+    ownerId,
+  );
 
-  await deploymentLogService.addLog(deployment.id, "Project is back online.");
+  const runtime = runtimeResolver.getRuntimeHandler(settings.runtime);
 
-  return {
-    message: "Project restarted successfully",
+  const context = {
+    project,
+    settings,
+    environment,
+    infrastructure,
   };
+
+  return await runtime.restart(context);
 };
 
 const getProjectDeployments = async (projectId, ownerId) => {
@@ -245,14 +147,21 @@ const getProjectDeployments = async (projectId, ownerId) => {
 const getDeploymentStatus = async (projectId, ownerId) => {
   await projectService.verifyProjectOwnership(projectId, ownerId);
 
-  const status = await containerService.getContainerStatus(projectId);
-
   const settings = await projectSettingsService.getProjectSettings(
     projectId,
     ownerId,
   );
 
-  const repository = await gitService.getRepository(projectId, ownerId);
+  const runtime = runtimeResolver.getRuntimeHandler(settings.runtime);
+
+  const runtimeStatus = await runtime.getStatus({
+    projectId,
+    project: await projectService.getProjectById(projectId, ownerId),
+    settings,
+    infrastructure,
+  });
+
+  const repository = await git.getRepository(projectId, ownerId);
 
   if (!settings) {
     return {
@@ -261,7 +170,7 @@ const getDeploymentStatus = async (projectId, ownerId) => {
   }
 
   return {
-    ...status,
+    ...runtimeStatus,
 
     runtime: settings.runtime,
 

@@ -13,7 +13,7 @@ import PendingUsers from "../pages/server/pendingUsers/pendingUsers";
 import ProjectLayout from "../layouts/ProjectLayout";
 import Deployments from "../components/project/deployments/deployments";
 import Environment from "../components/project/environment/Environment";
-import FileManager from "../components/project/filemanager/FileManager";
+
 import LogsCard from "../components/project/logscard/logscard";
 import ManageUsers from "../pages/server/manageUsers/ManageUsers";
 import Storage from "../pages/server/storage/Storage";

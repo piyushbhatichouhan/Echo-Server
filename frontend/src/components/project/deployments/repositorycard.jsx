@@ -57,23 +57,19 @@ export default function RepositoryCard({
 }) {
   const [repositoryUrl, setRepositoryUrl] = useState("");
   const [branch, setBranch] = useState("main");
-
   const [validating, setValidating] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [cloning, setCloning] = useState(false);
   const [validation, setValidation] = useState(null);
   const [showAll, setShowAll] = useState(false);
-
   const [commitMessage, setCommitMessage] = useState("");
-
   const [committing, setCommitting] = useState(false);
   const [pulling, setPulling] = useState(false);
-
   const [pushing, setPushing] = useState(false);
-
   const [fetching, setFetching] = useState(false);
   const changes = gitStatus?.changes ?? [];
   const toast = useToast();
+
   const summary = {
     modified: 0,
     added: 0,
@@ -120,15 +116,6 @@ export default function RepositoryCard({
   return (
     <div className="eh-repository-page">
       <>
-        <div className="eh-field">
-          <label>Repository URL</label>
-
-          <input
-            value={repositoryUrl}
-            onChange={(e) => setRepositoryUrl(e.target.value)}
-            placeholder="https://github.com/user/repo.git"
-          />
-        </div>
         <div className="eh-repository-top">
           <RepositoryConnectionCard
             repositoryUrl={repositoryUrl}
@@ -137,7 +124,6 @@ export default function RepositoryCard({
             setBranch={setBranch}
             repository={repository}
             validation={validation}
-            validating={validating}
             connecting={connecting}
             cloning={cloning}
             onValidate={async () => {
@@ -151,6 +137,16 @@ export default function RepositoryCard({
                 );
 
                 setValidation(result);
+                toast.success(
+                  "Repository Validated",
+                  "Repository Validation Succesfull",
+                );
+              } catch (error) {
+                toast.error(
+                  error.response?.data?.message ??
+                    error.message ??
+                    "Unknown error",
+                );
               } finally {
                 setValidating(false);
               }
@@ -162,6 +158,16 @@ export default function RepositoryCard({
                 await connectRepository(projectId, repositoryUrl, branch);
 
                 await refresh();
+                toast.success(
+                  "Repository Connected",
+                  "Repository Connected Succesfully",
+                );
+              } catch (error) {
+                toast.error(
+                  error.response?.data?.message ??
+                    error.message ??
+                    "Unknown error",
+                );
               } finally {
                 setConnecting(false);
               }
@@ -175,6 +181,12 @@ export default function RepositoryCard({
                 toast.success(
                   "Repository Cloned Succesfully",
                   "Whole repository downloaded.",
+                );
+              } catch (error) {
+                toast.error(
+                  error.response?.data?.message ??
+                    error.message ??
+                    "Unknown error",
                 );
               } finally {
                 setCloning(false);
@@ -210,6 +222,12 @@ export default function RepositoryCard({
               await refreshStatus();
 
               toast.success("Commit Created", "Changes have been committed.");
+            } catch (error) {
+              toast.error(
+                error.response?.data?.message ??
+                  error.message ??
+                  "Unknown error",
+              );
             } finally {
               setCommitting(false);
             }
@@ -227,6 +245,12 @@ export default function RepositoryCard({
 
               await refreshStatus();
               toast.success("Repository Pulled", "Latest changes downloaded.");
+            } catch (error) {
+              toast.error(
+                error.response?.data?.message ??
+                  error.message ??
+                  "Unknown error",
+              );
             } finally {
               setPulling(false);
             }
@@ -248,6 +272,12 @@ export default function RepositoryCard({
               await refreshStatus();
 
               toast.success("Repository Pushed", "Changes uploaded to GitHub.");
+            } catch (error) {
+              toast.error(
+                error.response?.data?.message ??
+                  error.message ??
+                  "Unknown error",
+              );
             } finally {
               setPushing(false);
             }
@@ -263,6 +293,12 @@ export default function RepositoryCard({
               toast.success(
                 "Repository Updated",
                 "Fetched latest remote information.",
+              );
+            } catch (error) {
+              toast.error(
+                error.response?.data?.message ??
+                  error.message ??
+                  "Unknown error",
               );
             } finally {
               setFetching(false);
