@@ -10,4 +10,14 @@ module.exports = {
   cloud: process.env.CLOUD_PATH || path.join(ROOT, "storage", "cloud"),
 
   backups: process.env.BACKUPS_PATH || path.join(ROOT, "storage", "backups"),
+
+  published:
+    process.env.PUBLISHED_PATH || path.join(ROOT, "storage", "published"),
+
+  nginx: {
+    executable: process.env.NGINX_EXECUTABLE || "D:/nginx/nginx.exe",
+
+    configDirectory:
+      process.env.NGINX_CONFIG_DIRECTORY || "D:/nginx/conf/echohub",
+  },
 };

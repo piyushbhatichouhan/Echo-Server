@@ -11,3 +11,18 @@
     margin-bottom: 22px;
 
 }
+
+.recentProjects {
+    margin-top: 40px;
+}
+
+.recentProjects h2 {
+    color: white;
+    margin-bottom: 22px;
+}
+
+.recentProjects-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 18px;
+}

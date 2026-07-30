@@ -1,13 +1,22 @@
-import * as api from "./file.api";
+// services/projectWorkspace.js
+
+import * as projectApi from "./projectFiles.api";
+import { getCloudStats } from "./cloud.api";
 
 export default {
-  getFiles: api.getFiles,
-  uploadFile: api.uploadFile,
-  deleteFile: api.deleteFile,
-  renameFile: api.renameFile,
-  createFolder: api.createFolder,
-  createFile: api.createFile,
-  downloadFile: api.downloadFile,
-  getFileContent: api.getFileContent,
-  saveFileContent: api.saveFileContent,
+  getFiles: projectApi.getProjectFiles,
+  uploadFile: projectApi.uploadProjectFile,
+  createFolder: projectApi.createProjectFolder,
+  createFile: projectApi.createProjectFile,
+
+  getFileContent: projectApi.getProjectFileContent,
+  saveFileContent: projectApi.saveProjectFileContent,
+
+  renameFile: projectApi.renameProjectFile,
+  deleteFile: projectApi.deleteProjectFile,
+
+  downloadFile: projectApi.downloadProjectFile,
+  getFileBlob: projectApi.getProjectFileBlob,
+  deleteFolder: projectApi.deleteProjectFolder,
+  getStats: getCloudStats,
 };

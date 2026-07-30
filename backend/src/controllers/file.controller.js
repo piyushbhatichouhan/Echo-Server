@@ -16,6 +16,10 @@ const {
 
 const uploadFile = async (req, res, next) => {
   try {
+    if (!req.file) {
+      throw new Error("No file uploaded.");
+    }
+
     req.file.relativePath = req.body.relativePath || req.file.originalname;
     const file = await saveFile(req.params.id, req.user.id, req.file);
 

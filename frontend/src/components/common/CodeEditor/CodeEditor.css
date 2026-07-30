@@ -1,0 +1,5 @@
+.code-editor {
+    overflow: hidden;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+}

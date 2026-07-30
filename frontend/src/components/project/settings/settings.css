@@ -1,122 +1,240 @@
-.eh-settings {
+.eh-settings-page {
     width: 100%;
-    display: flex;
-    justify-content: center;
-    padding: 20px;
-}
-
-.eh-settings-card {
-    width: 100%;
-    max-width: 900px;
-
-    background: #1b1b1b;
-    border: 1px solid rgba(255, 180, 84, 0.12);
-    border-radius: 18px;
-
+    max-width: 1400px;
+    margin: 0 auto;
     padding: 32px;
-
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+    box-sizing: border-box;
 }
 
-.eh-settings-card h2 {
+/* ===========================
+   Header
+=========================== */
+
+.eh-settings-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 24px;
+    margin-bottom: 32px;
+}
+
+.eh-settings-header h1 {
     margin: 0;
-    color: #ffb454;
-    font-size: 1.6rem;
+    font-size: 2rem;
     font-weight: 700;
 }
 
-.eh-settings-subtitle {
-    margin: 8px 0 30px;
-    color: #8f8f8f;
-    font-size: 0.95rem;
+.eh-settings-header p {
+    margin-top: 8px;
+    color: var(--text-secondary);
 }
+
+/* ===========================
+   Top Row
+=========================== */
+
+.eh-top-row {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 24px;
+    margin-bottom: 28px;
+}
+
+/* ===========================
+   Panels
+=========================== */
+
+.eh-panel,
+.eh-settings-section {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 22px;
+}
+
+.eh-panel h2,
+.eh-settings-section h2 {
+    margin: 0 0 18px 0;
+    font-size: 1.05rem;
+    font-weight: 600;
+}
+
+/* ===========================
+   Runtime Card
+=========================== */
+
+.eh-runtime-card {
+    display: flex;
+    gap: 18px;
+    align-items: center;
+}
+
+.eh-runtime-icon {
+    font-size: 2.5rem;
+}
+
+.eh-runtime-content h3 {
+    margin: 0;
+    font-size: 1.15rem;
+}
+
+.eh-runtime-content p {
+    margin-top: 8px;
+    line-height: 1.5;
+    color: var(--text-secondary);
+}
+
+/* ===========================
+   General Grid
+=========================== */
 
 .eh-settings-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 22px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px;
 }
+
+.eh-span-2 {
+    grid-column: span 2;
+}
+
+/* ===========================
+   Commands
+=========================== */
+
+.eh-command-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px;
+}
+
+.eh-install-command {
+    grid-column: span 2;
+}
+
+/* ===========================
+   Inputs
+=========================== */
 
 .eh-setting {
     display: flex;
     flex-direction: column;
-    margin-bottom: 24px;
 }
 
 .eh-setting label {
     margin-bottom: 8px;
-    color: #f0f0f0;
-    font-size: 0.95rem;
     font-weight: 600;
-}
-
-.eh-setting input {
-    width: 100%;
-
-    background: #242424;
-    border: 1px solid #3a3a3a;
-    border-radius: 12px;
-
-    padding: 13px 15px;
-
-    color: white;
-    font-size: 0.95rem;
-
-    transition: 0.2s;
-}
-
-.eh-setting input:hover {
-    border-color: #555;
-}
-
-.eh-setting input:focus {
-    outline: none;
-
-    border-color: #ffb454;
-
-    box-shadow: 0 0 0 3px rgba(255, 180, 84, 0.15);
 }
 
 .eh-setting small {
-    margin-top: 7px;
-    color: #808080;
-    font-size: 0.8rem;
+    margin-top: 8px;
+    color: var(--text-secondary);
+    line-height: 1.4;
 }
 
-.eh-command {
-    font-family:
-        Consolas,
-        "Courier New",
-        monospace;
+.eh-setting input,
+.eh-setting textarea {
+    width: 100%;
+    box-sizing: border-box;
 
-    background: #171717 !important;
+    padding: 12px 14px;
+
+    background: rgb(31, 31, 31);
+
+    border: 1px solid var(--border);
+    border-radius: 10px;
+
+    color: var(--text-primary);
+
+    font-size: 0.95rem;
+
+    transition:
+        border-color .2s,
+        background .2s;
 }
 
-.eh-section-title {
+.eh-setting textarea {
+    resize: vertical;
+    min-height: 90px;
+    font-family: Consolas, monospace;
+}
+
+.eh-setting input:focus,
+.eh-setting textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+/* ===========================
+   Docker
+=========================== */
+
+.eh-docker-notice {
+    padding: 16px 18px;
+    margin-bottom: 18px;
+
+    border-radius: 12px;
+
+    background: rgba(255, 170, 0, 0.08);
+    border: 1px solid rgba(255, 170, 0, 0.25);
+}
+
+.eh-docker-notice strong {
+    display: block;
+    margin-bottom: 6px;
+}
+
+.eh-docker-notice p {
+    margin: 0;
+    line-height: 1.5;
+    color: var(--text-secondary);
+}
+
+.eh-docker-editor-placeholder {
+    height: 500px;
+
+    border-radius: 14px;
+
+    border: 1px dashed var(--border);
+
     display: flex;
+    justify-content: center;
     align-items: center;
 
-    margin: 34px 0 22px;
+    background: var(--surface-2);
 
-    color: #ffb454;
-    font-weight: 600;
-    font-size: 1rem;
+    color: var(--text-secondary);
 }
 
-.eh-section-title::after {
-    content: "";
+/* ===========================
+   Responsive
+=========================== */
 
-    flex: 1;
+@media (max-width: 1000px) {
 
-    height: 1px;
+    .eh-top-row {
+        grid-template-columns: 1fr;
+    }
 
-    background: #323232;
+    .eh-command-grid,
+    .eh-settings-grid {
+        grid-template-columns: 1fr;
+    }
 
-    margin-left: 16px;
+    .eh-install-command,
+    .eh-span-2 {
+        grid-column: span 1;
+    }
 }
 
-.eh-settings-actions {
-    display: flex;
-    justify-content: flex-end;
-    margin-top: 32px;
+@media (max-width: 700px) {
+
+    .eh-settings-page {
+        padding: 18px;
+    }
+
+    .eh-settings-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
 }

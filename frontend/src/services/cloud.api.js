@@ -127,3 +127,17 @@ export const getCloudStats = async () => {
 
   return response.data.data;
 };
+
+export const getFileBlob = async (fileId) => {
+  const response = await api.get(`cloud/files/${fileId}/download`, {
+    responseType: "blob",
+  });
+
+  return {
+    blob: response.data,
+    filename:
+      response.headers["content-disposition"]?.match(
+        /filename="?([^"]+)"?/,
+      )?.[1] || "download",
+  };
+};

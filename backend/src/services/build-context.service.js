@@ -4,7 +4,7 @@ const path = require("path");
 const workspace = require("./workspace.service");
 const fileService = require("./file.service");
 
-const prepareBuildContext = async (projectId, settings) => {
+const prepareBuildContext = async (projectId, dockerfileContent) => {
   const filesPath = workspace.getFilesPath(projectId);
   const buildPath = workspace.getBuildPath(projectId);
 
@@ -35,25 +35,7 @@ const prepareBuildContext = async (projectId, settings) => {
 
   const dockerfilePath = path.join(buildPath, "Dockerfile");
 
-  const buildCommand = settings.build_command || "npm install";
-
-  const startCommand = settings.start_command || "npm start";
-
-  const dockerfile = `
-FROM node:22-alpine
-
-WORKDIR /app
-
-COPY . .
-
-${buildCommand ? `RUN ${buildCommand}` : ""}
-
-EXPOSE 3000
-
-CMD ["sh", "-c", "${startCommand}"]
-`;
-
-  await fs.writeFile(dockerfilePath, dockerfile);
+  await fs.writeFile(dockerfilePath, dockerfileContent);
 
   return buildPath;
 };

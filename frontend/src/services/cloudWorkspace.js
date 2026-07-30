@@ -1,3 +1,5 @@
+import { createFileWorkspace } from "./fileWorkspace";
+
 import {
   getCloudFiles,
   uploadCloudFile,
@@ -10,19 +12,28 @@ import {
   renameCloudFile,
   getCloudStats,
   deleteCloudFolder,
+  getFileBlob,
 } from "./cloud.api";
 
-export default {
+export default createFileWorkspace({
   getFiles: getCloudFiles,
+
   uploadFile: (folder, file, relativePath) =>
     uploadCloudFile(folder, file, relativePath),
+
   createFolder: createCloudFolder,
   createFile: createCloudFile,
+
   getFileContent: getCloudFileContent,
   saveFileContent: saveCloudFileContent,
+
   downloadFile: downloadCloudFile,
+
   deleteFile: deleteCloudFile,
   renameFile: renameCloudFile,
-  getStats: getCloudStats,
   deleteFolder: deleteCloudFolder,
-};
+
+  getStats: getCloudStats,
+
+  getFileBlob,
+});

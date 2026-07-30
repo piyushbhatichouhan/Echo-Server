@@ -31,19 +31,28 @@ export const saveFileContent = async (id, content) => {
   return response.data;
 };
 
-export const downloadFile = async (fileId) => {
+export const getFileBlob = async (fileId) => {
   const response = await api.get(`/files/${fileId}/download`, {
     responseType: "blob",
   });
 
-  const url = URL.createObjectURL(response.data);
+  return {
+    blob: response.data,
+    headers: response.headers,
+  };
+};
+
+export const downloadFile = async (fileId) => {
+  const { blob, headers } = await getFileBlob(fileId);
+
+  const url = URL.createObjectURL(blob);
 
   const a = document.createElement("a");
   a.href = url;
 
-  const disposition = response.headers["content-disposition"];
-
   let filename = "download";
+
+  const disposition = headers["content-disposition"];
 
   if (disposition) {
     const match = disposition.match(/filename="?([^"]+)"?/);

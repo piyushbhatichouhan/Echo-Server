@@ -53,9 +53,10 @@ const saveFile = async (projectId, ownerId, file) => {
     relativePath,
   });
 
-  if (file.size > replacingBytes) reserveStorage(file.size - replacingBytes);
+  if (file.size > replacingBytes)
+    storageAllocation.reserveStorage(ownerId, file.size - replacingBytes);
   else if (file.size < replacingBytes)
-    releaseStorage(replacingBytes - file.size);
+    storageAllocation.releaseStorage(ownerId, replacingBytes - file.size);
   //
   // Save metadata
   //
@@ -376,8 +377,10 @@ const updateFileContent = async (fileId, ownerId, content) => {
 
   await filesystem.writeContent(result.rows[0].storage_path, content, "utf8");
 
-  if (newSize > oldSize) reserveStorage(newSize - oldSize);
-  else if (newSize < oldSize) releaseStorage(oldSize - newSize);
+  if (newSize > oldSize)
+    storageAllocation.reserveStorage(ownerId, newSize - oldSize);
+  else if (newSize < oldSize)
+    storageAllocation.releaseStorage(ownerId, oldSize - newSize);
 
   await pool.query(
     `
