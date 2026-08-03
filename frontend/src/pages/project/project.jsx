@@ -1,7 +1,7 @@
-import "./Project.css";
+import "./project.css";
 import { useParams } from "react-router-dom";
 import useProject from "../../hooks/useProject";
-import ProjectHeader from "../../components/project/ProjectHeader/ProjectHeader";
+import ProjectHeader from "../../components/project/ProjectHeader/projectheader";
 import { useState } from "react";
 import DeploymentControls from "../../components/project/deploymentcontrols/deploymentcontrols";
 import LogsCard from "../../components/project/logscard/logscard";
