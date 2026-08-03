@@ -1,0 +1,21 @@
+name: Deploy Echo Server
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Update repository
+        run: |
+          cd /srv/echo
+          git pull --ff-only
+
+      - name: Restart containers
+        run: |
+          cd /srv/echo
+          docker compose up -d --build
