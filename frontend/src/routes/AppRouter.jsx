@@ -1,5 +1,4 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-
 import Login from "../pages/login/login";
 import Register from "../pages/register/register";
 import Dashboard from "../pages/dashboard/dashboard";
@@ -13,7 +12,6 @@ import PendingUsers from "../pages/server/pendingUsers/pendingUsers";
 import ProjectLayout from "../layouts/ProjectLayout";
 import Deployments from "../components/project/deployments/deployments";
 import Environment from "../components/project/environment/Environment";
-
 import LogsCard from "../components/project/logscard/logscard";
 import ManageUsers from "../pages/server/manageUsers/manageUsers";
 import Storage from "../pages/server/storage/Storage";
