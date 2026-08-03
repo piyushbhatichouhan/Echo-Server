@@ -1,13 +1,13 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
-import Login from "../pages/Login/Login";
-import Register from "../pages/Register/Register";
-import Dashboard from "../pages/Dashboard/Dashboard";
-import Projects from "../pages/Projects/Projects";
-import Project from "../pages/Project/Project";
+import Login from "../pages/login/login";
+import Register from "../pages/register/register";
+import Dashboard from "../pages/dashboard/dashboard";
+import Projects from "../pages/projects/projects";
+import Project from "../pages/project/project";
 import DashboardLayout from "../layouts/DashboardLayout";
 import ProtectedRoute from "./ProtectedRoute";
-import Settings from "../pages/Settings/Settings";
+import Settings from "../pages/settings/Settings";
 import Server from "../pages/server/server";
 import PendingUsers from "../pages/server/pendingUsers/pendingUsers";
 import ProjectLayout from "../layouts/ProjectLayout";
@@ -15,7 +15,7 @@ import Deployments from "../components/project/deployments/deployments";
 import Environment from "../components/project/environment/Environment";
 
 import LogsCard from "../components/project/logscard/logscard";
-import ManageUsers from "../pages/server/manageUsers/ManageUsers";
+import ManageUsers from "../pages/server/manageUsers/manageUsers";
 import Storage from "../pages/server/storage/Storage";
 import CloudStorage from "../pages/CloudStorage/CloudStorage";
 import VerifyEmailFailed from "../pages/auth/verify-email/VerifyEmailFailed";
