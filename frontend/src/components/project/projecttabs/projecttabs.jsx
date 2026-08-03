@@ -1,4 +1,4 @@
-import "./ProjectTabs.css";
+import "./projecttabs.css";
 
 export default function ProjectTabs({ activeTab, onTabChange }) {
   const tabs = ["overview", "files", "environment", "deployments", "settings"];

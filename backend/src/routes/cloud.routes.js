@@ -24,4 +24,9 @@ router.delete("/files/:id", authenticate, cloudController.deleteFile);
 router.put("/files/:id/rename", authenticate, cloudController.renameFile);
 router.get("/stats", authenticate, cloudController.getStats);
 router.delete("/folder", authenticate, cloudController.deleteFolder);
+router.post("/copy", authenticate, cloudController.copyCloudPath);
+
+router.post("/cut", authenticate, cloudController.cutCloudPath);
+
+router.post("/paste", authenticate, cloudController.pasteCloudPath);
 module.exports = router;

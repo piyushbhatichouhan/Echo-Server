@@ -1,4 +1,4 @@
-import "./EnvironmentItem.css";
+import "./environmentItem.css";
 
 import { Eye, EyeOff, Copy, Pencil, Trash2 } from "lucide-react";
 

@@ -34,6 +34,8 @@ const IMAGE_EXTENSIONS = [
   "ico",
 ];
 
+const PDF_EXTENSIONS = ["pdf"];
+
 export function getFileType(filename) {
   const parts = filename.split(".");
 
@@ -42,6 +44,10 @@ export function getFileType(filename) {
 
   if (IMAGE_EXTENSIONS.includes(extension)) {
     return "image";
+  }
+
+  if (PDF_EXTENSIONS.includes(extension)) {
+    return "pdf";
   }
 
   if (

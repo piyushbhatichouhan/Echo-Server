@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
-import Modal from "../../common/Modal/Modal";
-import Button from "../../common/Button/Button";
+import Modal from "../../common/modal/modal";
+import Button from "../../common/button/button";
 import { useToast } from "../../../context/ToastContext";
 export default function EnvironmentModal({ open, onClose, onSave, variable }) {
   const [key, setKey] = useState("");

@@ -1,4 +1,4 @@
-import "./CreateProjectModal.css";
+import "./createprojectmodal.css";
 
 import { useState } from "react";
 import { createProject } from "../../../services/project.api";

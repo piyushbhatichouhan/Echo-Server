@@ -1,4 +1,4 @@
-import "./ProjectHeader.css";
+import "./projectheader.css";
 
 import {
   Computer,

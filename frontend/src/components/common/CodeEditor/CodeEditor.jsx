@@ -8,7 +8,6 @@ export default function CodeEditor({
   readOnly = false,
   language,
 }) {
-  console.log(language);
   return (
     <div className="code-editor">
       <Editor
@@ -35,10 +34,7 @@ export default function CodeEditor({
             showFunctions: false,
           },
         }}
-        beforeMount={(monaco) => {
-          console.log("Language prop:", language);
-          console.log(monaco.languages.getLanguages().map((l) => l.id));
-        }}
+        beforeMount={(monaco) => {}}
       />
     </div>
   );

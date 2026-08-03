@@ -1,11 +1,11 @@
-import "./Environment.css";
+import "./environment.css";
 
 import { Plus } from "lucide-react";
 
-import Button from "../../common/Button/Button";
-import Card from "../../common/Card/Card";
+import Button from "../../common/button/button";
+import Card from "../../common/card/card";
 
-import EnvironmentItem from "./EnvironmentItem";
+import EnvironmentItem from "./environmentItem";
 
 import useEnvironment from "../../../hooks/useEnvironment";
 import { useState } from "react";

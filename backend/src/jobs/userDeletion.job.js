@@ -10,6 +10,14 @@ const runUserDeletionJob = async () => {
     const users = await userRepository.getExpiredUsers();
 
     for (const user of users) {
+      if (user.is_owner) {
+        console.error(
+          `[SECURITY] Owner account (${user.email}) was somehow scheduled for deletion. Skipping.`,
+        );
+
+        continue;
+      }
+
       try {
         console.log(`[UserDeletion] Permanently deleting ${user.email}`);
 

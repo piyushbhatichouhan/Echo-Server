@@ -14,6 +14,8 @@ const {
   deletePath,
 } = require("../services/file.service");
 
+const fileService = require("../services/file.service");
+
 const uploadFile = async (req, res, next) => {
   try {
     if (!req.file) {
@@ -131,7 +133,7 @@ const createProjectFile = async (req, res, next) => {
 
 const renameProjectFile = async (req, res, next) => {
   try {
-    const file = await renameFile(req.params.id, req.user.id, req.body.path);
+    const file = await renamePath(req.params.id, req.user.id, req.body.path);
 
     res.json({
       success: true,
@@ -171,6 +173,60 @@ const renameProjectPath = async (req, res, next) => {
   }
 };
 
+const copyPath = async (req, res, next) => {
+  try {
+    const result = await fileService.copyPath(
+      req.body.projectId,
+      req.user.id,
+      req.body.relativePath,
+      req.body.type,
+    );
+
+    res.json({
+      success: true,
+      data: result,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const cutPath = async (req, res, next) => {
+  try {
+    const result = await fileService.cutPath(
+      req.body.projectId,
+      req.user.id,
+      req.body.relativePath,
+      req.body.type,
+    );
+
+    res.json({
+      success: true,
+      data: result,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const pastePath = async (req, res, next) => {
+  try {
+    const result = await fileService.pastePath(
+      req.body.projectId,
+      req.user.id,
+      req.body.clipboard,
+      req.body.destination,
+    );
+
+    res.json({
+      success: true,
+      data: result,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   uploadFile,
   listFiles,
@@ -184,4 +240,7 @@ module.exports = {
   renameProjectFile,
   deleteProjectPath,
   renameProjectPath,
+  copyPath,
+  cutPath,
+  pastePath,
 };

@@ -15,29 +15,23 @@ import {
 } from "../../services/deployment.api";
 import DeploymentCard from "../../components/project/deploymentcard/deploymentcard";
 import useLogStream from "../../hooks/useLogStream";
-import ProjectTabs from "../../components/project/projecttabs/ProjectTabs";
-
-import useFiles from "../../hooks/useFiles";
-import FileEditor from "../../components/files/fileviewer/fileeditor";
-import { getFileContent } from "../../services/file.api";
+import ProjectTabs from "../../components/project/projecttabs/projecttabs";
 import { useEffect } from "react";
-import { saveFileContent, downloadFile } from "../../services/file.api";
-import { deleteFile } from "../../services/file.api";
-import { deletePath as deleteWorkspacePath } from "../../services/file.api";
 import Deployments from "../../components/project/deployments/deployments";
-import Settings from "../../components/project/settings/Settings";
+import Settings from "../../components/project/settings/settings";
 import DeploymentHistory from "../../components/project/overview/deploymentHistory";
 import { useToast } from "../../context/ToastContext";
 import Environment from "../../components/project/environment/Environment";
 import FileBrowser from "../../components/files/FileBrowser/FileBrowser";
-import FileViewer from "../../components/files/fileviewer/FileViewer";
 import projectWorkspace from "../../services/projectWorkspace";
+import * as projectFile from "../../services/projectFiles.api";
 
 export default function Project() {
   const { id } = useParams();
   const [actionLoading, setActionLoading] = useState(null);
   const { project, loading: projectLoading, refresh } = useProject(id);
   const [activeTab, setActiveTab] = useState("overview");
+
   const {
     status,
     logs,
@@ -51,12 +45,6 @@ export default function Project() {
   const isRunning = status?.running;
   const hasDeployment = status?.exists;
 
-  const { upload, remove } = useFiles(id);
-
-  const { files, loading: filesLoading, refresh: refreshFiles } = useFiles(id);
-
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [dirty, setDirty] = useState(false);
   useLogStream(id, (log) => {
     setLogs((previous) => [...previous, log]);
 
@@ -105,58 +93,9 @@ export default function Project() {
     }
   };
 
-  const [fileContent, setFileContent] = useState("");
-
-  useEffect(() => {
-    if (!selectedFile) return;
-
-    const load = async () => {
-      const text = await getFileContent(selectedFile.id);
-
-      setFileContent(text);
-      setDirty(false);
-    };
-
-    load();
-  }, [selectedFile]);
-
-  const handleEditorChange = (value) => {
-    setFileContent(value);
-    setDirty(true);
-  };
-
-  const saveCurrentFile = async () => {
-    if (!selectedFile) return;
-
-    try {
-      await saveFileContent(selectedFile.id, fileContent);
-      setDirty(false);
-      toast.success(`${type} Saved`, `${type} saved successfully`);
-    } catch (error) {
-      toast.error("Error", error.message);
-    }
-  };
   if (projectLoading || deploymentLoading) {
     return <p>Loading...</p>;
   }
-
-  const handleDelete = async (path, type) => {
-    try {
-      await deleteWorkspacePath(id, path, type);
-      console.log(`id: ${id} , path: ${path}, type: ${type}`);
-      if (
-        selectedFile &&
-        type === "file" &&
-        selectedFile.relative_path === path
-      ) {
-        setSelectedFile(null);
-      }
-      toast.success(`${type} deleted`, `${type} deleted successfully`);
-      refreshFiles();
-    } catch (error) {
-      toast.error("Error", error.message);
-    }
-  };
 
   const deploymentState = status?.status || "unknown";
 

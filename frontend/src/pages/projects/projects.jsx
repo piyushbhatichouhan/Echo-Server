@@ -1,4 +1,4 @@
-import "./Projects.css";
+import "./projects.css";
 
 import ProjectCard from "../../components/common/projectcard/projectcard";
 import React, { useState, useEffect } from "react";

@@ -60,7 +60,8 @@ const deleteUser = async (userId) => {
   await pool.query(
     `
     DELETE FROM users
-    WHERE id = $1
+WHERE id = $1
+AND is_owner = FALSE;
     `,
     [userId],
   );
@@ -78,6 +79,7 @@ const scheduleUserDeletion = async (userId) => {
     deletion_scheduled_at = NOW(),
     deletion_due_at = NOW() + ($2 * INTERVAL '1 hour')
   WHERE id = $1
+  AND is_owner = FALSE
   RETURNING *
   `,
     [userId, graceHours],
@@ -122,8 +124,9 @@ const getExpiredUsers = async () => {
 const deleteUserTx = async (client, userId) => {
   await client.query(
     `
-    DELETE FROM users
-    WHERE id = $1
+  DELETE FROM users
+WHERE id = $1
+AND is_owner = FALSE;
     `,
     [userId],
   );
@@ -150,7 +153,6 @@ const getUsersForStorage = async () => {
 };
 
 const updateUserQuota = async (userId, quotaBytes) => {
-  console.log("Updating quota:", userId, quotaBytes);
   const result = await pool.query(
     `
     UPDATE users
@@ -160,7 +162,7 @@ const updateUserQuota = async (userId, quotaBytes) => {
     `,
     [userId, quotaBytes],
   );
-  console.log(result.rows);
+
   return result.rows[0];
 };
 

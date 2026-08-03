@@ -8,6 +8,35 @@ const filesystem = require("../services/filesystem.service");
 const storageService = require("./storage.service");
 const fs = require("fs/promises");
 const storageAllocation = require("./storageAllocation.service");
+const {
+  normalizeRelativePath,
+  relativeDirname,
+  relativeBasename,
+  relativeExt,
+  relativeJoin,
+} = require("../utils/relativePath");
+
+const verifyCloudOwnership = async (ownerId, relativePath) => {
+  const result = await pool.query(
+    `
+    SELECT *
+    FROM cloud_files
+    WHERE
+        owner_id = $1
+    AND
+        relative_path = $2
+    `,
+    [ownerId, relativePath],
+  );
+
+  if (result.rows.length === 0) {
+    const error = new Error("Path not found");
+    error.status = 404;
+    throw error;
+  }
+
+  return result.rows[0];
+};
 
 const uploadCloudFile = async (
   ownerId,
@@ -18,13 +47,9 @@ const uploadCloudFile = async (
   let relativePath;
 
   if (incomingRelativePath) {
-    relativePath = folder
-      ? path.posix.join(folder, incomingRelativePath)
-      : incomingRelativePath;
+    relativePath = relativeJoin(folder, incomingRelativePath);
   } else {
-    relativePath = folder
-      ? path.posix.join(folder, file.originalname)
-      : file.originalname;
+    relativePath = relativeJoin(folder, file.originalname);
   }
 
   const existing = await cloudRepository.getCloudFileByPath(
@@ -85,7 +110,7 @@ const getCloudFiles = async (ownerId) => {
 const createFolder = async (userId, relativePath) => {
   const root = getCloudRoot(userId);
 
-  const fullPath = path.join(root, relativePath);
+  const fullPath = relativeJoin(root, relativePath);
 
   await filesystem.ensureDirectory(fullPath);
 
@@ -105,7 +130,7 @@ const createFolder = async (userId, relativePath) => {
             $1,$2,$3,$4,TRUE,0
         )
         `,
-    [userId, relativePath, path.basename(relativePath), fullPath],
+    [userId, relativePath, relativeBasename(relativePath), fullPath],
   );
 
   return {
@@ -116,13 +141,13 @@ const createFolder = async (userId, relativePath) => {
 const createEmptyFile = async (userId, relativePath) => {
   const root = getCloudRoot(userId);
 
-  const fullPath = path.join(root, relativePath);
+  const fullPath = relativeJoin(root, relativePath);
 
-  await filesystem.ensureDirectory(path.dirname(fullPath));
+  await filesystem.ensureDirectory(relativeDirname(fullPath));
 
   await filesystem.writeContent(fullPath, "");
 
-  const originalName = path.basename(relativePath);
+  const originalName = relativeBasename(relativePath);
 
   const result = await pool.query(
     `
@@ -296,16 +321,16 @@ const deleteFile = async (fileId, ownerId) => {
   };
 };
 
-const renameFile = async (fileId, ownerId, newName) => {
+const renamePath = async (fileId, ownerId, newName) => {
   const result = await pool.query(
     `
-    SELECT *
-    FROM cloud_files
-    WHERE
-        id = $1
-    AND
-        owner_id = $2
-    `,
+  SELECT *
+  FROM cloud_files
+  WHERE
+      id = $1
+  AND
+      owner_id = $2
+  `,
     [fileId, ownerId],
   );
 
@@ -315,35 +340,165 @@ const renameFile = async (fileId, ownerId, newName) => {
     throw error;
   }
 
-  const file = result.rows[0];
+  const item = result.rows[0];
 
-  const oldRelative = file.relative_path;
+  const oldPath = item.relative_path;
 
-  const parts = oldRelative.split("/");
+  const folder = relativeDirname(oldPath);
 
-  parts[parts.length - 1] = newName;
+  const newPath = folder === "." ? newName : relativeJoin(folder, newName);
 
-  const newRelative = parts.join("/");
+  const root = getCloudRoot(ownerId);
 
-  const newStoragePath = path.join(getCloudRoot(ownerId), newRelative);
+  const oldStorage = relativeJoin(root, oldPath);
+  const newStorage = relativeJoin(root, newPath);
 
-  await filesystem.moveUploadedFile(file.storage_path, newStoragePath);
+  await filesystem.ensureDirectory(relativeDirname(newStorage));
 
-  const updated = await pool.query(
-    `
-   UPDATE cloud_files
-SET
-    original_name = $2,
-    relative_path = $3,
-    storage_path = $4
-WHERE
-    id = $1
-RETURNING *
+  await filesystem.moveUploadedFile(oldStorage, newStorage);
+
+  //
+  // File
+  //
+
+  if (!item.is_directory) {
+    await pool.query(
+      `
+    UPDATE cloud_files
+    SET
+        original_name = $2,
+        relative_path = $3,
+        storage_path = $4
+    WHERE id = $1
     `,
-    [fileId, newName, newRelative, newStoragePath],
+      [fileId, relativeBasename(newPath), newPath, newStorage],
+    );
+
+    return;
+  }
+
+  //
+  // Folder
+  //
+
+  const rows = await pool.query(
+    `
+  SELECT *
+  FROM cloud_files
+  WHERE
+      owner_id = $1
+  AND
+      relative_path LIKE $2
+  `,
+    [ownerId, `${oldPath}%`],
   );
 
-  return updated.rows[0];
+  for (const file of rows.rows) {
+    const updatedRelative =
+      newPath + file.relative_path.substring(oldPath.length);
+
+    const updatedStorage = relativeJoin(root, updatedRelative);
+
+    await pool.query(
+      `
+    UPDATE cloud_files
+    SET
+        relative_path = $2,
+        storage_path = $3,
+        original_name = $4
+    WHERE id = $1
+    `,
+      [
+        file.id,
+        updatedRelative,
+        updatedStorage,
+        relativeBasename(updatedRelative),
+      ],
+    );
+  }
+};
+
+const movePath = async (ownerId, sourceRelative, destinationRelative, type) => {
+  const result = await pool.query(
+    `
+  SELECT *
+  FROM cloud_files
+  WHERE
+      owner_id = $1
+  AND
+      relative_path = $2
+  `,
+    [ownerId, sourceRelative],
+  );
+
+  if (result.rows.length === 0) {
+    throw new Error("Source not found");
+  }
+
+  const item = result.rows[0];
+  const root = getCloudRoot(ownerId);
+
+  const sourceStorage = relativeJoin(root, sourceRelative);
+
+  const destinationStorage = relativeJoin(root, destinationRelative);
+  await filesystem.ensureDirectory(relativeDirname(destinationStorage));
+
+  await filesystem.moveUploadedFile(sourceStorage, destinationStorage);
+  if (type === "file") {
+    await pool.query(
+      `
+    UPDATE cloud_files
+    SET
+        relative_path = $2,
+        storage_path = $3,
+        original_name = $4
+    WHERE id = $1
+    `,
+      [
+        item.id,
+        destinationRelative,
+        destinationStorage,
+        relativeBasename(destinationRelative),
+      ],
+    );
+
+    return;
+  }
+  const rows = await pool.query(
+    `
+  SELECT *
+  FROM cloud_files
+  WHERE
+      owner_id = $1
+  AND
+      relative_path LIKE $2
+  `,
+    [ownerId, `${sourceRelative}%`],
+  );
+
+  for (const file of rows.rows) {
+    const updatedRelative =
+      destinationRelative + file.relative_path.substring(sourceRelative.length);
+
+    const updatedStorage = relativeJoin(root, updatedRelative);
+
+    await pool.query(
+      `
+    UPDATE cloud_files
+    SET
+        relative_path = $2,
+        storage_path = $3,
+        original_name = $4
+    WHERE id = $1
+    `,
+      [
+        file.id,
+        updatedRelative,
+        updatedStorage,
+        relativeBasename(updatedRelative),
+      ],
+    );
+  }
 };
 
 const getStats = async (ownerId) => {
@@ -377,6 +532,261 @@ const deleteFolder = async (ownerId, folderPath) => {
   return deleted;
 };
 
+const copyPath = async (ownerId, relativePath, type) => {
+  await verifyCloudOwnership(ownerId, relativePath);
+
+  return {
+    operation: "copy",
+    relativePath,
+    type,
+  };
+};
+
+const cutPath = async (ownerId, relativePath, type) => {
+  await verifyCloudOwnership(ownerId, relativePath);
+
+  return {
+    operation: "cut",
+    relativePath,
+    type,
+  };
+};
+
+const generateDuplicatePath = async (projectId, relativePath) => {
+  relativePath = normalizeRelativePath(relativePath);
+
+  const extension = relativeExt(relativePath);
+
+  const directory = relativeDirname(relativePath);
+
+  const baseName = path.posix.basename(relativePath, extension);
+
+  let candidate = relativePath;
+
+  let counter = 1;
+
+  while (true) {
+    const exists = await pool.query(
+      `
+      SELECT id
+FROM cloud_files
+      WHERE owner_id = $1
+      AND relative_path = $2
+      `,
+      [projectId, candidate],
+    );
+
+    if (exists.rows.length === 0) {
+      return candidate;
+    }
+
+    const newName = `${baseName} (${counter})${extension}`;
+
+    candidate = directory === "." ? newName : relativeJoin(directory, newName);
+
+    counter++;
+  }
+};
+
+const pastePath = async (ownerId, clipboard, destination) => {
+  await verifyCloudOwnership(ownerId, clipboard.relativePath);
+
+  const workspaceRoot = getCloudRoot(ownerId);
+
+  const sourceRelative = clipboard.relativePath;
+
+  const sourcePath = relativeJoin(workspaceRoot, sourceRelative);
+
+  const desiredRelative = relativeJoin(
+    destination,
+    relativeBasename(sourceRelative),
+  );
+
+  const destinationRelative =
+    clipboard.operation === "copy"
+      ? await generateDuplicatePath(ownerId, desiredRelative)
+      : desiredRelative;
+
+  const destinationPath = relativeJoin(workspaceRoot, destinationRelative);
+
+  //
+  // Prevent pasting into itself
+  //
+  if (clipboard.type === "folder" && destination.startsWith(sourceRelative)) {
+    const error = new Error("Invalid destination");
+    error.status = 400;
+    throw error;
+  }
+
+  //
+  // Copy
+  //
+
+  if (clipboard.operation === "copy") {
+    if (clipboard.type === "folder") {
+      const folderSize = await filesystem.calculateDirectorySize(sourcePath);
+
+      await storageAllocation.checkQuota(ownerId, folderSize);
+    }
+  }
+
+  if (clipboard.operation === "copy") {
+    if (clipboard.type === "file") {
+      await filesystem.copyFile(sourcePath, destinationPath);
+      const exists = await fs
+        .access(destinationPath)
+        .then(() => true)
+        .catch(() => false);
+
+      console.log({
+        sourcePath,
+        destinationPath,
+        copied: exists,
+      });
+      const file = await pool.query(
+        `
+        SELECT *
+        FROM cloud_files
+        WHERE
+            owner_id = $1
+        AND
+            relative_path = $2
+        `,
+        [ownerId, sourceRelative],
+      );
+
+      const original = file.rows[0];
+
+      await pool.query(
+        `
+        INSERT INTO cloud_files
+        (
+            owner_id,
+            original_name,
+            relative_path,
+            stored_name,
+            mime_type,
+            file_size,
+            storage_path,
+            is_directory
+        )
+        VALUES
+        (
+            $1,$2,$3,$4,$5,$6,$7,false
+        )
+        `,
+        [
+          ownerId,
+          original.original_name,
+          destinationRelative,
+          original.stored_name,
+          original.mime_type,
+          original.file_size,
+          destinationPath,
+        ],
+      );
+
+      await storageAllocation.reserveStorage(
+        ownerId,
+        Number(original.file_size),
+      );
+    } else {
+      //
+      // Folder copy (next step)
+      //
+      await filesystem.copyDirectory(sourcePath, destinationPath);
+
+      const rows = await pool.query(
+        `
+SELECT *
+FROM cloud_files
+WHERE
+    owner_id = $1
+AND
+    relative_path LIKE $2
+ORDER BY LENGTH(relative_path)
+`,
+        [ownerId, `${sourceRelative}%`],
+      );
+
+      let totalBytes = 0;
+
+      for (const item of rows.rows) {
+        const newRelative =
+          destinationRelative +
+          item.relative_path.substring(sourceRelative.length);
+
+        const newStorage = relativeJoin(workspaceRoot, newRelative);
+
+        await pool.query(
+          `
+INSERT INTO cloud_files
+(
+    owner_id,
+    original_name,
+    relative_path,
+    stored_name,
+    mime_type,
+    file_size,
+    storage_path,
+    is_directory
+)
+VALUES
+(
+    $1,$2,$3,$4,$5,$6,$7,$8
+)
+`,
+          [
+            ownerId,
+            item.original_name,
+            newRelative,
+            item.stored_name,
+            item.mime_type,
+            item.file_size,
+            newStorage,
+            item.is_directory,
+          ],
+        );
+
+        if (!item.is_directory) totalBytes += Number(item.file_size);
+      }
+
+      await storageAllocation.reserveStorage(ownerId, totalBytes);
+    }
+  }
+
+  //
+  // Cut
+  //
+  if (clipboard.operation === "cut") {
+    const existing = await pool.query(
+      `
+  SELECT id
+  FROM cloud_files
+  WHERE
+      owner_id = $1
+  AND
+      relative_path = $2
+  `,
+      [ownerId, destinationRelative],
+    );
+
+    if (existing.rows.length > 0) {
+      const error = new Error(
+        "A file or folder with this name already exists.",
+      );
+      error.status = 409;
+      throw error;
+    }
+  }
+
+  await movePath(ownerId, sourceRelative, destinationRelative, clipboard.type);
+
+  return {
+    success: true,
+  };
+};
+
 module.exports = {
   uploadCloudFile,
   getCloudFiles,
@@ -386,7 +796,11 @@ module.exports = {
   updateFileContent,
   getFileForDownload,
   deleteFile,
-  renameFile,
+  renamePath,
+  movePath,
   getStats,
   deleteFolder,
+  copyPath,
+  cutPath,
+  pastePath,
 };

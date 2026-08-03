@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import useAuth from "../../hooks/useAuth";
+import { resendVerification } from "../../services/auth.api";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -20,6 +21,10 @@ export default function Login() {
 
   const [error, setError] = useState("");
 
+  const [verificationEmail, setVerificationEmail] = useState("");
+  const [needsVerification, setNeedsVerification] = useState(false);
+  const [sendingVerification, setSendingVerification] = useState(false);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -34,11 +39,36 @@ export default function Login() {
     } catch (err) {
       console.error(err);
 
-      setError(
-        err.response?.data?.message || err.message || "Unable to login.",
-      );
+      const data = err.response?.data;
+
+      if (data?.code === "EMAIL_NOT_VERIFIED") {
+        setNeedsVerification(true);
+        setVerificationEmail(data.email);
+      }
+
+      setError(data?.message || err.message || "Unable to login.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    try {
+      setSendingVerification(true);
+
+      await resendVerification({
+        email: verificationEmail,
+      });
+
+      setError("Verification email sent. Please check your inbox.");
+    } catch (err) {
+      setError(
+        err.response?.data?.message ??
+          err.message ??
+          "Unable to resend verification email.",
+      );
+    } finally {
+      setSendingVerification(false);
     }
   };
 
@@ -100,13 +130,33 @@ export default function Login() {
             </div>
 
             <div className="login__options">
-              <button type="button" className="login__textButton">
+              <Link to="/forgot-password" className="login__textButton">
                 Forgot password?
-              </button>
+              </Link>
             </div>
 
             {error && <div className="login__error">{error}</div>}
+            {needsVerification && (
+              <div className="login__verify-card">
+                <h3>Email not verified</h3>
 
+                <p>
+                  Your account has been created successfully.
+                  <br />
+                  Please verify your email before signing in.
+                </p>
+
+                <button
+                  className="login__verify-button"
+                  onClick={handleResendVerification}
+                  disabled={sendingVerification}
+                >
+                  {sendingVerification
+                    ? "Sending..."
+                    : "Resend Verification Email"}
+                </button>
+              </div>
+            )}
             <button className="login__button" type="submit" disabled={loading}>
               {loading ? "Signing In..." : "Sign In"}
             </button>

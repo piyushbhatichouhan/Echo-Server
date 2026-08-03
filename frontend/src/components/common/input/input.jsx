@@ -1,4 +1,4 @@
-import "./Input.css";
+import "./input.css";
 
 export default function Input({
   label,

@@ -1,10 +1,14 @@
 import { useEffect, useState } from "react";
-import "./Settings.css";
+import "./settings.css";
 
-import Button from "../../common/Button/Button";
+import Button from "../../common/button/button";
 import useProjectSettings from "../../../hooks/useProjectSettings";
 import { useToast } from "../../../context/ToastContext";
 import CodeEditor from "../../common/CodeEditor/CodeEditor";
+
+import { deleteProject } from "../../../services/project.api";
+import { useNavigate } from "react-router-dom";
+import ConfirmationModal from "../../common/modal/ConfirmationModal";
 
 export default function Settings({ projectId }) {
   const { project, settings, loading, save } = useProjectSettings(projectId);
@@ -13,6 +17,30 @@ export default function Settings({ projectId }) {
 
   const [form, setForm] = useState(null);
   const [saving, setSaving] = useState(false);
+  const navigate = useNavigate();
+
+  const [deleteOpen, setDeleteOpen] = useState(false);
+
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDeleteProject = async () => {
+    setDeleting(true);
+
+    try {
+      await deleteProject(projectId);
+
+      toast.success(
+        "Project deleted",
+        "The project has been permanently removed.",
+      );
+
+      navigate("/dashboard");
+    } catch (error) {
+      toast.error("Error", error.response?.data?.message || error.message);
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   useEffect(() => {
     if (settings) {
@@ -47,7 +75,6 @@ export default function Settings({ projectId }) {
           onClick={async () => {
             try {
               setSaving(true);
-              console.log("Saving form:", form);
 
               await save(form);
 
@@ -215,6 +242,54 @@ export default function Settings({ projectId }) {
           />
         </section>
       )}
+      <section className="eh-settings-section eh-danger-zone">
+        <h2>Danger Zone</h2>
+
+        <div className="eh-danger-card">
+          <div>
+            <h3>Delete Project</h3>
+
+            <p>
+              Permanently delete this project.
+              <br />
+              <br />
+              The following will be removed immediately:
+              <br />
+              • Project files
+              <br />
+              • Git repository
+              <br />
+              • Deployments
+              <br />
+              • Environment Variables
+              <br />
+              • Docker images & containers
+              <br />
+              • Logs
+              <br />
+              <br />
+              <strong>This action cannot be undone.</strong>
+            </p>
+          </div>
+
+          <Button variant="danger" onClick={() => setDeleteOpen(true)}>
+            Delete Project
+          </Button>
+        </div>
+      </section>
+      <ConfirmationModal
+        open={deleteOpen}
+        title="Delete Project"
+        projectMode
+        user={{
+          username: project.name,
+          email: "",
+        }}
+        loading={deleting}
+        onDelete={handleDeleteProject}
+        onClose={() => setDeleteOpen(false)}
+        project={project}
+      />
     </div>
   );
 }

@@ -75,6 +75,18 @@ const cleanupEmptyDirectories = async (directory, stopAt) => {
   } catch {}
 };
 
+const copyFile = async (source, destination) => {
+  await ensureDirectory(path.dirname(destination));
+
+  await fs.copyFile(source, destination);
+};
+
+const copyDirectory = async (source, destination) => {
+  await fs.cp(source, destination, {
+    recursive: true,
+  });
+};
+
 module.exports = {
   calculateDirectorySize,
   ensureDirectory,
@@ -83,4 +95,6 @@ module.exports = {
   writeContent,
   readContent,
   cleanupEmptyDirectories,
+  copyFile,
+  copyDirectory,
 };

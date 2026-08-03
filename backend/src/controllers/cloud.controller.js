@@ -126,15 +126,14 @@ const deleteFile = async (req, res, next) => {
 
 const renameFile = async (req, res, next) => {
   try {
-    const result = await cloudService.renameFile(
-      req.params.id,
+    await cloudService.renamePath(
+      req.params.id, // file id
       req.user.id,
       req.body.name,
     );
 
     res.json({
       success: true,
-      data: result,
     });
   } catch (error) {
     next(error);
@@ -170,6 +169,57 @@ const deleteFolder = async (req, res, next) => {
   }
 };
 
+const copyCloudPath = async (req, res, next) => {
+  try {
+    const result = await cloudService.copyPath(
+      req.user.id,
+      req.body.relativePath,
+      req.body.type,
+    );
+
+    res.json({
+      success: true,
+      data: result,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const cutCloudPath = async (req, res, next) => {
+  try {
+    const result = await cloudService.cutPath(
+      req.user.id,
+      req.body.relativePath,
+      req.body.type,
+    );
+
+    res.json({
+      success: true,
+      data: result,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const pasteCloudPath = async (req, res, next) => {
+  try {
+    const result = await cloudService.pastePath(
+      req.user.id,
+      req.body.clipboard,
+      req.body.destination,
+    );
+
+    res.json({
+      success: true,
+      data: result,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   upload,
   list,
@@ -182,4 +232,7 @@ module.exports = {
   renameFile,
   getStats,
   deleteFolder,
+  copyCloudPath,
+  pasteCloudPath,
+  cutCloudPath,
 };

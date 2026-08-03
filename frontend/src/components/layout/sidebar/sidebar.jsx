@@ -1,6 +1,6 @@
-import "./Sidebar.css";
+import "./sidebar.css";
 
-import NavigationItem from "../NavigationItem/NavigationItem";
+import NavigationItem from "../NavigationItem/navigationItem";
 import { Home, FolderKanban, Settings, Server, Cloud } from "lucide-react";
 import useAuth from "../../../hooks/useAuth";
 import Button from "../../common/button/button";

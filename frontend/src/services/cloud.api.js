@@ -111,7 +111,7 @@ export const downloadCloudFile = async (fileId) => {
 export const getCloudFileContent = async (fileId) => {
   const response = await api.get(`/cloud/files/${fileId}/content`);
 
-  return response.data.data.content;
+  return response.data.data;
 };
 
 export const saveCloudFileContent = async (fileId, content) => {
@@ -140,4 +140,23 @@ export const getFileBlob = async (fileId) => {
         /filename="?([^"]+)"?/,
       )?.[1] || "download",
   };
+};
+
+export const copyCloudPath = async (clipboard) => {
+  const res = await api.post("/cloud/copy", clipboard);
+  return res.data;
+};
+
+export const cutCloudPath = async (clipboard) => {
+  const res = await api.post("/cloud/cut", clipboard);
+  return res.data;
+};
+
+export const pasteCloudPath = async (clipboard, destination) => {
+  const res = await api.post("/cloud/paste", {
+    clipboard,
+    destination,
+  });
+
+  return res.data;
 };

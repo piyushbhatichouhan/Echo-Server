@@ -1,7 +1,7 @@
 import "./fileeditor.css";
 
-import Card from "../../common/Card/Card";
-import Button from "../../common/Button/Button";
+import Card from "../../common/card/card";
+import Button from "../../common/button/button";
 import CodeEditor from "../../project/fileeditor/CodeEditor";
 import { ArrowLeft, Save, Download, Trash2 } from "lucide-react";
 import { getLanguageExtension } from "../../../utils/fileLanguage";

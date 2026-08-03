@@ -1,6 +1,6 @@
-import "./DeploymentHistory.css";
+import "./deploymentHistory.css";
 
-import Card from "../../common/Card/Card";
+import Card from "../../common/card/card";
 import { CheckCircle2, AlertCircle, Square, Hammer, Bomb } from "lucide-react";
 
 const statusIcon = (status) => {

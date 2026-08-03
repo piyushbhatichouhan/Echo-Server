@@ -1,4 +1,4 @@
-import "./NavigationItem.css";
+import "./navigationItem.css";
 import { NavLink } from "react-router-dom";
 
 export default function NavigationItem({ to, icon: Icon, children }) {

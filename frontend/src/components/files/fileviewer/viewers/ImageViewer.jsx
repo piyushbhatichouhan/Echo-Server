@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
-import Button from "../../../common/Button/Button";
+import Button from "../../../common/button/button";
+
+import "./ImageViewer.css";
 
 export default function ImageViewer({ file, adapter, onBack, onDownload }) {
   const [imageUrl, setImageUrl] = useState(null);
@@ -22,7 +24,7 @@ export default function ImageViewer({ file, adapter, onBack, onDownload }) {
         URL.revokeObjectURL(url);
       }
     };
-  }, [file]);
+  }, [file, adapter]);
 
   return (
     <div className="eh-file-viewer">
@@ -35,7 +37,11 @@ export default function ImageViewer({ file, adapter, onBack, onDownload }) {
       </div>
 
       <div className="eh-image-viewer">
-        {imageUrl && <img src={imageUrl} alt={file.original_name} />}
+        <div className="eh-image-container">
+          {imageUrl && (
+            <img src={imageUrl} alt={file.original_name} draggable={false} />
+          )}
+        </div>
       </div>
     </div>
   );

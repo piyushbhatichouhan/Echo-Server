@@ -8,6 +8,9 @@ import {
   Download,
   MoreVertical,
   FolderOpen,
+  Copy,
+  ClipboardPaste,
+  Scissors,
 } from "lucide-react";
 
 export default function CloudFileList({
@@ -17,14 +20,26 @@ export default function CloudFileList({
   onOpenFile,
   adapter,
   refresh,
+  workspaceId,
+  clipboard,
+  onCopy,
+  onCut,
+  onPaste,
 }) {
-  const { downloadFile, renameFile, deleteFile, deleteFolder } = adapter;
-
+  const { downloadFile, deletePath, renamePath } = adapter;
+  console.log(adapter);
+  console.log(Object.keys(adapter));
   const [menu, setMenu] = useState({
     visible: false,
     x: 0,
     y: 0,
     item: null,
+  });
+
+  const [backgroundMenu, setBackgroundMenu] = useState({
+    visible: false,
+    x: 0,
+    y: 0,
   });
 
   const [renaming, setRenaming] = useState(null);
@@ -90,7 +105,7 @@ export default function CloudFileList({
       }
     }
 
-    await renameFile(renaming.file.id, newName);
+    await renamePath(workspaceId, renaming, newName);
 
     await refresh();
 
@@ -98,7 +113,21 @@ export default function CloudFileList({
   };
 
   return (
-    <div className="cloud-list">
+    <div
+      className="cloud-list"
+      onContextMenu={(e) => {
+        // only if user clicked empty space
+        if (e.target !== e.currentTarget) return;
+
+        e.preventDefault();
+
+        setBackgroundMenu({
+          visible: true,
+          x: e.clientX,
+          y: e.clientY,
+        });
+      }}
+    >
       <div className="cloud-header">
         <div>Name</div>
         <div>Size</div>
@@ -106,82 +135,88 @@ export default function CloudFileList({
         <div></div>
       </div>
 
-      {children.map((item) => (
-        <div
-          key={item.path}
-          className="cloud-row"
-          onDoubleClick={() => {
-            if (item.type === "folder") {
-              onNavigate(item.path);
-            } else {
-              onOpenFile(item.file);
-            }
-          }}
-          onContextMenu={(e) => {
-            e.preventDefault();
+      {children.map((item) => {
+        const isCut =
+          clipboard?.operation === "cut" &&
+          clipboard.relativePath === item.path;
 
-            setMenu({
-              visible: true,
-              x: e.clientX,
-              y: e.clientY,
-              item,
-            });
-          }}
-        >
-          <div className="cloud-name">
-            {item.type === "folder" ? "📁" : "📄"}
+        return (
+          <div
+            key={item.path}
+            className={`cloud-row ${isCut ? "cloud-row--cut" : ""}`}
+            onDoubleClick={() => {
+              if (item.type === "folder") {
+                onNavigate(item.path);
+              } else {
+                onOpenFile(item.file);
+              }
+            }}
+            onContextMenu={(e) => {
+              e.preventDefault();
 
-            {renaming?.path === item.path ? (
-              <input
-                className="cloud-rename"
-                autoFocus
-                value={renameValue}
-                onChange={(e) => setRenameValue(e.target.value)}
-                onBlur={finishRename}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") finishRename();
+              setMenu({
+                visible: true,
+                x: e.clientX,
+                y: e.clientY,
+                item,
+              });
+            }}
+          >
+            <div className="cloud-name">
+              {item.type === "folder" ? "📁" : "📄"}
 
-                  if (e.key === "Escape") setRenaming(null);
+              {renaming?.path === item.path ? (
+                <input
+                  className="cloud-rename"
+                  autoFocus
+                  value={renameValue}
+                  onChange={(e) => setRenameValue(e.target.value)}
+                  onBlur={finishRename}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") finishRename();
+
+                    if (e.key === "Escape") setRenaming(null);
+                  }}
+                />
+              ) : (
+                item.name
+              )}
+            </div>
+
+            <div>
+              {item.type === "folder"
+                ? "--"
+                : item.file
+                  ? formatSize(item.file.file_size)
+                  : "--"}
+            </div>
+
+            <div>
+              {item.file?.updated_at ? formatDate(item.file.updated_at) : "--"}
+            </div>
+
+            <div className="cloud-actions">
+              <button
+                className="cloud-more"
+                onClick={(e) => {
+                  e.stopPropagation();
+
+                  const rect = e.currentTarget.getBoundingClientRect();
+
+                  setMenu({
+                    visible: true,
+                    x: rect.left,
+                    y: rect.bottom + 4,
+                    item,
+                  });
                 }}
-              />
-            ) : (
-              item.name
-            )}
+              >
+                <MoreVertical size={18} />
+              </button>
+            </div>
           </div>
-
-          <div>
-            {item.type === "folder"
-              ? "--"
-              : item.file
-                ? formatSize(item.file.file_size)
-                : "--"}
-          </div>
-
-          <div>
-            {item.file?.updated_at ? formatDate(item.file.updated_at) : "--"}
-          </div>
-
-          <div className="cloud-actions">
-            <button
-              className="cloud-more"
-              onClick={(e) => {
-                e.stopPropagation();
-
-                const rect = e.currentTarget.getBoundingClientRect();
-
-                setMenu({
-                  visible: true,
-                  x: rect.left,
-                  y: rect.bottom + 4,
-                  item,
-                });
-              }}
-            >
-              <MoreVertical size={18} />
-            </button>
-          </div>
-        </div>
-      ))}
+        );
+      })}
 
       <ContextMenu
         visible={menu.visible}
@@ -200,7 +235,7 @@ export default function CloudFileList({
             label: "Open",
             icon: FolderOpen,
             onClick: () => {
-              if (menu.item.type === "folder") {
+              if (menu.item?.type === "folder") {
                 onNavigate(menu.item.path);
               } else {
                 onOpenFile(menu.item.file);
@@ -209,8 +244,46 @@ export default function CloudFileList({
           },
 
           {
+            label: "Copy",
+            onClick: () => {
+              onCopy(menu.item);
+            },
+          },
+
+          {
+            label: "Cut",
+            onClick: () => {
+              onCut(menu.item);
+            },
+          },
+
+          {
+            label: "Paste",
+            disabled: !clipboard,
+            onClick: () => {
+              let destination;
+
+              if (menu.item.type === "folder") {
+                // Paste inside the folder
+                destination = menu.item.path;
+              } else {
+                // Paste beside the file
+                const lastSlash = menu.item.path.lastIndexOf("/");
+
+                destination =
+                  lastSlash === -1
+                    ? ""
+                    : menu.item.path.substring(0, lastSlash);
+              }
+
+              onPaste(destination);
+            },
+          },
+
+          {
             label: "Download",
             icon: Download,
+            disabled: menu.item?.type === "folder",
             onClick: async () => {
               await downloadFile(menu.item.file.id);
             },
@@ -231,14 +304,29 @@ export default function CloudFileList({
                 return;
               }
 
-              if (menu.item.type === "folder") {
-                await deleteFolder(menu.item.path);
-              } else {
-                await deleteFile(menu.item.file.id);
-              }
+              await deletePath(workspaceId, menu.item);
 
               await refresh();
             },
+          },
+        ]}
+      />
+      <ContextMenu
+        visible={backgroundMenu.visible}
+        x={backgroundMenu.x}
+        y={backgroundMenu.y}
+        onClose={() =>
+          setBackgroundMenu({
+            visible: false,
+            x: 0,
+            y: 0,
+          })
+        }
+        items={[
+          {
+            label: "Paste",
+            disabled: !clipboard,
+            onClick: () => onPaste(currentFolder),
           },
         ]}
       />
