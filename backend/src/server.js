@@ -11,9 +11,13 @@ const startServer = async () => {
 
   await connectDatabase();
 
-  app.listen(PORT, () => {
-    console.log(`✅ Echo API is running on port ${PORT}`);
-  });
+  (async () => {
+    await connectDatabase();
+
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+    });
+  })();
 };
 
 startServer();

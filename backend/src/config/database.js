@@ -2,24 +2,35 @@ const { Pool } = require("pg");
 
 const pool = new Pool({
   host: process.env.DB_HOST,
-  port: process.env.DB_PORT,
+  port: Number(process.env.DB_PORT),
   database: process.env.DB_NAME,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
 });
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 const connectDatabase = async () => {
-  try {
-    const client = await pool.connect();
+  let attempt = 1;
 
-    console.log("📦 PostgreSQL connected successfully");
+  while (true) {
+    try {
+      console.log(`🔄 Connecting to PostgreSQL... (Attempt ${attempt})`);
 
-    client.release();
-  } catch (error) {
-    console.error("❌ Failed to connect to PostgreSQL");
-    console.error(error.message);
+      const client = await pool.connect();
 
-    process.exit(1);
+      console.log("📦 PostgreSQL connected successfully");
+
+      client.release();
+      return;
+    } catch (error) {
+      console.error(`❌ PostgreSQL connection failed: ${error.message}`);
+      console.log("⏳ Retrying in 5 seconds...\n");
+
+      attempt++;
+
+      await sleep(5000);
+    }
   }
 };
 
