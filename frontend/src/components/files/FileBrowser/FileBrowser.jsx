@@ -10,7 +10,7 @@ import { useRef } from "react";
 import { Upload } from "lucide-react";
 import { readDroppedEntries } from "../../../utils/readDroppedEntries";
 import "./FileBrowser.css";
-import FileViewer from "../FileViewer/FileViewer";
+import FileViewer from "../fileviewer/FileViewer";
 import FileToolbar from "../FileToolBar/FileToolbar";
 
 export default function FileBrowser({ adapter, workspaceId }) {
