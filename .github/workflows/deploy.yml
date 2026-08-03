@@ -17,5 +17,7 @@ jobs:
 
       - name: Restart containers
         run: |
-          cd /srv/echo
-          docker compose up -d --build
+          docker compose \
+             -f /srv/echo/docker-compose.prod.yml \
+             --project-directory /srv/echo \
+             up -d --build
