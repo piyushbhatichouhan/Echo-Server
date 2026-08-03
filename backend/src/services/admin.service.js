@@ -13,7 +13,7 @@ const disableUser = async (userId) => {
     throw new Error("User not found");
   }
 
-  if (user.email === SUPER_ADMIN_EMAIL) {
+  if (user.is_owner) {
     throw new Error("Super Admin cannot be disabled");
   }
 
@@ -36,11 +36,9 @@ const deleteUser = async (userId) => {
   if (!user) {
     throw new Error("User not found");
   }
-
-  if (user.email === SUPER_ADMIN_EMAIL) {
-    throw new Error("Super Admin cannot be deleted");
+  if (user.is_owner) {
+    throw new Error("Owner account cannot be deleted");
   }
-
   if (user.pending_deletion) {
     throw new Error("User is already scheduled for deletion");
   }

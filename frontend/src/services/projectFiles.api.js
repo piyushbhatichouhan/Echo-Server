@@ -16,15 +16,15 @@ export const uploadProjectFile = async (
 
   formData.append("file", file);
   formData.append("relativePath", relativePath);
-  console.log(projectId);
+
   const res = await api.post(`/projects/${projectId}/files`, formData);
 
   return res.data.data;
 };
 
-export const createProjectFile = async (projectId, relativePath) => {
+export const createProjectFile = async (projectId, path) => {
   const res = await api.post(`/projects/${projectId}/files/create`, {
-    relativePath,
+    path,
   });
 
   return res.data.data;
@@ -91,28 +91,31 @@ export const deleteProjectFile = async (fileId) => {
   return res.data;
 };
 
-export const renameProjectFile = async (fileId, newName) => {
-  const res = await api.put(`/files/${fileId}/rename`, {
-    newName,
+export const renameProjectPath = async (projectId, oldPath, newPath, type) => {
+  const res = await api.put(`/projects/${projectId}/rename`, {
+    oldPath,
+    newPath,
+    type,
   });
 
-  return res.data.data;
+  return res.data;
 };
 
 // ---------- Folders ----------
 
-export const createProjectFolder = async (projectId, relativePath) => {
+export const createProjectFolder = async (projectId, path) => {
   const res = await api.post(`/projects/${projectId}/folders`, {
-    relativePath,
+    path,
   });
 
   return res.data.data;
 };
 
-export const deleteProjectFolder = async (projectId, relativePath) => {
+export const deleteProjectPath = async (projectId, path, type) => {
   const res = await api.delete(`/projects/${projectId}/path`, {
     data: {
-      relativePath,
+      path,
+      type,
     },
   });
 
@@ -128,4 +131,32 @@ export const renameProjectFolder = async (projectId, relativePath, newName) => {
   return res.data.data;
 };
 
-// ---------- Stats ----------
+export const copyPath = async (projectId, relativePath, type) => {
+  const res = await api.post("/files/copy", {
+    projectId,
+    relativePath,
+    type,
+  });
+
+  return res.data;
+};
+
+export const cutPath = async (projectId, relativePath, type) => {
+  const res = await api.post("/files/cut", {
+    projectId,
+    relativePath,
+    type,
+  });
+
+  return res.data;
+};
+
+export const pastePath = async (projectId, clipboard, destination) => {
+  const res = await api.post("/files/paste", {
+    projectId,
+    clipboard,
+    destination,
+  });
+
+  return res.data;
+};

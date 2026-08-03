@@ -238,3 +238,24 @@
         align-items: stretch;
     }
 }
+
+.eh-danger-zone h2 {
+    color: #ff6666;
+}
+
+.eh-danger-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 30px;
+}
+
+.eh-danger-card h3 {
+    color: #ff6666;
+    margin-bottom: 12px;
+}
+
+.eh-danger-card p {
+    line-height: 1.7;
+    color: var(--muted);
+}

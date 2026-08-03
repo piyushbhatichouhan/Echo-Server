@@ -1,0 +1,53 @@
+.verify-page {
+    min-height: 100vh;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    background: #0d0907;
+}
+
+.verify-card {
+    width: 430px;
+
+    padding: 40px;
+
+    border-radius: 18px;
+
+    background: #17110d;
+
+    border: 1px solid rgba(255, 140, 50, .15);
+
+    text-align: center;
+}
+
+.verify-card h1 {
+    margin-bottom: 24px;
+}
+
+.verify-success {
+    color: #6ddc7d;
+}
+
+.verify-error {
+    color: #ff7b7b;
+}
+
+.verify-button {
+    display: inline-block;
+
+    margin-top: 28px;
+
+    padding: 12px 22px;
+
+    border-radius: 10px;
+
+    text-decoration: none;
+
+    color: white;
+
+    background: linear-gradient(135deg,
+            #ff8c32,
+            #d96c18);
+}

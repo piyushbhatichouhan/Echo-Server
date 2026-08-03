@@ -1,0 +1,121 @@
+.pdf-viewer {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: var(--bg-primary);
+    overflow: hidden;
+}
+
+/* ---------- Toolbar ---------- */
+
+.pdf-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 14px 18px;
+
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--border-color);
+
+    flex-shrink: 0;
+}
+
+.pdf-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    font-weight: 600;
+    color: var(--text-primary);
+
+    max-width: 45%;
+    overflow: hidden;
+}
+
+.pdf-title span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pdf-back,
+.pdf-nav button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    border: none;
+
+    padding: 8px 12px;
+
+    border-radius: 10px;
+
+    background: var(--button-bg);
+    color: var(--text-primary);
+
+    cursor: pointer;
+
+    transition: 0.2s;
+}
+
+.pdf-back:hover,
+.pdf-nav button:hover:not(:disabled) {
+    background: var(--button-hover);
+}
+
+.pdf-nav {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.pdf-nav span {
+    min-width: 110px;
+    text-align: center;
+
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.pdf-nav button:disabled {
+    opacity: .35;
+    cursor: default;
+}
+
+/* ---------- Document ---------- */
+
+.pdf-document {
+    flex: 1;
+
+    overflow: auto;
+
+    display: flex;
+    justify-content: center;
+
+    padding: 28px;
+}
+
+/* PDF page */
+
+.react-pdf__Page {
+    margin-bottom: 30px;
+
+    box-shadow:
+        0 10px 35px rgba(0, 0, 0, .28);
+
+    border-radius: 12px;
+
+    overflow: hidden;
+}
+
+.react-pdf__Page canvas {
+    display: block;
+}
+
+/* ---------- Loading ---------- */
+
+.pdf-loading {
+    color: var(--text-secondary);
+    font-size: 15px;
+}

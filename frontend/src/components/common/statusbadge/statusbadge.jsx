@@ -1,4 +1,4 @@
-import "./statusBadge.css";
+import "./statusbadge.css";
 
 export default function StatusBadge({ status }) {
   const cls = status || "unknown";

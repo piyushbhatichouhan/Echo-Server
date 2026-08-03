@@ -1,4 +1,4 @@
-import Button from "../../../common/Button/Button";
+import Button from "../../../common/button/button";
 
 export default function BinaryViewer({ file, onBack, onDownload }) {
   return (

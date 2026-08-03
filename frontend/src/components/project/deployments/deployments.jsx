@@ -1,8 +1,8 @@
-import "./Deployments.css";
+import "./deployments.css";
 
 import useGit from "../../../hooks/useGit";
 
-import RepositoryCard from "./RepositoryCard";
+import RepositoryCard from "./repositorycard";
 
 export default function Deployments({ projectId }) {
   const {

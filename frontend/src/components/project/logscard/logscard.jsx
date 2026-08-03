@@ -1,9 +1,9 @@
-import "./LogsCard.css";
+import "./logscard.css";
 
-import Card from "../../common/Card/Card";
+import Card from "../../common/card/card";
 import { useRef } from "react";
 import { useEffect, useState } from "react";
-import Button from "../../common/Button/Button";
+import Button from "../../common/button/button";
 import {
   Rocket,
   RefreshCw,

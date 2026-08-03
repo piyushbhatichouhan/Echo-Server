@@ -135,3 +135,32 @@
         border-color .18s,
         box-shadow .18s;
 }
+
+
+.clipboard-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    margin-left: auto;
+
+    padding: 8px 14px;
+
+    border-radius: 10px;
+
+    background: rgba(255, 140, 50, .08);
+
+    border: 1px solid rgba(255, 140, 50, .15);
+
+    color: #d7d7d7;
+
+    font-size: 13px;
+}
+
+.clipboard-info__icon {
+    font-size: 16px;
+}
+
+.clipboard-info__text {
+    opacity: .9;
+}

@@ -68,13 +68,7 @@ const getUserStorageStats = async (userId) => {
   const free = Math.max(0, limit - used);
 
   const projects = await projectRepository.getProjectsByOwner(userId);
-  console.log("USER STORAGE", {
-    user: user.username,
-    projectsUsed,
-    cloudUsed,
-    used,
-    quota: limit,
-  });
+
   return {
     used,
     limit,
@@ -99,7 +93,7 @@ const getUsersStorage = async () => {
 
   for (const user of users) {
     const stats = await getUserStorageStats(user.id);
-    console.log("USERS PAGE STATS", user.username, stats);
+
     result.push({
       id: user.id,
       username: user.username,

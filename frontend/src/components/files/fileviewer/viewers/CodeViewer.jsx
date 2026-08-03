@@ -1,6 +1,6 @@
 import "./CodeViewer.css";
 
-import Button from "../../../common/Button/Button";
+import Button from "../../../common/button/button";
 import CodeEditor from "../../../common/CodeEditor/CodeEditor";
 import getLanguageFromFile from "../../../../utils/getLanguageFromFile";
 import { useEffect } from "react";

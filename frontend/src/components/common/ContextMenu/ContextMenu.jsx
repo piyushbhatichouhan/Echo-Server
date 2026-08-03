@@ -46,12 +46,15 @@ export default function ContextMenu({ x, y, visible, items, onClose }) {
           <button
             key={item.label}
             className="eh-context-item"
+            disabled={item.disabled}
             onClick={() => {
-              item.onClick();
+              if (item.disabled) return;
+
+              item.onClick?.();
               onClose();
             }}
           >
-            <item.icon size={16} />
+            {item.icon && <item.icon size={16} />}
 
             <span>{item.label}</span>
           </button>

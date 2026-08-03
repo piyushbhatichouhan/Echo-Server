@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { getFiles } from "../services/file.api";
-
+import * as projectFile from "../services/projectFiles.api";
 export default function useFiles(projectId) {
   const [files, setFiles] = useState([]);
 
@@ -9,8 +8,8 @@ export default function useFiles(projectId) {
 
   const refresh = async () => {
     try {
-      const data = await getFiles(projectId);
-
+      //   const data = await getFiles(projectId);
+      const data = await projectFile.getProjectFiles(projectId);
       setFiles(data);
     } finally {
       setLoading(false);

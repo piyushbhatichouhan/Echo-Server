@@ -8,7 +8,10 @@ export default function FileToolbar({
   onUploadFolder,
   onNewFolder,
   onNewFile,
+  clipboard,
 }) {
+  console.log("clipboard", clipboard);
+
   return (
     <div className="cloud-toolbar">
       <div className="cloud-toolbar-left">
@@ -41,6 +44,20 @@ export default function FileToolbar({
         <button className="cloud-btn1" disabled>
           <span>You can drag and drop file and folder too</span>
         </button>
+        {clipboard && (
+          <div className="clipboard-info">
+            <span className="clipboard-info__icon">
+              {clipboard.operation === "cut" ? "✂" : "📄"}
+            </span>
+
+            <span className="clipboard-info__text">
+              {clipboard.operation === "cut"
+                ? "Clipboard - Cut:"
+                : "Clipboard - Copy:"}{" "}
+              {clipboard.relativePath}
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );

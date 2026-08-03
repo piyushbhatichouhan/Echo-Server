@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import "./RepositoryCard.css";
+import "./repositorycard.css";
 import Button from "../../common/button/button";
 import RepositoryInfoCard from "../repository/info/RepositoryInfoCard";
 import GitStatusCard from "../repository/status/GitStatusCard";

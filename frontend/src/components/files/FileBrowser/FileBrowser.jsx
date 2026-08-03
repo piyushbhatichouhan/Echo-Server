@@ -27,6 +27,64 @@ export default function FileBrowser({ adapter, workspaceId }) {
   const uploadFileRef = useRef();
   const uploadFolderRef = useRef();
   const [saving, setSaving] = useState(false);
+  const [clipboard, setClipboard] = useState(null);
+
+  const handleCopy = async (item) => {
+    if (!adapter.copyPath) {
+      toast.info("Copy isn't supported here yet.");
+      return;
+    }
+
+    await adapter.copyPath(workspaceId, item.path, item.type);
+
+    setClipboard({
+      operation: "copy",
+      type: item.type,
+      relativePath: item.path,
+    });
+
+    toast.success("Copied");
+  };
+
+  const handleCut = async (item) => {
+    if (!adapter.copyPath) {
+      toast.info("Copy isn't supported here yet.");
+      return;
+    }
+
+    await adapter.cutPath(workspaceId, item.path, item.type);
+
+    setClipboard({
+      operation: "cut",
+      type: item.type,
+      relativePath: item.path,
+    });
+
+    toast.success("Ready to move");
+  };
+
+  const handlePaste = async (destination = currentFolder) => {
+    if (!adapter.copyPath) {
+      toast.info("Copy isn't supported here yet.");
+      return;
+    }
+
+    if (!clipboard) return;
+
+    try {
+      await adapter.pastePath(workspaceId, clipboard, destination);
+
+      if (clipboard.operation === "cut") {
+        setClipboard(null);
+      }
+
+      await refresh();
+
+      toast.success("Pasted");
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message);
+    }
+  };
 
   useEffect(() => {
     if (!selectedFile) return;
@@ -86,8 +144,12 @@ export default function FileBrowser({ adapter, workspaceId }) {
     for (const item of files) {
       const actualFile = item.file || item;
 
-      const relativePath =
+      const sourceRelative =
         item.relativePath || actualFile.webkitRelativePath || actualFile.name;
+
+      const relativePath = currentFolder
+        ? `${currentFolder}/${sourceRelative}`
+        : sourceRelative;
 
       try {
         await adapter.uploadFile(workspaceId, actualFile, relativePath);
@@ -129,7 +191,7 @@ export default function FileBrowser({ adapter, workspaceId }) {
 
     if (!name) return;
 
-    await adapter.createFolder(currentFolder, name);
+    await adapter.createFolder(workspaceId, currentFolder, name);
 
     refresh();
   };
@@ -139,7 +201,7 @@ export default function FileBrowser({ adapter, workspaceId }) {
 
     if (!name) return;
 
-    await adapter.createFile(currentFolder, name);
+    await adapter.createFile(workspaceId, currentFolder, name);
 
     refresh();
   };
@@ -158,6 +220,29 @@ export default function FileBrowser({ adapter, workspaceId }) {
       window.removeEventListener("drop", resetDrag);
     };
   }, []);
+
+  useEffect(() => {
+    console.log("Loading file...", selectedFile);
+
+    if (!selectedFile) return;
+
+    const load = async () => {
+      console.log("Calling adapter.getFileContent");
+
+      const text = await adapter.getFileContent(selectedFile.id);
+
+      console.log("Returned:", text);
+
+      setFileContent(text);
+      setDirty(false);
+    };
+
+    load();
+  }, [selectedFile]);
+
+  useEffect(() => {
+    console.log("selectedFile", selectedFile);
+  }, [selectedFile]);
 
   useEffect(() => {
     refresh();
@@ -189,6 +274,7 @@ export default function FileBrowser({ adapter, workspaceId }) {
         onUploadFolder={() => uploadFolderRef.current.click()}
         onNewFolder={createFolder}
         onNewFile={createFile}
+        clipboard={clipboard}
       />
       {!selectedFile ? (
         <div
@@ -225,7 +311,7 @@ export default function FileBrowser({ adapter, workspaceId }) {
           }}
         >
           {dragActive && (
-            <div className="cloud-drop-overlay">
+            <div classNa="cloud-drop-overlay">
               <Upload size={56} />
 
               <h2>Drop files to upload</h2>
@@ -238,8 +324,13 @@ export default function FileBrowser({ adapter, workspaceId }) {
             currentFolder={currentFolder}
             onNavigate={setCurrentFolder}
             onOpenFile={setSelectedFile}
+            onCopy={handleCopy}
+            onCut={handleCut}
+            onPaste={handlePaste}
+            clipboard={clipboard}
             adapter={adapter}
             refresh={refresh}
+            workspaceId={workspaceId}
           />
         </div>
       ) : (

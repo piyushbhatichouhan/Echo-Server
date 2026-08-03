@@ -9,6 +9,13 @@ const { getProjectGitDirectory } = require("../services/git.service");
 const filesystem = require("./filesystem.service");
 const workspaceFileService = require("./workspace.file.service");
 const storageAllocation = require("./storageAllocation.service");
+const {
+  normalizeRelativePath,
+  relativeDirname,
+  relativeBasename,
+  relativeExt,
+  relativeJoin,
+} = require("../utils/relativePath");
 
 const saveFile = async (projectId, ownerId, file) => {
   //
@@ -415,10 +422,10 @@ const renamePath = async (projectId, ownerId, oldPath, newPath, type) => {
 
   const workspaceRoot = getProjectFilesDirectory(projectId);
 
-  const oldStoragePath = path.join(workspaceRoot, oldPath);
-  const newStoragePath = path.join(workspaceRoot, newPath);
+  const oldStoragePath = relativeJoin(workspaceRoot, oldPath);
+  const newStoragePath = relativeJoin(workspaceRoot, newPath);
 
-  await filesystem.ensureDirectory(path.dirname(newStoragePath));
+  await filesystem.ensureDirectory(relativeDirname(newStoragePath));
 
   await filesystem.moveUploadedFile(oldStoragePath, newStoragePath);
 
@@ -435,7 +442,7 @@ const renamePath = async (projectId, ownerId, oldPath, newPath, type) => {
       AND
           relative_path = $5
       `,
-      [projectId, newPath, path.basename(newPath), newStoragePath, oldPath],
+      [projectId, newPath, relativeBasename(newPath), newStoragePath, oldPath],
     );
 
     return;
@@ -461,7 +468,7 @@ const renamePath = async (projectId, ownerId, oldPath, newPath, type) => {
     const updatedRelative =
       newPath + file.relative_path.substring(oldPath.length);
 
-    const updatedStorage = path.join(workspaceRoot, updatedRelative);
+    const updatedStorage = relativeJoin(workspaceRoot, updatedRelative);
 
     await pool.query(
       `
@@ -476,7 +483,7 @@ const renamePath = async (projectId, ownerId, oldPath, newPath, type) => {
         file.id,
         updatedRelative,
         updatedStorage,
-        path.basename(updatedRelative),
+        relativeBasename(updatedRelative),
       ],
     );
   }
@@ -488,7 +495,7 @@ const createFolder = async (projectId, ownerId, relativePath) => {
 
   const workspaceRoot = getProjectFilesDirectory(projectId);
 
-  const folderPath = path.join(workspaceRoot, relativePath);
+  const folderPath = relativeJoin(workspaceRoot, relativePath);
 
   await filesystem.ensureDirectory(folderPath);
 
@@ -510,7 +517,7 @@ VALUES
     $1,$2,$3,NULL,NULL,0,$4,TRUE
 )
 `,
-    [projectId, path.basename(relativePath), relativePath, folderPath],
+    [projectId, relativeBasename(relativePath), relativePath, folderPath],
   );
 
   return {
@@ -635,6 +642,265 @@ const deletePath = async (projectId, ownerId, relativePath, type) => {
   );
 };
 
+const copyPath = async (projectId, ownerId, relativePath, type) => {
+  const { verifyProjectOwnership } = require("./project.service");
+  await verifyProjectOwnership(projectId, ownerId);
+
+  return {
+    operation: "copy",
+    projectId,
+    relativePath,
+    type,
+  };
+};
+
+const cutPath = async (projectId, ownerId, relativePath, type) => {
+  const { verifyProjectOwnership } = require("./project.service");
+  await verifyProjectOwnership(projectId, ownerId);
+
+  return {
+    operation: "cut",
+    projectId,
+    relativePath,
+    type,
+  };
+};
+
+const pastePath = async (projectId, ownerId, clipboard, destination) => {
+  const { verifyProjectOwnership } = require("./project.service");
+  await verifyProjectOwnership(projectId, ownerId);
+
+  const workspaceRoot = getProjectFilesDirectory(projectId);
+
+  const sourceRelative = clipboard.relativePath;
+
+  const sourcePath = path.join(workspaceRoot, sourceRelative);
+
+  const desiredRelative = relativeJoin(
+    destination,
+    path.basename(sourceRelative),
+  );
+
+  const destinationRelative =
+    clipboard.operation === "copy"
+      ? await generateDuplicatePath(projectId, desiredRelative)
+      : desiredRelative;
+
+  const destinationPath = path.join(workspaceRoot, destinationRelative);
+
+  //
+  // Prevent pasting into itself
+  //
+  if (clipboard.type === "folder" && destination.startsWith(sourceRelative)) {
+    const error = new Error("Invalid destination");
+    error.status = 400;
+    throw error;
+  }
+
+  //
+  // Copy
+  //
+
+  if (clipboard.operation === "copy") {
+    if (clipboard.type === "folder") {
+      const folderSize = await filesystem.calculateDirectorySize(sourcePath);
+
+      await storageAllocation.checkQuota(ownerId, folderSize);
+    }
+  }
+
+  if (clipboard.operation === "copy") {
+    if (clipboard.type === "file") {
+      await filesystem.copyFile(sourcePath, destinationPath);
+
+      const file = await pool.query(
+        `
+        SELECT *
+        FROM files
+        WHERE
+            project_id = $1
+        AND
+            relative_path = $2
+        `,
+        [projectId, sourceRelative],
+      );
+
+      const original = file.rows[0];
+
+      await pool.query(
+        `
+        INSERT INTO files
+        (
+            project_id,
+            original_name,
+            relative_path,
+            stored_name,
+            mime_type,
+            file_size,
+            storage_path,
+            is_directory
+        )
+        VALUES
+        (
+            $1,$2,$3,$4,$5,$6,$7,false
+        )
+        `,
+        [
+          projectId,
+          original.original_name,
+          destinationRelative,
+          original.stored_name,
+          original.mime_type,
+          original.file_size,
+          destinationPath,
+        ],
+      );
+
+      await storageAllocation.reserveStorage(
+        ownerId,
+        Number(original.file_size),
+      );
+    } else {
+      //
+      // Folder copy (next step)
+      //
+      await filesystem.copyDirectory(sourcePath, destinationPath);
+
+      const rows = await pool.query(
+        `
+SELECT *
+FROM files
+WHERE
+    project_id = $1
+AND
+    relative_path LIKE $2
+ORDER BY LENGTH(relative_path)
+`,
+        [projectId, `${sourceRelative}%`],
+      );
+
+      let totalBytes = 0;
+
+      for (const item of rows.rows) {
+        const newRelative =
+          destinationRelative +
+          item.relative_path.substring(sourceRelative.length);
+
+        const newStorage = path.join(workspaceRoot, newRelative);
+
+        await pool.query(
+          `
+INSERT INTO files
+(
+    project_id,
+    original_name,
+    relative_path,
+    stored_name,
+    mime_type,
+    file_size,
+    storage_path,
+    is_directory
+)
+VALUES
+(
+    $1,$2,$3,$4,$5,$6,$7,$8
+)
+`,
+          [
+            projectId,
+            item.original_name,
+            newRelative,
+            item.stored_name,
+            item.mime_type,
+            item.file_size,
+            newStorage,
+            item.is_directory,
+          ],
+        );
+
+        if (!item.is_directory) totalBytes += Number(item.file_size);
+      }
+
+      await storageAllocation.reserveStorage(ownerId, totalBytes);
+    }
+  }
+
+  //
+  // Cut
+  //
+  if (clipboard.operation === "cut") {
+    const existing = await pool.query(
+      `
+  SELECT id
+  FROM files
+  WHERE
+      project_id = $1
+  AND
+      relative_path = $2
+  `,
+      [projectId, destinationRelative],
+    );
+
+    if (existing.rows.length > 0) {
+      const error = new Error(
+        "A file or folder with this name already exists.",
+      );
+      error.status = 409;
+      throw error;
+    }
+
+    await renamePath(
+      projectId,
+      ownerId,
+      sourceRelative,
+      destinationRelative,
+      clipboard.type,
+    );
+  }
+
+  await syncWorkspaceToGit(projectId);
+
+  return {
+    success: true,
+  };
+};
+
+const generateDuplicatePath = async (projectId, relativePath) => {
+  relativePath = normalizeRelativePath(relativePath);
+
+  const extension = relativeExt(relativePath);
+
+  const directory = relativeDirname(relativePath);
+
+  const baseName = path.posix.basename(relativePath, extension);
+
+  let candidate = relativePath;
+
+  let counter = 1;
+
+  while (true) {
+    const exists = await pool.query(
+      `
+      SELECT id
+      FROM files
+      WHERE project_id = $1
+      AND relative_path = $2
+      `,
+      [projectId, candidate],
+    );
+
+    if (exists.rows.length === 0) {
+      return candidate;
+    }
+
+    const newName = `${baseName} (${counter})${extension}`;
+
+    candidate = directory === "." ? newName : relativeJoin(directory, newName);
+
+    counter++;
+  }
+};
+
 module.exports = {
   saveFile,
   getProjectFiles,
@@ -648,4 +914,8 @@ module.exports = {
   createEmptyFile,
   renamePath,
   deletePath,
+  copyPath,
+  cutPath,
+  pastePath,
+  generateDuplicatePath,
 };

@@ -23,6 +23,9 @@ const {
   getFileContent,
   deleteProjectPath,
   renameProjectPath,
+  copyPath,
+  cutPath,
+  pastePath,
 } = require("../controllers/file.controller");
 
 router.get("/projects/:id/files", authenticate, listFiles);
@@ -54,4 +57,9 @@ router.get("/files/:id/download", authenticate, downloadFile);
 router.put("/files/:id/rename", authenticate, renameProjectFile);
 router.delete("/projects/:id/path", authenticate, deleteProjectPath);
 router.put("/projects/:id/rename", authenticate, renameProjectPath);
+
+router.post("/files/copy", authenticate, copyPath);
+router.post("/files/cut", authenticate, cutPath);
+router.post("/files/paste", authenticate, pastePath);
+
 module.exports = router;

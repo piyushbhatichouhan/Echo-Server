@@ -18,6 +18,11 @@ import LogsCard from "../components/project/logscard/logscard";
 import ManageUsers from "../pages/server/manageUsers/ManageUsers";
 import Storage from "../pages/server/storage/Storage";
 import CloudStorage from "../pages/CloudStorage/CloudStorage";
+import VerifyEmailFailed from "../pages/auth/verify-email/VerifyEmailFailed";
+import VerifyEmailSuccess from "../pages/auth/verify-email/VerifyEmailSuccess";
+import VerifyEmail from "../pages/auth/verify-email/VerifyEmail";
+import ForgotPassword from "../pages/auth/forgotpassword/ForgotPassword";
+import ResetPassword from "../pages/auth/forgotpassword/ResetPassword";
 
 export default function AppRouter() {
   return (
@@ -28,6 +33,14 @@ export default function AppRouter() {
         <Route path="/login" element={<Login />} />
 
         <Route path="/register" element={<Register />} />
+
+        <Route path="/verify-email-success" element={<VerifyEmailSuccess />} />
+
+        <Route path="/verify-email-failed" element={<VerifyEmailFailed />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+
         <Route
           element={
             <ProtectedRoute>
