@@ -1,4 +1,4 @@
-import "./FileToolbar.css";
+import "./Filetoolbar.css";
 
 import { Upload, FolderPlus, FilePlus, Folder, File } from "lucide-react";
 import { FileUp, FolderUp } from "lucide-react";
