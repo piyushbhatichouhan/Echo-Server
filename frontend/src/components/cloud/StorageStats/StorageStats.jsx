@@ -2,7 +2,7 @@ import "./StorageStats.css";
 
 export default function StorageStats({ stats }) {
   if (!stats) return null;
-
+  console.log("hello");
   const formatBytes = (bytes) => {
     if (bytes == null) return "Unlimited";
 
