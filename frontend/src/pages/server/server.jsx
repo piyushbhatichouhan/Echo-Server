@@ -45,7 +45,7 @@ export default function Server() {
       <div className="server__header">
         <h1>Server</h1>
 
-        <p>Manage your EchoHub server and users.</p>
+        <p>Manage your server and users.</p>
       </div>
 
       <div className="server__grid">
