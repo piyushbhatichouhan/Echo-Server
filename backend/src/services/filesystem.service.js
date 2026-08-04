@@ -35,7 +35,16 @@ const ensureDirectory = async (directory) => {
 const moveUploadedFile = async (tempPath, destination) => {
   await ensureDirectory(path.dirname(destination));
 
-  await fs.rename(tempPath, destination);
+  try {
+    await fs.rename(tempPath, destination);
+  } catch (err) {
+    if (err.code === "EXDEV") {
+      await fs.copyFile(tempPath, destination);
+      await fs.unlink(tempPath);
+    } else {
+      throw err;
+    }
+  }
 };
 
 const removeDiskFile = async (filePath) => {
