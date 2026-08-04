@@ -2,6 +2,7 @@ require("dotenv").config();
 
 const app = require("./app");
 const { connectDatabase } = require("./config/database");
+const { validateStartup } = require("./startup/validator");
 
 const PORT = process.env.PORT || 3000;
 
@@ -10,7 +11,7 @@ const startServer = async () => {
   console.log("🔄 Connecting to PostgreSQL...");
 
   await connectDatabase();
-
+  await validateStartup();
   (async () => {
     await connectDatabase();
 

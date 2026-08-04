@@ -39,17 +39,15 @@ export default function Dashboard() {
 
     return `${value.toFixed(1)} ${units[i]}`;
   };
-
+  if (loading || !dashboard || !stats) {
+    return <h2>Loading...</h2>;
+  }
   let quotaUsed;
-
+  console.log("stats", stats);
   if (stats !== null) {
     quotaUsed = `${formatBytes(stats.used)} / ${formatBytes(stats.limit)}`;
   } else {
     quotaUsed = "Loading...";
-  }
-
-  if (loading) {
-    return <h2>Loading...</h2>;
   }
 
   return (

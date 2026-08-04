@@ -14,7 +14,8 @@ const {
   indexWorkspace,
   syncWorkspaceToGit,
 } = require("./workspace.sync.service");
-const simpleGit = require("simple-git");
+const gitOperations = require("../git/git.service");
+const gitClient = require("../git/git.client");
 const storageAllocation = require("./storageAllocation.service");
 
 const checkGit = async (projectId, stage) => {
@@ -208,28 +209,6 @@ const getProjectGitDirectory = (projectId) => {
   return path.join(GIT_ROOT, projectId);
 };
 
-const pullRepositoryInternal = async (gitDirectory) => {
-  const git = simpleGit(gitDirectory);
-
-  const branch = (await git.branch()).current;
-
-  return await git.pull("origin", branch);
-};
-
-const pushRepositoryInternal = async (gitDirectory) => {
-  const git = simpleGit(gitDirectory);
-
-  const branch = (await git.branch()).current;
-
-  return await git.push("origin", branch);
-};
-
-const fetchRepositoryInternal = async (gitDirectory) => {
-  const git = simpleGit(gitDirectory);
-
-  return await git.fetch("origin");
-};
-
 const cloneRepository = async (projectId, ownerId) => {
   const {
     syncGitToWorkspace,
@@ -371,9 +350,7 @@ const getGitStatus = async (projectId, ownerId) => {
 
   const gitDirectory = getProjectGitDirectory(projectId);
 
-  const git = simpleGit(gitDirectory);
-
-  const status = await git.status();
+  const status = await gitOperations.status(gitDirectory);
 
   const changes = [];
 
@@ -434,13 +411,9 @@ const commitChanges = async (projectId, ownerId, message) => {
 
   const gitDirectory = getProjectGitDirectory(projectId);
 
-  const git = simpleGit(gitDirectory);
-
   const statusBefore = await git.status();
 
-  await git.add(".");
-
-  const result = await git.commit(message);
+  const result = await gitOperations.commit(gitDirectory, message);
 
   const statusAfter = await git.status();
 
@@ -459,7 +432,7 @@ const pullRepository = async (projectId, ownerId) => {
 
   const gitDirectory = getProjectGitDirectory(projectId);
 
-  await pullRepositoryInternal(gitDirectory);
+  await gitOperations.pull(gitDirectory);
 
   await syncGitToWorkspace(projectId);
 
@@ -477,7 +450,7 @@ const pushRepository = async (projectId, ownerId) => {
 
   const gitDirectory = getProjectGitDirectory(projectId);
 
-  await pushRepositoryInternal(gitDirectory);
+  await gitOperations.push(gitDirectory);
 
   return {
     success: true,
@@ -491,7 +464,7 @@ const fetchRepository = async (projectId, ownerId) => {
 
   const gitDirectory = getProjectGitDirectory(projectId);
 
-  await fetchRepositoryInternal(gitDirectory);
+  await gitOperations.fetch(gitDirectory);
 
   return {
     success: true,
@@ -515,13 +488,7 @@ const updateRepository = async (projectId, ownerId) => {
 
   const gitDirectory = getProjectGitDirectory(projectId);
 
-  const git = simpleGit(gitDirectory);
-
-  await git.fetch("origin");
-
-  await git.reset(["--hard", `origin/${repository.branch}`]);
-
-  await git.clean("f", ["-d"]);
+  await gitOperations.resetHard(gitDirectory, repository.branch);
 
   await syncGitToWorkspace(projectId);
 

@@ -2,6 +2,8 @@ const path = require("path");
 
 const ROOT = process.cwd();
 
+const platform = require("./platform");
+
 module.exports = {
   projects: process.env.PROJECTS_PATH || path.join(ROOT, "storage", "projects"),
 
@@ -15,9 +17,9 @@ module.exports = {
     process.env.PUBLISHED_PATH || path.join(ROOT, "storage", "published"),
 
   nginx: {
-    executable: process.env.NGINX_EXECUTABLE || "D:/nginx/nginx.exe",
+    executable: process.env.NGINX_EXECUTABLE || platform.nginxExecutable,
 
     configDirectory:
-      process.env.NGINX_CONFIG_DIRECTORY || "D:/nginx/conf/echohub",
+      process.env.NGINX_CONFIG_DIRECTORY || platform.nginxConfigDirectory,
   },
 };
