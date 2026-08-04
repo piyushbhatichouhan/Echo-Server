@@ -18,29 +18,29 @@ services:
     networks:
       - echo-network
 
-backend:
-  build:
-    context: .
-    dockerfile: backend/Dockerfile
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
 
-  container_name: echo-backend
+    container_name: echo-backend
 
-  restart: unless-stopped
+    restart: unless-stopped
 
-  env_file:
+    env_file:
     - ./backend/.env
 
-  depends_on:
+    depends_on:
     - postgres
 
-  volumes:
+    volumes:
     - /srv/echo-storage:/srv/echo-storage
     - /var/run/docker.sock:/var/run/docker.sock
 
-  ports:
+    ports:
     - "3000:3000"
 
-  networks:
+    networks:
     - echo-network
 
   frontend:
