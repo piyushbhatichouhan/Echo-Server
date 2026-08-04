@@ -89,7 +89,7 @@ export default function Login() {
 
         <div className="login__card">
           <div className="login__header">
-            <h2>Welcome Back</h2>
+            <h2>Welcome</h2>
 
             <span>Sign in to continue to your dashboard.</span>
           </div>
