@@ -6,7 +6,7 @@ import Projects from "../pages/projects/projects";
 import Project from "../pages/project/project";
 import DashboardLayout from "../layouts/DashboardLayout";
 import ProtectedRoute from "./ProtectedRoute";
-import Settings from "../pages/settings/Settings";
+import Settings from "../pages/settings/settings";
 import Server from "../pages/server/server";
 import PendingUsers from "../pages/server/pendingUsers/pendingUsers";
 import ProjectLayout from "../layouts/ProjectLayout";
