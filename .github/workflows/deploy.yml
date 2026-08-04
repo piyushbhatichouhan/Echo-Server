@@ -13,11 +13,23 @@ jobs:
       - name: Update repository
         run: |
           cd /srv/echo
-          git pull --ff-only
+          git fetch origin
+          git reset --hard origin/main
 
-      - name: Restart containers
+      - name: Stop existing containers
         run: |
           docker compose \
-             -f /srv/echo/docker-compose.prod.yml \
-             --project-directory /srv/echo \
-             up -d --build
+            -f /srv/echo/docker-compose.prod.yml \
+            --project-directory /srv/echo \
+            down
+
+      - name: Build and start containers
+        run: |
+          docker compose \
+            -f /srv/echo/docker-compose.prod.yml \
+            --project-directory /srv/echo \
+            up -d --build --remove-orphans
+
+      - name: Cleanup old images
+        run: |
+          docker image prune -f
