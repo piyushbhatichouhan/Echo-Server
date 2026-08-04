@@ -4,17 +4,20 @@ const ROOT = process.cwd();
 
 const platform = require("./platform");
 
+const STORAGE_ROOT = process.env.STORAGE_ROOT || path.join(ROOT, "storage");
+
 module.exports = {
-  projects: process.env.PROJECTS_PATH || path.join(ROOT, "storage", "projects"),
+  STORAGE_ROOT,
 
-  git: process.env.GIT_PATH || path.join(ROOT, "storage", "git"),
+  projects: path.join(STORAGE_ROOT, "projects"),
 
-  cloud: process.env.CLOUD_PATH || path.join(ROOT, "storage", "cloud"),
+  git: path.join(STORAGE_ROOT, "git"),
 
-  backups: process.env.BACKUPS_PATH || path.join(ROOT, "storage", "backups"),
+  cloud: path.join(STORAGE_ROOT, "cloud"),
 
-  published:
-    process.env.PUBLISHED_PATH || path.join(ROOT, "storage", "published"),
+  backups: path.join(STORAGE_ROOT, "backups"),
+
+  published: path.join(STORAGE_ROOT, "published"),
 
   nginx: {
     executable: process.env.NGINX_EXECUTABLE || platform.nginxExecutable,
