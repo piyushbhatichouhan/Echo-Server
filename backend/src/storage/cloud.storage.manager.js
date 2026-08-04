@@ -1,7 +1,12 @@
 const path = require("path");
 const fs = require("fs/promises");
 
-const CLOUD_ROOT = path.resolve(process.cwd(), "storage", "cloud");
+const CLOUD_ROOT =
+  process.env.CLOUD_PATH ||
+  path.join(
+    process.env.STORAGE_ROOT || path.join(process.cwd(), "storage"),
+    "cloud",
+  );
 
 const getCloudRoot = (userId) => {
   return path.join(CLOUD_ROOT, userId.toString());
