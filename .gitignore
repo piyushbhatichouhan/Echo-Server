@@ -4,3 +4,4 @@ docs
 testing
 echohub_backup.sql
 docker-compose.yml
+backend/storage
