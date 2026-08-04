@@ -13,7 +13,8 @@ const registerUser = async (userData) => {
 
   const assignedQuota = await storageAllocation.allocateQuota(defaultQuota);
 
-  const { username, email, password } = userData;
+  const { username, password } = userData;
+  const email = userData.email.trim().toLowerCase();
 
   const existingUser = await pool.query(
     "SELECT id FROM users WHERE username = $1",
@@ -136,6 +137,8 @@ const verifyEmail = async (token) => {
 };
 
 const resendVerificationEmail = async (email) => {
+  email = email.trim().toLowerCase();
+
   const result = await pool.query(
     `
     SELECT
@@ -191,7 +194,8 @@ const resendVerificationEmail = async (email) => {
 };
 
 const loginUser = async (loginData) => {
-  const { email, password } = loginData;
+  const { password } = loginData;
+  const email = loginData.email.trim().toLowerCase();
 
   // Find the user
   const result = await pool.query(
@@ -308,6 +312,8 @@ created_at
 };
 
 const forgotPasswordUser = async (email) => {
+  email = email.trim().toLowerCase();
+
   const result = await pool.query(
     `
     SELECT id,email,verified
