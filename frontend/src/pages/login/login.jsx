@@ -84,7 +84,7 @@ export default function Login() {
 
       <div className="login__container">
         <div className="login__brand">
-          <h1>EchoHub</h1>
+          <h1>Echo-Server</h1>
         </div>
 
         <div className="login__card">
