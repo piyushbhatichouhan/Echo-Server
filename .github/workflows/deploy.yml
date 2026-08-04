@@ -10,26 +10,42 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      - name: Update repository
+      - name: Sync repository
         run: |
           cd /srv/echo
           git fetch origin
           git reset --hard origin/main
+          git clean -fd
 
-      - name: Stop existing containers
+      - name: Stop and remove old containers
         run: |
           docker compose \
             -f /srv/echo/docker-compose.prod.yml \
             --project-directory /srv/echo \
-            down
+            down --remove-orphans || true
 
-      - name: Build and start containers
+          docker rm -f \
+            echo-postgres \
+            echo-backend \
+            echo-frontend \
+            2>/dev/null || true
+
+      - name: Build and start
         run: |
           docker compose \
             -f /srv/echo/docker-compose.prod.yml \
             --project-directory /srv/echo \
-            up -d --build --remove-orphans
+            up -d --build --force-recreate --remove-orphans
 
-      - name: Cleanup old images
+      - name: Remove dangling images
         run: |
           docker image prune -f
+
+      - name: Verify deployment
+        run: |
+          docker compose \
+            -f /srv/echo/docker-compose.prod.yml \
+            --project-directory /srv/echo \
+            ps
+
+          docker ps
