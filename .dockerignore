@@ -1,0 +1,27 @@
+# Git
+.git
+.gitignore
+
+# Node
+node_modules
+**/node_modules
+
+# Runtime storage
+backend/storage
+
+# Build output
+dist
+build
+coverage
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editors
+.vscode
+.idea
+
+# Environment
+.env
+.env.*

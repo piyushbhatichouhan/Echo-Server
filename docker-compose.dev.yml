@@ -1,5 +1,4 @@
 services:
-
   postgres:
     image: postgres:17
 
@@ -17,6 +16,26 @@ services:
 
     volumes:
       - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+
+    container_name: echo-dev-backend
+
+    env_file:
+      - ./backend/.env
+
+    depends_on:
+      - postgres
+
+    ports:
+      - "3000:3000"
+
+    volumes:
+      - "D:/Echostorage:/storage"
+      - /var/run/docker.sock:/var/run/docker.sock
 
 volumes:
   postgres_data:
