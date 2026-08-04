@@ -1,7 +1,8 @@
 const Docker = require("dockerode");
 
-const docker = new Docker({
-  socketPath: "//./pipe/docker_engine",
-});
+// Automatically uses:
+// Windows -> Docker Desktop named pipe
+// Linux -> /var/run/docker.sock
+const docker = new Docker();
 
 module.exports = docker;

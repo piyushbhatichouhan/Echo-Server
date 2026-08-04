@@ -1,8 +1,20 @@
 const { spawn } = require("child_process");
+const runtime = require("../../config/runtime");
+
+function normalizeCommand(command) {
+  if (process.platform !== "win32") {
+    command = command.replace(/^python(\s|$)/, `${runtime.python}$1`);
+    command = command.replace(/^pip(\s|$)/, `${runtime.pip}$1`);
+  }
+
+  return command;
+}
 
 const runCommand = ({ command, cwd, env = {} }) => {
   return new Promise((resolve) => {
-    const child = spawn(command, {
+    const normalizedCommand = normalizeCommand(command);
+
+    const child = spawn(normalizedCommand, {
       cwd,
       shell: true,
       env: {
