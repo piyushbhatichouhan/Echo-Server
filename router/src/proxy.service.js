@@ -6,7 +6,7 @@ const proxyRequest = (req, res, deployment) => {
   let target;
 
   if (process.env.ROUTER_TARGET === "docker") {
-    target = `http://${deployment.containerName}:3000`;
+    target = `http://${deployment.containerName}:${deployment.port}`;
   } else {
     target = `http://localhost:${deployment.port}`;
   }
