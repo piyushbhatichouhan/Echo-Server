@@ -31,7 +31,7 @@ const createContainer = async (
     Env: dockerEnvironment,
 
     ExposedPorts: {
-      [`${containerPort}/tcp`]: {},
+      ["80/tcp"]: {},
     },
 
     HostConfig: {
@@ -40,11 +40,13 @@ const createContainer = async (
       },
 
       PortBindings: {
-        [`${containerPort}/tcp`]: [
+        ["80/tcp"]: [
           {
             HostPort: String(projectPort),
           },
         ],
+
+        NetworkMode: "echo_echo-network",
       },
     },
   };
