@@ -1,6 +1,7 @@
 const workspace = require("../../workspace/workspace.service");
 const fs = require("fs/promises");
 const path = require("path");
+const healthService = require("../../health.service");
 
 module.exports = {
   deploy,
@@ -26,6 +27,8 @@ async function deploy(context) {
 
     await start(context);
 
+    await healthCheck(context);
+
     await finishDeployment(context);
 
     return context.deployment;
@@ -46,7 +49,7 @@ async function prepare(context) {
   context.cwd = workspace.getProjectFilesDirectory(project.id);
 
   context.imageName = `echo-${project.id}`;
-
+  context.containerPort = context.settings.port;
   context.containerName = context.infrastructure.container.getContainerName(
     project.id,
   );
@@ -285,8 +288,8 @@ async function start(context) {
   const container = await context.infrastructure.container.create(
     project.id,
     context.imageName,
-    settings.port,
     environment,
+    context.containerPort,
   );
 
   context.container = container;
@@ -305,6 +308,26 @@ async function start(context) {
   await context.infrastructure.logger.info(
     deployment.id,
     "Application is now online.",
+  );
+}
+
+async function healthCheck(context) {
+  const { deployment, settings } = context;
+
+  await context.infrastructure.logger.stage(
+    deployment.id,
+    "Checking Application Health",
+  );
+
+  const healthy = await healthService.checkApplication(settings.port);
+
+  if (!healthy) {
+    throw new Error("Application failed health check.");
+  }
+
+  await context.infrastructure.logger.info(
+    deployment.id,
+    "Application responded successfully.",
   );
 }
 
@@ -376,7 +399,9 @@ async function getStatus(context) {
 
   if (!deployment) {
     return {
-      status: "Not Deployed",
+      state: "not_deployed",
+      display: "Not Deployed",
+
       running: false,
       stoppedByUser: false,
     };
@@ -389,7 +414,11 @@ async function getStatus(context) {
   return {
     ...containerStatus,
 
-    status: deployment.status,
+    state: deployment.status,
+
+    display: deployment.status
+      .replaceAll("_", " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase()),
 
     running: deployment.status === "running",
 

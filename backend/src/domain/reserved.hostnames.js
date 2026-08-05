@@ -1,0 +1,18 @@
+module.exports = [
+  "api",
+  "admin",
+  "dashboard",
+  "www",
+  "mail",
+  "ftp",
+  "echo",
+  "static",
+  "backend",
+  "frontend",
+  "assets",
+  "piyushbhatichouhan",
+  "piyushbhati",
+  "piyush",
+  "pbc",
+  "piyushshende",
+];

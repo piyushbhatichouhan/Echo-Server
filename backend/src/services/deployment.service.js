@@ -11,7 +11,8 @@ const runtimeResolver = require("./deployment/runtimeResolver");
 const projectSettingsService = require("./projectSettings.service");
 const deploymentRepository = require("./deployment/infrastructure/deployment.infrastructure");
 const infrastructure = require("./deployment/infrastructure");
-
+const runtimeEnvironmentService = require("./runtime.environment.service");
+const publicationService = require("../publication/publication.service");
 const {
   deployment,
   logger,
@@ -40,10 +41,17 @@ const deployProject = async (projectId, ownerId) => {
     ownerId,
   );
 
-  const environment = await environmentService.getEnvironmentVariables(
+  const userEnvironment = await environmentService.getEnvironmentVariables(
     projectId,
     ownerId,
   );
+
+  const runtimeEnvironment = runtimeEnvironmentService.buildRuntimeEnvironment(
+    project,
+    settings,
+  );
+
+  const environment = [...userEnvironment, ...runtimeEnvironment];
 
   const runtime = runtimeResolver.getRuntimeHandler(settings.runtime);
 
@@ -54,7 +62,12 @@ const deployProject = async (projectId, ownerId) => {
     infrastructure,
   };
 
-  return await runtime.deploy(deploymentContext);
+  const deployment = await runtime.deploy(deploymentContext);
+
+  // Refresh routing only if this project is already published
+  await publicationService.republishProject(projectId, ownerId);
+
+  return deployment;
 };
 
 const stopProject = async (projectId, ownerId) => {
@@ -152,6 +165,16 @@ const getDeploymentStatus = async (projectId, ownerId) => {
     ownerId,
   );
 
+  // Nothing has ever been deployed
+  if (!settings) {
+    return {
+      state: "not_deployed",
+      display: "Not Deployed",
+      running: false,
+      stoppedByUser: false,
+    };
+  }
+
   const runtime = runtimeResolver.getRuntimeHandler(settings.runtime);
 
   const runtimeStatus = await runtime.getStatus({
@@ -163,23 +186,17 @@ const getDeploymentStatus = async (projectId, ownerId) => {
 
   const repository = await git.getRepository(projectId, ownerId);
 
-  if (!settings) {
-    return {
-      status: "Not Deployed",
-    };
-  }
-
   return {
     ...runtimeStatus,
 
+    state: runtimeStatus.state,
+    display: runtimeStatus.display,
+
     runtime: settings.runtime,
-
     port: settings.port,
-
     workingDirectory: settings.working_directory,
 
     repository: repository?.repository_name ?? null,
-
     branch: repository?.branch ?? null,
   };
 };

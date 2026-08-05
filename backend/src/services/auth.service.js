@@ -292,7 +292,7 @@ username,
 email,
 status,
 is_owner,
-created_at
+created_at  
         FROM users
         WHERE id = $1
         `,

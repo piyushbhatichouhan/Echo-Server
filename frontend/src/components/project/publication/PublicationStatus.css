@@ -1,0 +1,162 @@
+.publication-card {
+    background: linear-gradient(180deg, #2b211c 0%, #241b17 100%);
+    border: 1px solid rgba(255, 170, 90, 0.18);
+    border-radius: 18px;
+    padding: 24px;
+    box-shadow:
+        0 12px 30px rgba(0, 0, 0, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.publication-header {
+    margin-bottom: 22px;
+}
+
+.publication-header h3 {
+    margin: 0;
+    color: #ffb15c;
+    font-size: 1.35rem;
+    font-weight: 700;
+}
+
+.publication-header p {
+    margin-top: 6px;
+    color: #a99d92;
+    font-size: 0.9rem;
+}
+
+.publication-status-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 26px;
+}
+
+.publication-status-item {
+    background: rgba(255, 255, 255, 0.025);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 14px;
+    padding: 16px;
+    transition: 0.2s ease;
+}
+
+.publication-status-item:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255, 177, 92, 0.25);
+}
+
+.publication-status-label {
+    display: block;
+    margin-bottom: 12px;
+    color: #9f9489;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 12px;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+/* ---------- STATUS COLORS ---------- */
+
+.status-active,
+.status-verified {
+    color: #62e58a;
+    background: rgba(98, 229, 138, 0.12);
+}
+
+.status-pending {
+    color: #ffc857;
+    background: rgba(255, 200, 87, 0.12);
+}
+
+.status-failed,
+.status-error,
+.status-inactive {
+    color: #ff6f6f;
+    background: rgba(255, 111, 111, 0.12);
+}
+
+/* ---------- URL ---------- */
+
+.publication-info {
+    margin-bottom: 24px;
+}
+
+.publication-label {
+    display: block;
+    margin-bottom: 8px;
+    color: #9f9489;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.publication-box {
+    background: #171311;
+    border: 1px solid #3a2d27;
+    border-radius: 12px;
+    padding: 14px 16px;
+    overflow-x: auto;
+}
+
+.publication-link a {
+    color: #7dc8ff;
+    text-decoration: none;
+    font-size: 0.92rem;
+    word-break: break-all;
+}
+
+.publication-link a:hover {
+    text-decoration: underline;
+}
+
+/* ---------- ACTIONS ---------- */
+
+.publication-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.publication-actions>* {
+    flex: 1;
+    min-width: 140px;
+}
+
+/* ---------- EMPTY STATE ---------- */
+
+.publication-card p {
+    color: #9f9489;
+}
+
+/* ---------- RESPONSIVE ---------- */
+
+@media (max-width:900px) {
+
+    .publication-status-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .publication-actions {
+        flex-direction: column;
+    }
+
+    .publication-actions>* {
+        width: 100%;
+    }
+}

@@ -5,3 +5,7 @@ testing
 echohub_backup.sql
 docker-compose.yml
 backend/storage
+router/node_modules
+router/.env
+backend/src/routing/npm/data
+backend/src/routing/npm/letsencrypt
