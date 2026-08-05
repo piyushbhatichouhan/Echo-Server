@@ -39,14 +39,14 @@ const createContainer = async (
         Name: "unless-stopped",
       },
 
+      NetworkMode: process.env.DOCKER_NETWORK,
+
       PortBindings: {
         ["80/tcp"]: [
           {
             HostPort: String(projectPort),
           },
         ],
-
-        NetworkMode: "echo_echo-network",
       },
     },
   };
