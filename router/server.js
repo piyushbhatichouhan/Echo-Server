@@ -7,7 +7,7 @@ const PORT = process.env.PORT || 8080;
 
 (async () => {
   try {
-    console.log("Connecting to PostgreSQL...");
+    console.log("Connecting to PostgreSQL database...");
 
     await connectDatabase();
 
