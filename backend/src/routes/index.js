@@ -15,6 +15,8 @@ const adminRoutes = require("./admin.routes");
 const storageRoutes = require("./storage.routes");
 const cloudRoutes = require("./cloud.routes");
 const runtimeRoutes = require("./runtime.routes");
+const domainRoutes = require("../domain/domain.routes");
+const publicationRoutes = require("../publication/publication.routes");
 
 router.use("/webhooks", webhookRoutes);
 router.use("/auth", authRoutes);
@@ -31,4 +33,7 @@ router.use("/admin", adminRoutes);
 router.use("/storage", storageRoutes);
 router.use("/cloud", cloudRoutes);
 router.use(runtimeRoutes);
+router.use("/domains", domainRoutes);
+router.use("/projects/publication", publicationRoutes);
+
 module.exports = router;

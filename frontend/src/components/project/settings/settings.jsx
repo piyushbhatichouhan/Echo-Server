@@ -9,6 +9,9 @@ import CodeEditor from "../../common/CodeEditor/CodeEditor";
 import { deleteProject } from "../../../services/project.api";
 import { useNavigate } from "react-router-dom";
 import ConfirmationModal from "../../common/modal/ConfirmationModal";
+import PublicationStatus from "../publication/PublicationStatus";
+import usePublication from "../../../hooks/usePublication";
+import * as publicationApi from "../../../services/publication.api";
 
 export default function Settings({ projectId }) {
   const { project, settings, loading, save } = useProjectSettings(projectId);
@@ -22,6 +25,36 @@ export default function Settings({ projectId }) {
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   const [deleting, setDeleting] = useState(false);
+
+  const {
+    publication,
+    loading: publoading,
+    pubrefresh,
+  } = usePublication(projectId);
+
+  const handlePublish = async () => {
+    try {
+      await publicationApi.publishProject(projectId);
+
+      await pubrefresh();
+
+      toast.success("Website published");
+    } catch (err) {
+      toast.error("Action Failed", err.response?.data?.message || err.message);
+    }
+  };
+
+  const handleUnpublish = async () => {
+    try {
+      await publicationApi.unpublishProject(projectId);
+
+      await pubrefresh();
+
+      toast.success("Website unpublished");
+    } catch (err) {
+      toast.error("Action Failed", err.response?.data?.message || err.message);
+    }
+  };
 
   const handleDeleteProject = async () => {
     setDeleting(true);
@@ -242,6 +275,15 @@ export default function Settings({ projectId }) {
           />
         </section>
       )}
+
+      <PublicationStatus
+        publication={publication}
+        loading={publoading}
+        onPublish={handlePublish}
+        onUnpublish={handleUnpublish}
+        refresh={pubrefresh}
+      />
+
       <section className="eh-settings-section eh-danger-zone">
         <h2>Danger Zone</h2>
 

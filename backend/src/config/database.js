@@ -36,5 +36,8 @@ const connectDatabase = async () => {
 
 module.exports = {
   pool,
+
+  query: (text, params) => pool.query(text, params),
+
   connectDatabase,
 };

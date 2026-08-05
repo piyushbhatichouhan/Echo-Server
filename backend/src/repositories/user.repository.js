@@ -188,6 +188,20 @@ const decrementUsedBytes = async (userId, bytes) => {
   );
 };
 
+const getById = async (id) => {
+  const result = await db.query(
+    `
+    SELECT *
+    FROM users
+    WHERE id = $1
+    LIMIT 1
+    `,
+    [id],
+  );
+
+  return result.rows[0] || null;
+};
+
 module.exports = {
   getUsers,
   getUserById,
@@ -202,4 +216,6 @@ module.exports = {
   updateUserQuota,
   incrementUsedBytes,
   decrementUsedBytes,
+
+  getById,
 };

@@ -1,7 +1,7 @@
 const workspace = require("../../workspace/workspace.service");
 const fs = require("fs/promises");
 const path = require("path");
-
+const healthService = require("../../health.service");
 module.exports = {
   deploy,
   start,
@@ -26,6 +26,8 @@ async function deploy(context) {
 
     await start(context);
 
+    await healthCheck(context);
+
     await finishDeployment(context);
 
     return context.deployment;
@@ -47,9 +49,24 @@ async function prepare(context) {
     context.cwd,
     settings.output_directory || ".",
   );
-
+  context.imageName = `echo-${project.id}`;
+  context.containerPort = 80;
   context.publishedDirectory =
     context.infrastructure.publisher.getPublishedDirectory(project.id);
+
+  context.settings.dockerfile = generateDockerfile(context);
+}
+
+function generateDockerfile(context) {
+  const output = context.settings.output_directory || "dist";
+
+  return `
+FROM nginx:alpine
+
+COPY ${output}/ /usr/share/nginx/html/
+
+EXPOSE 80
+`;
 }
 
 async function createDeployment(context) {
@@ -137,70 +154,51 @@ async function build(context) {
 }
 
 async function publish(context) {
-  const { outputDirectory, publishedDirectory, deployment, settings } = context;
+  const { deployment, project, settings } = context;
 
-  await context.infrastructure.logger.stage(deployment.id, "Publishing Files");
-
-  //
-  // Ensure output directory exists
-  //
-  try {
-    await fs.access(outputDirectory);
-  } catch {
-    throw new Error(
-      `Output directory "${settings.output_directory}" was not found.`,
-    );
-  }
-
-  //
-  // Copy files
-  //
-  await context.infrastructure.logger.info(
+  await context.infrastructure.logger.stage(
     deployment.id,
-    "Copying build output...",
+    "Building Docker Image",
   );
 
-  await context.infrastructure.publisher.copyDirectory(
-    outputDirectory,
-    publishedDirectory,
-  );
+  // Remove previous image
+  await context.infrastructure.docker.remove(project.id);
 
   await context.infrastructure.logger.info(
     deployment.id,
-    "Files copied successfully.",
+    "Previous Docker image removed.",
   );
 
-  //
-  // Generate nginx config
-  //
-  await context.infrastructure.logger.info(
-    deployment.id,
-    "Generating web server configuration...",
+  // Build new image
+  const imageName = await context.infrastructure.docker.build(
+    project.id,
+    settings,
+    async (message) => {
+      await context.infrastructure.logger.info(deployment.id, message);
+    },
   );
 
-  await context.infrastructure.nginx.publishStaticSite(context);
+  context.imageName = imageName;
+
+  await context.infrastructure.deployment.updateImage(deployment.id, imageName);
 
   await context.infrastructure.logger.info(
     deployment.id,
-    "Web server configuration generated.",
+    "Docker image built successfully.",
   );
 }
 
 async function verify(context) {
-  const { deployment, publishedDirectory } = context;
+  const { deployment } = context;
 
   await context.infrastructure.logger.stage(
     deployment.id,
     "Verifying Deployment",
   );
 
-  await context.infrastructure.verification.verifyStaticDeployment(
-    publishedDirectory,
-  );
-
   await context.infrastructure.logger.info(
     deployment.id,
-    "Deployment verified successfully.",
+    "Docker image verified.",
   );
 }
 
@@ -239,10 +237,10 @@ async function failDeployment(context, error) {
 async function cleanup(context) {}
 
 async function start(context) {
+  const { project, environment } = context;
+
   const deployment =
-    await context.infrastructure.deployment.getLatestDeployment(
-      context.project.id,
-    );
+    await context.infrastructure.deployment.getLatestDeployment(project.id);
 
   if (!deployment) {
     throw new Error("No deployment found.");
@@ -253,6 +251,27 @@ async function start(context) {
     "Starting Deployment",
   );
 
+  // Stop previous container
+  await context.infrastructure.container.stopByProject(project.id);
+
+  // Remove previous container
+  await context.infrastructure.container.removeByProject(project.id);
+
+  // Create new container
+  const container = await context.infrastructure.container.create(
+    project.id,
+    context.imageName,
+    environment,
+    context.containerPort,
+  );
+
+  context.container = container;
+
+  // Start it
+  await context.infrastructure.container.start(container, deployment.id);
+
+  await context.infrastructure.deployment.markStoppedByUser(project.id, false);
+
   await context.infrastructure.deployment.updateStatus(
     deployment.id,
     "running",
@@ -261,6 +280,25 @@ async function start(context) {
   await context.infrastructure.logger.info(
     deployment.id,
     "Static site is now online.",
+  );
+}
+async function healthCheck(context) {
+  const { deployment, settings } = context;
+
+  await context.infrastructure.logger.stage(
+    deployment.id,
+    "Checking Application Health",
+  );
+
+  const healthy = await healthService.checkApplication(settings.port);
+
+  if (!healthy) {
+    throw new Error("Application failed health check.");
+  }
+
+  await context.infrastructure.logger.info(
+    deployment.id,
+    "Application responded successfully.",
   );
 }
 
@@ -331,15 +369,23 @@ async function getStatus(context) {
 
   if (!deployment) {
     return {
-      status: "Not Deployed",
+      state: "not_deployed",
+      display: "Not Deployed",
+
       running: false,
       stoppedByUser: false,
     };
   }
 
   return {
-    status: deployment.status,
+    state: deployment.status,
+
+    display: deployment.status
+      .replaceAll("_", " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase()),
+
     running: deployment.status === "running",
+
     stoppedByUser: deployment.stopped_by_user,
   };
 }

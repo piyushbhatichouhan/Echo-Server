@@ -25,6 +25,9 @@ import Environment from "../../components/project/environment/Environment";
 import FileBrowser from "../../components/files/FileBrowser/FileBrowser";
 import projectWorkspace from "../../services/projectWorkspace";
 import * as projectFile from "../../services/projectFiles.api";
+import PublicationStatus from "../../components/project/publication/PublicationStatus";
+import usePublication from "../../hooks/usePublication";
+import * as publicationApi from "../../services/publication.api";
 
 export default function Project() {
   const { id } = useParams();
@@ -93,11 +96,42 @@ export default function Project() {
     }
   };
 
+  const { publication, loading, pubrefresh } = usePublication(id);
+
+  const handlePublish = async () => {
+    try {
+      await publicationApi.publishProject(id);
+
+      await pubrefresh();
+
+      toast.success("Website published");
+      refresh();
+    } catch (err) {
+      toast.error("Action Failed", err.response?.data?.message || err.message);
+    }
+  };
+
+  const handleUnpublish = async () => {
+    try {
+      await publicationApi.unpublishProject(id);
+
+      await pubrefresh();
+
+      toast.success("Website unpublished");
+      refresh();
+    } catch (err) {
+      toast.error("Action Failed", err.response?.data?.message || err.message);
+    }
+  };
+
   if (projectLoading || deploymentLoading) {
     return <p>Loading...</p>;
   }
 
-  const deploymentState = status?.status || "unknown";
+  const deploymentState = status?.state ?? "not_deployed";
+
+  console.log("Deployment status:", status);
+  console.log("Deployment state:", deploymentState);
 
   return (
     <div className="eh-project-page">
@@ -124,7 +158,13 @@ export default function Project() {
 
               <DeploymentCard status={status} />
             </div>
-
+            <PublicationStatus
+              publication={publication}
+              loading={loading}
+              onPublish={handlePublish}
+              onUnpublish={handleUnpublish}
+              refresh={pubrefresh}
+            />
             <LogsCard logs={logs} onClear={() => setLogs([])} />
           </>
         )}

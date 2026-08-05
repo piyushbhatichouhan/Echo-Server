@@ -112,46 +112,46 @@ ORDER BY p.updated_at DESC;
 const getProjectById = async (projectId, ownerId) => {
   const result = await pool.query(
     `
-  SELECT
+SELECT
 
     p.id,
-
     p.name,
-
     p.description,
-
     p.application_type,
-
     p.port,
-
     p.created_at,
-
     p.updated_at,
-
     p.git_connected,
-
     p.git_branch,
-
     p.git_remote_url,
 
-    COALESCE(d.status,'Not Deployed') AS status,
+    u.username,
 
-    d.updated_at AS last_deployment
+    COALESCE(d.status,'Not Deployed') AS status,
+    d.updated_at AS last_deployment,
+
+    pd.hostname,
+    pd.custom_domain,
+    pd.publication_status,
+    pd.ssl_status,
+    pd.verification_status
 
 FROM projects p
 
-LEFT JOIN deployments d
+JOIN users u
+ON u.id = p.owner_id
 
-ON d.project_id=p.id
+LEFT JOIN deployments d
+ON d.project_id = p.id
+
+LEFT JOIN project_domains pd
+ON pd.project_id = p.id
+AND pd.is_primary = TRUE
 
 WHERE
-
-p.id=$1
-
-AND
-
-p.owner_id=$2
-        `,
+    p.id = $1
+AND p.owner_id = $2;
+  `,
     [projectId, ownerId],
   );
 

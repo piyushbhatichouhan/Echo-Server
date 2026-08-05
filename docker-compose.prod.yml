@@ -2,9 +2,7 @@ services:
 
   postgres:
     image: postgres:17
-
     container_name: echo-postgres
-
     restart: unless-stopped
 
     environment:
@@ -18,6 +16,7 @@ services:
     networks:
       - echo-network
 
+
   backend:
     build:
       context: .
@@ -28,20 +27,43 @@ services:
     restart: unless-stopped
 
     env_file:
-    - ./backend/.env
+      - ./backend/.env
 
     depends_on:
-    - postgres
+      - postgres
 
     volumes:
-    - /srv/echo-storage:/srv/echo-storage
-    - /var/run/docker.sock:/var/run/docker.sock
+      - /srv/echo-storage:/srv/echo-storage
+      - /var/run/docker.sock:/var/run/docker.sock
 
     ports:
-    - "3000:3000"
+      - "3000:3000"
 
     networks:
-    - echo-network
+      - echo-network
+
+
+  router:
+    build:
+      context: .
+      dockerfile: router/Dockerfile
+
+    container_name: echo-router
+
+    restart: unless-stopped
+
+    env_file:
+      - ./router/.env
+
+    depends_on:
+      - backend
+
+    ports:
+      - "8080"
+
+    networks:
+      - echo-network
+
 
   frontend:
     build:
@@ -63,8 +85,10 @@ services:
     networks:
       - echo-network
 
+
 volumes:
   postgres_data:
+
 
 networks:
   echo-network:

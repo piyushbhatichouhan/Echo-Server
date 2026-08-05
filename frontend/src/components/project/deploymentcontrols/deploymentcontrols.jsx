@@ -23,7 +23,7 @@ export default function DeploymentControls({
       <div className="eh-deployment-controls">
         <h2>Deployment Controls</h2>
         <div className={`eh-deployment-status eh-${deploymentState}`}>
-          {deploymentState.replaceAll("_", " ").toUpperCase()}
+          {status?.display ?? "Not Deployed"}
         </div>
         <div className="eh-control-grid">
           <Button
@@ -31,7 +31,7 @@ export default function DeploymentControls({
             icon={Rocket}
             onClick={onDeploy}
             loading={loading === "deploy"}
-            disabled={deploymentState !== "not_found"}
+            disabled={deploymentState !== "not_deployed"}
           >
             Deploy
           </Button>
