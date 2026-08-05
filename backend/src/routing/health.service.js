@@ -6,23 +6,36 @@ const checkPublication = async (
   hostname,
   { retries = 10, delay = 1000, timeout = 3000 } = {},
 ) => {
-  const url = `http://127.0.0.1:8080`;
+  // Check through Nginx Proxy Manager, just like a real user would.
+  const url = "http://npm";
 
-  for (let i = 0; i < retries; i++) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
     try {
-      await axios.get(url, {
+      const response = await axios.get(url, {
         timeout,
-        validateStatus: () => true,
         headers: {
           Host: hostname,
         },
+        validateStatus: (status) => status >= 200 && status < 400,
       });
 
-      return true;
-    } catch {}
+      console.log(
+        `[Publication Health] Healthy on attempt ${attempt} (${response.status})`,
+      );
 
-    await sleep(delay);
+      return true;
+    } catch (err) {
+      console.log(
+        `[Publication Health] Attempt ${attempt}/${retries} failed: ${err.code || err.message}`,
+      );
+
+      if (attempt < retries) {
+        await sleep(delay);
+      }
+    }
   }
+
+  console.log("[Publication Health] Publication failed health check.");
 
   return false;
 };
