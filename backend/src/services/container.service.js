@@ -192,6 +192,39 @@ const startContainerByProject = async (projectId, deploymentId) => {
   streamContainerLogs(container, deploymentId).catch(console.error);
 };
 
+const waitUntilContainerRunning = async (
+  container,
+  { retries = 20, delay = 1000 } = {},
+) => {
+  for (let i = 0; i < retries; i++) {
+    const info = await container.inspect();
+
+    if (info.State.Running) {
+      return true;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, delay));
+  }
+
+  throw new Error("Container did not enter running state.");
+};
+
+const getContainerIPAddress = async (projectId) => {
+  const container = getContainer(projectId);
+
+  const info = await container.inspect();
+
+  const networks = info.NetworkSettings.Networks;
+
+  const firstNetwork = Object.values(networks)[0];
+
+  if (!firstNetwork?.IPAddress) {
+    throw new Error("Container has no network IP.");
+  }
+
+  return firstNetwork.IPAddress;
+};
+
 module.exports = {
   getContainerName,
   createContainer,
@@ -207,4 +240,6 @@ module.exports = {
   streamContainerLogs,
   restartContainer,
   startContainerByProject,
+  waitUntilContainerRunning,
+  getContainerIPAddress,
 };
