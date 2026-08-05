@@ -290,7 +290,7 @@ async function healthCheck(context) {
     "Checking Application Health",
   );
 
-  const healthy = await healthService.checkApplication(settings.port);
+  const healthy = await healthService.checkApplication(context.project.id, 80);
 
   if (!healthy) {
     throw new Error("Application failed health check.");
