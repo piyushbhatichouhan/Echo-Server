@@ -44,7 +44,9 @@ const request = async (config) => {
         },
       });
     }
-
+    console.error("NPM Status:", err.response?.status);
+    console.error("NPM Response:", err.response?.data);
+    console.dir(err.response?.data, { depth: null });
     throw err;
   }
 };
