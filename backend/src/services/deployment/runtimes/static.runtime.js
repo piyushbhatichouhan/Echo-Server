@@ -267,6 +267,15 @@ async function start(context) {
 
   context.container = container;
 
+  const containerName = context.infrastructure.container.getContainerName(
+    project.id,
+  );
+
+  await context.infrastructure.deployment.updateContainer(
+    deployment.id,
+    containerName,
+  );
+
   // Start it
   await context.infrastructure.container.start(container, deployment.id);
 
