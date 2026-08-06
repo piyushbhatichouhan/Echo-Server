@@ -10,9 +10,10 @@ const createContainer = async (
   environment,
   containerPort,
 ) => {
-  const dockerEnvironment = environment.map(
-    ({ key, value }) => `${key}=${value}`,
-  );
+  const dockerEnvironment = [
+    ...environment.map(({ key, value }) => `${key}=${value}`),
+    "CONTAINER_PORT=3000",
+  ];
 
   const portVariable = environment.find((e) => e.key === "PORT");
 
@@ -30,7 +31,7 @@ const createContainer = async (
     Env: dockerEnvironment,
 
     ExposedPorts: {
-      [`${containerPort}/tcp`]: {},
+      "3000/tcp": {},
     },
 
     HostConfig: {
@@ -39,7 +40,7 @@ const createContainer = async (
       },
 
       PortBindings: {
-        [`${containerPort}/tcp`]: [
+        "3000/tcp": [
           {
             HostPort: projectPort,
           },
