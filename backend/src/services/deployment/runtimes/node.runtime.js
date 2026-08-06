@@ -66,9 +66,13 @@ FROM node:22-alpine
 
 WORKDIR /app
 
-COPY . .
+# Copy dependency manifests first
+COPY package*.json ./
 
 ${settings.install_command?.trim() ? `RUN ${settings.install_command}` : ""}
+
+# Copy application source
+COPY . .
 
 ${settings.build_command?.trim() ? `RUN ${settings.build_command}` : ""}
 
