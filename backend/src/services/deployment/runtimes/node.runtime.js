@@ -294,7 +294,7 @@ async function start(context) {
 
   context.container = container;
 
-  await context.infrastructure.container.start(container.handle, deployment.id);
+  await context.infrastructure.container.start(container, deployment.id);
 
   await context.infrastructure.deployment.updateContainer(
     deployment.id,
@@ -302,9 +302,6 @@ async function start(context) {
     container.echoName,
     3000,
   );
-  // Start it
-
-  await context.infrastructure.container.start(container, deployment.id);
 
   await context.infrastructure.deployment.markStoppedByUser(project.id, false);
 

@@ -64,7 +64,7 @@ const createContainer = async (
       console.warn("Network connect skipped:", err.message);
     }
   }
-
+  container.echoName = containerOptions.name;
   return container;
 };
 
