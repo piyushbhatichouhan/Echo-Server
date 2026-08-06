@@ -27,8 +27,18 @@ const fail = async (deploymentId) =>
 const running = async (deploymentId) =>
   deploymentRepository.updateDeploymentStatus(deploymentId, "running");
 
-const updateContainer = async (deploymentId, containerName) =>
-  deploymentRepository.updateDeploymentContainer(deploymentId, containerName);
+const updateContainer = async (
+  deploymentId,
+  containerId,
+  containerName,
+  containerPort,
+) =>
+  deploymentRepository.updateDeploymentContainer(
+    deploymentId,
+    containerId,
+    containerName,
+    containerPort,
+  );
 
 module.exports = {
   create,
