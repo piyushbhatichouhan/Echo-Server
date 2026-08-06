@@ -1,5 +1,5 @@
 const { pool } = require("../config/database");
-const portService = require("./port.service");
+
 const projectCleanupService = require("./project-cleanup.service");
 
 const { getRuntimePreset } = require("../config/runtimePresets");
@@ -8,8 +8,6 @@ const projectSettingsRepository = require("../repositories/projectSettings.repos
 
 const createProject = async (ownerId, projectData) => {
   const { name, description, applicationType } = projectData;
-
-  const port = await portService.allocatePort();
 
   const preset = getRuntimePreset(applicationType);
 
@@ -25,7 +23,7 @@ const createProject = async (ownerId, projectData) => {
         name,
         application_type,
         description,
-        port
+        
     )
     VALUES
     (
@@ -37,14 +35,13 @@ const createProject = async (ownerId, projectData) => {
     )
     RETURNING *
     `,
-    [ownerId, name, applicationType, description || null, port],
+    [ownerId, name, applicationType, description || null],
   );
 
   const project = result.rows[0];
 
   await projectSettingsRepository.createProjectSettings(project.id, {
     ...preset,
-    port,
   });
 
   return project;
@@ -63,7 +60,7 @@ const getProjects = async (ownerId) => {
 
     p.application_type,
 
-    p.port,
+    
 
     p.created_at,
 
@@ -118,7 +115,7 @@ SELECT
     p.name,
     p.description,
     p.application_type,
-    p.port,
+    
     p.created_at,
     p.updated_at,
     p.git_connected,
@@ -227,20 +224,6 @@ const verifyProjectOwnership = async (projectId, ownerId) => {
   }
 };
 
-const updateProjectPort = async (projectId, port) => {
-  const result = await pool.query(
-    `
-    UPDATE projects
-    SET port = $2
-    WHERE id = $1
-    RETURNING *
-    `,
-    [projectId, port],
-  );
-
-  return result.rows[0];
-};
-
 const deleteProjectRecord = async (projectId) => {
   const result = await pool.query(
     `
@@ -271,7 +254,7 @@ module.exports = {
   updateProject,
   deleteProject,
   verifyProjectOwnership,
-  updateProjectPort,
+
   deleteProjectInternal,
   deleteProjectRecord,
   deleteProjectCompletelyInternal,
