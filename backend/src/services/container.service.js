@@ -10,7 +10,6 @@ const createContainer = async (
   environment,
   containerPort,
 ) => {
-  console.log("container.service loaded");
   const dockerEnvironment = environment.map(
     ({ key, value }) => `${key}=${value}`,
   );
@@ -31,7 +30,7 @@ const createContainer = async (
     Env: dockerEnvironment,
 
     ExposedPorts: {
-      ["80/tcp"]: {},
+      [`${containerPort}/tcp`]: {},
     },
 
     HostConfig: {
@@ -39,19 +38,32 @@ const createContainer = async (
         Name: "unless-stopped",
       },
 
-      NetworkMode: process.env.DOCKER_NETWORK,
-
       PortBindings: {
-        ["80/tcp"]: [
+        [`${containerPort}/tcp`]: [
           {
-            HostPort: String(projectPort),
+            HostPort: projectPort,
           },
         ],
       },
     },
   };
-  console.log(JSON.stringify(containerOptions, null, 2));
+
   const container = await docker.createContainer(containerOptions);
+
+  //
+  // Connect to Docker network AFTER creation
+  //
+  if (process.env.DOCKER_NETWORK) {
+    try {
+      const network = docker.getNetwork(process.env.DOCKER_NETWORK);
+
+      await network.connect({
+        Container: container.id,
+      });
+    } catch (err) {
+      console.warn("Network connect skipped:", err.message);
+    }
+  }
 
   return container;
 };

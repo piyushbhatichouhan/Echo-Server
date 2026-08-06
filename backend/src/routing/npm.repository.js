@@ -10,6 +10,11 @@ const getHostByHostname = async (hostname) => {
 };
 
 const updateHost = async ({ id, hostname, port }) => {
+  const forwardHost =
+    process.env.NPM_FORWARD_MODE === "docker"
+      ? `echohub-${projectId}`
+      : process.env.NPM_FORWARD_HOST;
+
   const response = await client.request({
     method: "PUT",
     url: `/api/nginx/proxy-hosts/${id}`,
@@ -17,7 +22,7 @@ const updateHost = async ({ id, hostname, port }) => {
       domain_names: [hostname],
 
       forward_scheme: "http",
-      forward_host: process.env.NPM_FORWARD_HOST,
+      forward_host: forwardHost,
       forward_port: port,
 
       access_list_id: 0,
@@ -43,7 +48,7 @@ const updateHost = async ({ id, hostname, port }) => {
   return response.data;
 };
 
-const publishHost = async ({ hostname, port }) => {
+const publishHost = async ({ projectId, hostname, port }) => {
   const existing = await getHostByHostname(hostname);
 
   if (existing) {
@@ -58,6 +63,11 @@ const publishHost = async ({ hostname, port }) => {
 
   console.log(`[NPM] Creating proxy host: ${hostname}`);
 
+  const forwardHost =
+    process.env.NPM_FORWARD_MODE === "docker"
+      ? `echohub-${projectId}`
+      : process.env.NPM_FORWARD_HOST;
+
   const response = await client.request({
     method: "POST",
     url: "/api/nginx/proxy-hosts",
@@ -65,7 +75,7 @@ const publishHost = async ({ hostname, port }) => {
       domain_names: [hostname],
 
       forward_scheme: "http",
-      forward_host: process.env.NPM_FORWARD_HOST,
+      forward_host: forwardHost,
       forward_port: port,
 
       access_list_id: 0,
