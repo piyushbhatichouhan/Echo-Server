@@ -147,6 +147,8 @@ const updateDeploymentContainer = async (
   containerName,
   containerPort,
 ) => {
+  console.log("Updating deployment:", deploymentId);
+  console.log("Setting container:", containerName);
   const result = await pool.query(
     `
         UPDATE deployments
@@ -159,7 +161,7 @@ const updateDeploymentContainer = async (
         `,
     [deploymentId, containerId, containerName, containerPort],
   );
-
+  console.log(result.rows);
   return result.rows[0];
 };
 
