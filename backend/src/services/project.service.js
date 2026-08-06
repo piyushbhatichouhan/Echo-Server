@@ -30,8 +30,8 @@ const createProject = async (ownerId, projectData) => {
         $1,
         $2,
         $3,
-        $4,
-        $5
+        $4
+        
     )
     RETURNING *
     `,
@@ -254,7 +254,6 @@ module.exports = {
   updateProject,
   deleteProject,
   verifyProjectOwnership,
-
   deleteProjectInternal,
   deleteProjectRecord,
   deleteProjectCompletelyInternal,
