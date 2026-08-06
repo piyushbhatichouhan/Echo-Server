@@ -3,7 +3,7 @@ const httpProxy = require("http-proxy");
 const proxy = httpProxy.createProxyServer({});
 
 const proxyRequest = (req, res, deployment) => {
-  const target = `http://${deployment.containerName}:80`;
+  target = `http://${deployment.containerName}:${deployment.containerPort}`;
 
   proxy.web(req, res, {
     target,
