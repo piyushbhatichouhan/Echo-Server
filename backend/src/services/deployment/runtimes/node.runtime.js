@@ -294,8 +294,7 @@ async function start(context) {
 
   context.container = container;
 
-  console.log("Deployment ID:", deployment.id);
-  console.log("Container Name:", container.name);
+  await context.infrastructure.container.start(container.handle, deployment.id);
 
   await context.infrastructure.deployment.updateContainer(
     deployment.id,
