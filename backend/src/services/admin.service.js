@@ -10,7 +10,7 @@ const disableUser = async (userId) => {
   const user = await userRepository.getUserById(userId);
 
   if (!user) {
-    throw new Error("User not found");
+    throw new Error("User not found.");
   }
 
   if (user.is_owner) {
