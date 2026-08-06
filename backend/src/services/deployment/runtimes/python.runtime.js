@@ -293,18 +293,16 @@ async function start(context) {
 
   context.container = container;
 
+  // Start ONCE
   await context.infrastructure.container.start(container, deployment.id);
 
+  // Save metadata
   await context.infrastructure.deployment.updateContainer(
     deployment.id,
     container.id,
     container.echoName,
-    8000,
+    context.containerPort,
   );
-
-  // Start container
-
-  await context.infrastructure.container.start(container, deployment.id);
 
   await context.infrastructure.deployment.markStoppedByUser(project.id, false);
 
