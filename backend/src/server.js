@@ -14,7 +14,7 @@ const startServer = async () => {
   await validateStartup();
 
   app.listen(PORT, () => {
-    console.log(`🚀 Server running on port, hello ${PORT}`);
+    console.log(`🚀 Server running on port, helloo ${PORT}`);
   });
 };
 
