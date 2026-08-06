@@ -12,27 +12,13 @@ SELECT
     p.name,
 
     d.container_name,
+    d.container_port,
     d.port,
     d.status AS deployment_status,
 
     pd.ssl_status,
     pd.verification_status,
     pd.publication_status
-
-FROM project_domains pd
-
-JOIN projects p
-ON p.id = pd.project_id
-
-LEFT JOIN deployments d
-ON d.project_id = p.id
-
-WHERE
-    pd.hostname = $1
-AND pd.publication_status = 'active'
-
-ORDER BY d.created_at DESC
-LIMIT 1;
     `,
     [hostname],
   );

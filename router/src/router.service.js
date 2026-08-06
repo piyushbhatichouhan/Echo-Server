@@ -23,6 +23,7 @@ const resolveHostname = async (hostname) => {
 
     deployment: {
       containerName: row.container_name,
+      containerPort: row.container_port,
       port: row.port,
       status: row.deployment_status,
     },
