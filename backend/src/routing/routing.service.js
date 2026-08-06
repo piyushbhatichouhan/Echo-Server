@@ -6,6 +6,7 @@ const publish = async ({ projectId, hostname, port }) => {
   console.log(`[Routing] Publishing ${hostname}`);
 
   await repository.publishHost({
+    projectId,
     hostname,
     port,
   });
