@@ -73,21 +73,21 @@ const createContainer = async (
 };
 
 const startContainer = async (container, deploymentId) => {
-  await container.start();
+  await container.handle.start();
 
-  streamContainerLogs(container, deploymentId).catch(console.error);
+  streamContainerLogs(container.handle, deploymentId).catch(console.error);
 
   return container;
 };
 
 const removeContainer = async (container) => {
-  await container.remove({
+  await container.handle.remove({
     force: true,
   });
 };
 
 const inspectContainer = async (container) => {
-  return await container.inspect();
+  return await container.handle.inspect();
 };
 
 const getContainer = (projectId) => {
@@ -215,7 +215,7 @@ const waitUntilContainerRunning = async (
   { retries = 20, delay = 1000 } = {},
 ) => {
   for (let i = 0; i < retries; i++) {
-    const info = await container.inspect();
+    const info = await container.handle.inspect();
 
     if (info.State.Running) {
       return true;
