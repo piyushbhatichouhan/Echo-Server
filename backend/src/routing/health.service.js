@@ -24,19 +24,17 @@ const checkPublication = async (
       );
 
       return true;
-    } } catch (err) {
-  console.log(
-    `[Publication Health] Attempt ${attempt}/${retries}`,
-  );
+    } catch (err) {
+      console.log(`[Publication Health] Attempt ${attempt}/${retries}`);
 
-  console.log("Status:", err.response?.status);
-  console.log("Body:", err.response?.data);
-  console.log("Code:", err.code);
+      console.log("Status:", err.response?.status);
+      console.log("Body:", err.response?.data);
+      console.log("Code:", err.code);
 
-  if (attempt < retries) {
-    await sleep(delay);
-  }
-} 
+      if (attempt < retries) {
+        await sleep(delay);
+      }
+    }
   }
 
   console.log("[Publication Health] Publication failed health check.");
