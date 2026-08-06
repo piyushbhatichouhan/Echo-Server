@@ -141,16 +141,23 @@ const markStoppedByUser = async (projectId, value) => {
   );
 };
 
-const updateDeploymentContainer = async (deploymentId, containerName) => {
+const updateDeploymentContainer = async (
+  deploymentId,
+  containerId,
+  containerName,
+  containerPort,
+) => {
   const result = await pool.query(
     `
-    UPDATE deployments
-    SET
-      container_name = $2
-    WHERE id = $1
-    RETURNING *
-    `,
-    [deploymentId, containerName],
+        UPDATE deployments
+        SET
+            container_id=$2,
+            container_name=$3,
+            container_port=$4
+        WHERE id=$1
+        RETURNING *
+        `,
+    [deploymentId, containerId, containerName, containerPort],
   );
 
   return result.rows[0];

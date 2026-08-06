@@ -226,13 +226,11 @@ async function start(context) {
 
   context.container = container;
 
-  const containerName = context.infrastructure.container.getContainerName(
-    project.id,
-  );
-
   await context.infrastructure.deployment.updateContainer(
     deployment.id,
-    containerName,
+    container.id,
+    container.name,
+    5000,
   );
 
   // Start it
