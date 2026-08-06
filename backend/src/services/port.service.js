@@ -1,21 +1,20 @@
 const { pool } = require("../config/database");
 
-const allocatePort = async () => {
-  const result = await pool.query(
-    `
+const START_PORT = 3001;
+
+const getAvailablePort = async () => {
+  const result = await pool.query(`
     SELECT port
-    FROM projects
-    ORDER BY port ASC
-    `,
-  );
+    FROM deployments
+    WHERE port IS NOT NULL
+    ORDER BY port
+  `);
 
-  let port = 3001;
+  const used = new Set(result.rows.map((r) => r.port));
 
-  for (const row of result.rows) {
-    if (row.port !== port) {
-      break;
-    }
+  let port = START_PORT;
 
+  while (used.has(port)) {
     port++;
   }
 
@@ -23,5 +22,5 @@ const allocatePort = async () => {
 };
 
 module.exports = {
-  allocatePort,
+  getAvailablePort,
 };

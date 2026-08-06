@@ -1,8 +1,10 @@
 const buildRuntimeEnvironment = (project, settings) => {
+  const runtime = runtimeResolver.getRuntimeHandler(settings.runtime);
+
   return [
     {
       key: "PORT",
-      value: settings.port.toString(),
+      value: runtime.INTERNAL_PORT.toString(),
     },
   ];
 };

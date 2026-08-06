@@ -34,7 +34,6 @@ export default function ProjectHeader({ project }) {
 
           <span>
             <Network size={15} />
-            Port {project.port}
           </span>
 
           <span>

@@ -172,16 +172,6 @@ export default function Settings({ projectId }) {
               <input value={form.runtime} readOnly />
             </div>
 
-            <div className="eh-setting">
-              <label>Port</label>
-
-              <input
-                type="number"
-                value={form.port}
-                onChange={(e) => update("port", Number(e.target.value))}
-              />
-            </div>
-
             <div className="eh-setting eh-span-2">
               <label>Working Directory</label>
 

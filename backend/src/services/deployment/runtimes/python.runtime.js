@@ -3,6 +3,7 @@ const fs = require("fs/promises");
 const path = require("path");
 const healthService = require("../../health.service");
 module.exports = {
+  INTERNAL_PORT: 8000,
   deploy,
   start,
   stop,
@@ -46,7 +47,7 @@ async function prepare(context) {
   context.cwd = workspace.getProjectFilesDirectory(project.id);
 
   context.imageName = `echo-python-${project.id}`;
-  context.containerPort = context.settings.port;
+  context.containerPort = module.exports.INTERNAL_PORT;
   context.containerName = context.infrastructure.container.getContainerName(
     project.id,
   );
@@ -68,7 +69,7 @@ ${settings.install_command?.trim() ? `RUN ${settings.install_command}` : ""}
 
 ${settings.build_command?.trim() ? `RUN ${settings.build_command}` : ""}
 
-EXPOSE ${settings.port}
+EXPOSE ${module.exports.INTERNAL_PORT}
 
 CMD ["sh", "-c", "${settings.start_command}"]
 `;
@@ -83,7 +84,6 @@ async function createDeployment(context) {
     project.id,
     context.imageName,
     context.containerName,
-    settings.port,
   );
 
   await context.infrastructure.deployment.updateStatus(
@@ -288,7 +288,8 @@ async function start(context) {
     project.id,
     context.imageName,
     environment,
-    context.containerPort,
+    deployment.port, // host port
+    context.containerPort, // runtime internal port
   );
 
   context.container = container;
@@ -326,7 +327,7 @@ async function healthCheck(context) {
   );
   const healthy = await healthService.checkApplication(
     context.project.id,
-    settings.port,
+    runtime.INTERNAL_PORT,
   );
 
   if (!healthy) {
@@ -430,5 +431,6 @@ async function getStatus(context) {
     running: deployment.status === "running",
 
     stoppedByUser: deployment.stopped_by_user,
+    port: deployment.port,
   };
 }
