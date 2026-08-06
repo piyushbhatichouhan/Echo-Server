@@ -55,4 +55,7 @@ module.exports = new Set([
   "zinko",
   "zinkopiyush",
   "echopiyush",
+  "pi",
+  "raspberrypi",
+  "raspberry",
 ]);
