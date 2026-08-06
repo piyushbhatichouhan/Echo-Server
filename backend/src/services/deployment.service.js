@@ -193,7 +193,7 @@ const getDeploymentStatus = async (projectId, ownerId) => {
     display: runtimeStatus.display,
 
     runtime: settings.runtime,
-    port: settings.port,
+
     workingDirectory: settings.working_directory,
 
     repository: repository?.repository_name ?? null,
@@ -234,7 +234,7 @@ const createDeploymentProject = async (projectId, ownerId) => {
     build_command: settings.build_command,
     start_command: settings.start_command,
     working_directory: settings.working_directory,
-    port: settings.port,
+
     environment: process.env,
   };
 };

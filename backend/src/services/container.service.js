@@ -8,6 +8,7 @@ const createContainer = async (
   projectId,
   imageName,
   environment,
+  hostPort,
   containerPort,
 ) => {
   const dockerEnvironment = [
@@ -15,13 +16,7 @@ const createContainer = async (
     "CONTAINER_PORT=3000",
   ];
 
-  const portVariable = environment.find((e) => e.key === "PORT");
-
-  if (!portVariable) {
-    throw new Error("Runtime environment missing PORT.");
-  }
-
-  const projectPort = String(portVariable.value);
+  const projectPort = String(hostPort);
 
   const containerOptions = {
     Image: imageName,
@@ -31,7 +26,7 @@ const createContainer = async (
     Env: dockerEnvironment,
 
     ExposedPorts: {
-      "3000/tcp": {},
+      [`${containerPort}/tcp`]: {},
     },
 
     HostConfig: {
@@ -40,7 +35,7 @@ const createContainer = async (
       },
 
       PortBindings: {
-        "3000/tcp": [
+        [`${containerPort}/tcp`]: [
           {
             HostPort: projectPort,
           },

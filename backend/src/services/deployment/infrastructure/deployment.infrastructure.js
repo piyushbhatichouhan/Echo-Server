@@ -1,7 +1,16 @@
 const deploymentRepository = require("../../../repositories/deployment.repository");
+const portService = require("../../port.service");
 
-const create = async (projectId, image, container, port) =>
-  deploymentRepository.createDeployment(projectId, image, container, port);
+const create = async (projectId, image, container) => {
+  const hostPort = await portService.getAvailablePort();
+
+  return deploymentRepository.createDeployment(
+    projectId,
+    image,
+    container,
+    hostPort,
+  );
+};
 
 const stopPreviousDeployments = async (projectId) =>
   deploymentRepository.stopDeployments(projectId);

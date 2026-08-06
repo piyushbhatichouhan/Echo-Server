@@ -11,12 +11,12 @@ const createProjectSettings = async (projectId, preset) => {
         install_command,
         build_command,
         start_command,
-        output_directory,
-        port
+        output_directory
+      
     )
     VALUES
     (
-        $1,$2,$3,$4,$5,$6,$7,$8
+        $1,$2,$3,$4,$5,$6,$7
     )
     RETURNING *
     `,
@@ -28,7 +28,6 @@ const createProjectSettings = async (projectId, preset) => {
       preset.build_command,
       preset.start_command,
       preset.output_directory,
-      preset.port,
     ],
   );
 

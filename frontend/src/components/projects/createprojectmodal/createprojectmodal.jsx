@@ -205,12 +205,6 @@ export default function CreateProjectModal({ open, onClose, onCreated }) {
           <div className="projectFooter">
             <div className="footerInfo">
               <div>
-                <PlugZap size={18} />
-
-                <span>Automatic Port Allocation</span>
-              </div>
-
-              <div>
                 <GitBranch size={18} />
 
                 <span>Git can be connected later</span>

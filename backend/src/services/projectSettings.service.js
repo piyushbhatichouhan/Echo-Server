@@ -40,9 +40,7 @@ start_command=$6,
 
  output_directory = $7,
 
-port=$8,
-
-dockerfile=$9,
+dockerfile=$8,
 
 updated_at=NOW()
 
@@ -64,8 +62,6 @@ RETURNING *
       settings.start_command,
 
       settings.output_directory,
-
-      settings.port,
 
       settings.dockerfile,
     ],

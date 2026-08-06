@@ -3,6 +3,7 @@ const fs = require("fs/promises");
 const path = require("path");
 const healthService = require("../../health.service");
 module.exports = {
+  INTERNAL_PORT: 80,
   deploy,
   start,
   stop,
@@ -50,7 +51,7 @@ async function prepare(context) {
     settings.output_directory || ".",
   );
   context.imageName = `echo-${project.id}`;
-  context.containerPort = 80;
+  context.containerPort = module.exports.INTERNAL_PORT;
   context.publishedDirectory =
     context.infrastructure.publisher.getPublishedDirectory(project.id);
 
@@ -65,7 +66,7 @@ FROM nginx:alpine
 
 COPY ${output}/ /usr/share/nginx/html/
 
-EXPOSE 80
+EXPOSE ${module.exports.INTERNAL_PORT}
 `;
 }
 
@@ -78,7 +79,6 @@ async function createDeployment(context) {
     project.id,
     null,
     null,
-    settings.port,
   );
 
   await context.infrastructure.deployment.updateStatus(
@@ -262,7 +262,8 @@ async function start(context) {
     project.id,
     context.imageName,
     environment,
-    context.containerPort,
+    deployment.port, // host port
+    context.containerPort, // runtime internal port
   );
 
   context.container = container;
@@ -270,8 +271,8 @@ async function start(context) {
   await context.infrastructure.deployment.updateContainer(
     deployment.id,
     container.id,
-    container.name,
-    80,
+    container.echoName,
+    context.containerPort,
   );
   // Start it
   await context.infrastructure.container.start(container, deployment.id);
@@ -393,5 +394,6 @@ async function getStatus(context) {
     running: deployment.status === "running",
 
     stoppedByUser: deployment.stopped_by_user,
+    port: deployment.port,
   };
 }
