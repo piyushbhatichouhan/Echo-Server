@@ -22,7 +22,7 @@ const createProject = async (ownerId, projectData) => {
         owner_id,
         name,
         application_type,
-        description,
+        description
         
     )
     VALUES
