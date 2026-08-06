@@ -299,7 +299,7 @@ async function start(context) {
   await context.infrastructure.deployment.updateContainer(
     deployment.id,
     container.id,
-    container.name,
+    container.echoName,
     3000,
   );
   // Start it
