@@ -26,27 +26,12 @@ const publishProject = async (projectId, ownerId) => {
     hostname,
   );
 
-  try {
-    await routingService.publish({
-      projectId,
-      hostname,
-      port: project.port,
-    });
+  await publicationRepository.updateProjectDomain(publication.id, {
+    publication_status: "active",
+    verification_status: "verified",
+  });
 
-    await publicationRepository.updateProjectDomain(publication.id, {
-      publication_status: "active",
-      verification_status: "verified",
-    });
-
-    return publication;
-  } catch (err) {
-    await publicationRepository.updateProjectDomain(publication.id, {
-      publication_status: "failed",
-      verification_status: "pending",
-    });
-
-    throw err;
-  }
+  return publication;
 };
 
 const getPublication = async (projectId, ownerId) => {
@@ -64,11 +49,6 @@ const unpublishProject = async (projectId, ownerId) => {
     throw new Error("Project is not published.");
   }
 
-  await routingService.unpublish({
-    projectId,
-    hostname: publication.hostname,
-  });
-
   await publicationRepository.deleteProjectDomain(projectId);
 
   return true;
@@ -85,27 +65,12 @@ const republishProject = async (projectId, ownerId) => {
 
   const project = await projectService.getProjectById(projectId, ownerId);
 
-  try {
-    await routingService.publish({
-      projectId,
-      hostname: publication.hostname,
-      port: project.port,
-    });
+  await publicationRepository.updateProjectDomain(publication.id, {
+    publication_status: "active",
+    verification_status: "verified",
+  });
 
-    await publicationRepository.updateProjectDomain(publication.id, {
-      publication_status: "active",
-      verification_status: "verified",
-    });
-
-    return publication;
-  } catch (err) {
-    await publicationRepository.updateProjectDomain(publication.id, {
-      publication_status: "failed",
-      verification_status: "pending",
-    });
-
-    throw err;
-  }
+  return publication;
 };
 
 module.exports = {
