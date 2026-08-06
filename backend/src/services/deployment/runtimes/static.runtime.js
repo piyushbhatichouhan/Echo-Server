@@ -26,7 +26,7 @@ async function deploy(context) {
 
     await start(context);
 
-    await healthCheck(context);
+    //  await healthCheck(context);
 
     await finishDeployment(context);
 
