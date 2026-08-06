@@ -6,7 +6,6 @@ const checkPublication = async (
   hostname,
   { retries = 10, delay = 1000, timeout = 3000 } = {},
 ) => {
-  // Check through Nginx Proxy Manager, just like a real user would.
   const url = "http://npm";
 
   for (let attempt = 1; attempt <= retries; attempt++) {
@@ -16,24 +15,40 @@ const checkPublication = async (
         headers: {
           Host: hostname,
         },
-        validateStatus: (status) => status >= 200 && status < 400,
+        validateStatus: () => true,
       });
 
-      console.log(
-        `[Publication Health] Healthy on attempt ${attempt} (${response.status})`,
-      );
+      //
+      // Router is reachable and hostname resolved correctly.
+      // These responses are considered healthy during deployment.
+      //
+      if (
+        response.status === 200 ||
+        (response.status === 503 &&
+          [
+            "Project has never been deployed",
+            "Project is not running",
+          ].includes(response.data?.message))
+      ) {
+        console.log(
+          `[Publication Health] Healthy on attempt ${attempt} (${response.status})`,
+        );
 
-      return true;
+        return true;
+      }
+
+      console.log(`[Publication Health] Attempt ${attempt}/${retries}`);
+      console.log("Status:", response.status);
+      console.log("Body:", response.data);
     } catch (err) {
       console.log(`[Publication Health] Attempt ${attempt}/${retries}`);
-
       console.log("Status:", err.response?.status);
       console.log("Body:", err.response?.data);
       console.log("Code:", err.code);
+    }
 
-      if (attempt < retries) {
-        await sleep(delay);
-      }
+    if (attempt < retries) {
+      await sleep(delay);
     }
   }
 
