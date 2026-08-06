@@ -14,7 +14,7 @@ const getRuntimeHandler = (runtime) => {
   const handler = handlers[runtime];
 
   if (!handler) {
-    throw new Error(`Unsupported runtime: ${runtime}`);
+    throw new Error(`Unsupported runtime there: ${runtime}`);
   }
 
   return handler;
