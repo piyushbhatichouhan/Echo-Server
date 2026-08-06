@@ -56,8 +56,6 @@ export default function ProjectCard({ project }) {
 
             <div className="eh-project-info-item">
               <Network size={15} />
-
-              <span>Port {project.port}</span>
             </div>
           </div>
 
