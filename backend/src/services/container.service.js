@@ -65,7 +65,11 @@ const createContainer = async (
     }
   }
 
-  return container;
+  return {
+    id: container.id,
+    name: containerOptions.name,
+    handle: container,
+  };
 };
 
 const startContainer = async (container, deploymentId) => {
