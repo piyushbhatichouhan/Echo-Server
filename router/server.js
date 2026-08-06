@@ -12,7 +12,7 @@ const PORT = process.env.PORT || 8080;
     await connectDatabase();
 
     app.listen(PORT, () => {
-      console.log(`Echo Router is running on port this: ${PORT}`);
+      console.log(`Echo Router is running on port: ${PORT}`);
     });
   } catch (err) {
     console.error(err);
