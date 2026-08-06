@@ -287,16 +287,18 @@ async function start(context) {
   const container = await context.infrastructure.container.create(
     project.id,
     context.imageName,
-    context.containerPort,
     environment,
+    context.containerPort,
   );
 
   context.container = container;
 
+  await context.infrastructure.container.start(container, deployment.id);
+
   await context.infrastructure.deployment.updateContainer(
     deployment.id,
     container.id,
-    container.name,
+    container.echoName,
     8000,
   );
 
