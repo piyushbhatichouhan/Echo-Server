@@ -16,3 +16,36 @@ jobs:
           git fetch origin
           git reset --hard origin/main
           git clean -fd
+
+      - name: Stop and remove old containers
+        run: |
+          docker compose \
+            -f /srv/echo/docker-compose.prod.yml \
+            --project-directory /srv/echo \
+            down --remove-orphans || true
+
+          docker rm -f \
+            echo-postgres \
+            echo-backend \
+            echo-frontend \
+            2>/dev/null || true
+
+      - name: Build and start
+        run: |
+          docker compose \
+            -f /srv/echo/docker-compose.prod.yml \
+            --project-directory /srv/echo \
+            up -d --build --force-recreate --remove-orphans
+
+      - name: Remove dangling images
+        run: |
+          docker image prune -f
+
+      - name: Verify deployment
+        run: |
+          docker compose \
+            -f /srv/echo/docker-compose.prod.yml \
+            --project-directory /srv/echo \
+            ps
+
+          docker ps
