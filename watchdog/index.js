@@ -20,9 +20,30 @@ async function dependenciesSatisfied(container) {
   return true;
 }
 
+function getDependents(containerName) {
+  return CONTAINERS.filter((container) =>
+    container.dependsOn.includes(containerName),
+  );
+}
+
+async function waitUntilRunning(containerName, timeout = 60000) {
+  const start = Date.now();
+
+  while (Date.now() - start < timeout) {
+    if (await isContainerRunning(containerName)) {
+      return true;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
+
+  return false;
+}
+
 async function watchdogLoop() {
   try {
-    const running = await getRunningContainers();
+    const restartQueue = [];
+    const processed = new Set();
 
     console.clear();
 
@@ -31,31 +52,63 @@ async function watchdogLoop() {
     console.log("Core Services");
 
     for (const container of CONTAINERS) {
-      if (!(await dependenciesSatisfied(container))) {
-        console.log(`Waiting for dependencies of ${container.name}`);
+      const running = await isContainerRunning(container.name);
+
+      if (running) {
+        console.log("✓", container.name);
         continue;
       }
 
-      if (running.includes(container.name)) {
-        console.log("✓", container.name);
-      } else {
-        console.log("✗", container.name, "(NOT RUNNING)");
+      console.log("✗", container.name);
 
-        try {
-          await restartContainer(container.name);
+      restartQueue.push(container);
+    }
 
-          console.log("↳ Restart command sent");
-          await log("↳ Restart command sent");
-        } catch (err) {
-          console.log("↳ Failed:", err.message);
-          await log(`${container.name} restart FAILED : ${err.message}`);
+    while (restartQueue.length > 0) {
+      const container = restartQueue.shift();
+
+      if (processed.has(container.name)) {
+        continue;
+      }
+
+      processed.add(container.name);
+
+      console.log(`Restarting ${container.name}`);
+
+      try {
+        await restartContainer(container.name);
+
+        console.log(`Waiting for ${container.name}...`);
+
+        const healthy = await waitUntilRunning(container.name);
+
+        if (!healthy) {
+          console.log(`${container.name} failed to come online.`);
+          await log(`${container.name} failed to become healthy.`);
+          continue;
         }
+
+        console.log(`${container.name} is running.`);
+
+        await log(`${container.name} restarted successfully.`);
+
+        const dependents = getDependents(container.name);
+
+        for (const dependent of dependents) {
+          if (!processed.has(dependent.name)) {
+            restartQueue.push(dependent);
+          }
+        }
+      } catch (err) {
+        await log(`${container.name} restart FAILED`);
       }
     }
 
+    const runningContainers = await getRunningContainers();
+
     console.log("\nUser Deployments");
 
-    running
+    runningContainers
       .filter((c) => c.startsWith("echohub-"))
       .forEach((c) => console.log("•", c));
   } catch (err) {
