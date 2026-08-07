@@ -1,7 +1,24 @@
 const { startScheduler } = require("./scheduler");
 const { getRunningContainers, restartContainer } = require("./docker");
-const { REQUIRED_CONTAINERS } = require("./config");
+const CONTAINERS = require("./containers");
 const { log } = require("./logger");
+
+async function isContainerRunning(name) {
+  const running = await getRunningContainers();
+  return running.includes(name);
+}
+
+async function dependenciesSatisfied(container) {
+  for (const dependency of container.dependsOn) {
+    const running = await isContainerRunning(dependency);
+
+    if (!running) {
+      return false;
+    }
+  }
+
+  return true;
+}
 
 async function watchdogLoop() {
   try {
@@ -13,20 +30,25 @@ async function watchdogLoop() {
 
     console.log("Core Services");
 
-    for (const container of REQUIRED_CONTAINERS) {
-      if (running.includes(container)) {
-        console.log("✓", container);
+    for (const container of CONTAINERS) {
+      if (!(await dependenciesSatisfied(container))) {
+        console.log(`Waiting for dependencies of ${container.name}`);
+        continue;
+      }
+
+      if (running.includes(container.name)) {
+        console.log("✓", container.name);
       } else {
-        console.log("✗", container, "(NOT RUNNING)");
+        console.log("✗", container.name, "(NOT RUNNING)");
 
         try {
-          await restartContainer(container);
+          await restartContainer(container.name);
 
           console.log("↳ Restart command sent");
           await log("↳ Restart command sent");
         } catch (err) {
           console.log("↳ Failed:", err.message);
-          await log(`${container} restart FAILED : ${err.message}`);
+          await log(`${container.name} restart FAILED : ${err.message}`);
         }
       }
     }
