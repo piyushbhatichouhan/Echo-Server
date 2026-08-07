@@ -12,6 +12,13 @@ async function getRunningContainers() {
     .filter(Boolean);
 }
 
+async function restartContainer(containerName) {
+  console.log(`Restarting ${containerName}...`);
+
+  await execAsync(`docker start ${containerName}`);
+}
+
 module.exports = {
   getRunningContainers,
+  restartContainer,
 };
