@@ -1,6 +1,6 @@
 const { exec } = require("child_process");
 const { promisify } = require("util");
-
+const { log } = require("./logger");
 const execAsync = promisify(exec);
 
 async function getRunningContainers() {
@@ -14,7 +14,7 @@ async function getRunningContainers() {
 
 async function restartContainer(containerName) {
   console.log(`Restarting ${containerName}...`);
-
+  await log(`Restarting ${containerName}`);
   await execAsync(`docker start ${containerName}`);
 }
 
