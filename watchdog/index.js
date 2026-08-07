@@ -1,23 +1,40 @@
 const { startScheduler } = require("./scheduler");
-const { getRunningContainers } = require("./docker");
+const { getRunningContainers, restartContainer } = require("./docker");
+const { REQUIRED_CONTAINERS } = require("./config");
 
 async function watchdogLoop() {
   try {
-    const containers = await getRunningContainers();
+    const running = await getRunningContainers();
 
     console.clear();
 
-    console.log("Running Containers");
-    console.log("------------------");
+    console.log("===== Echo Watchdog =====\n");
 
-    containers.forEach((container) => {
-      console.log("✓", container);
-    });
+    console.log("Core Services");
 
-    console.log("\nTotal:", containers.length);
+    for (const container of REQUIRED_CONTAINERS) {
+      if (running.includes(container)) {
+        console.log("✓", container);
+      } else {
+        console.log("✗", container, "(NOT RUNNING)");
+
+        try {
+          await restartContainer(container);
+
+          console.log("↳ Restart command sent");
+        } catch (err) {
+          console.log("↳ Failed:", err.message);
+        }
+      }
+    }
+
+    console.log("\nUser Deployments");
+
+    running
+      .filter((c) => c.startsWith("echohub-"))
+      .forEach((c) => console.log("•", c));
   } catch (err) {
-    console.error("Docker Error");
-    console.error(err.message);
+    console.error(err);
   }
 }
 
