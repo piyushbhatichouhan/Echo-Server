@@ -11,6 +11,7 @@ export const uploadCloudFile = async (
   file,
   relativePath,
   onUploadProgress,
+  signal,
 ) => {
   const form = new FormData();
 
