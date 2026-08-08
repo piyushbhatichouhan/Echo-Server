@@ -29,6 +29,7 @@ export default function FileBrowser({ adapter, workspaceId }) {
   const [saving, setSaving] = useState(false);
   const [clipboard, setClipboard] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(null);
+  const uploadAbortController = useRef(null);
 
   const handleCopy = async (item) => {
     if (!adapter.copyPath) {
@@ -143,8 +144,14 @@ export default function FileBrowser({ adapter, workspaceId }) {
 
   const uploadFiles = async (items) => {
     if (!items || items.length === 0) return;
+
+    uploadAbortController.current = new AbortController();
+
+    const { signal } = uploadAbortController.current;
+
     console.log("uploadFiles received:", items);
     console.log("upload count:", items.length);
+
     const uploadItems = items.map((item) => {
       const actualFile = item.file || item;
 
@@ -215,6 +222,7 @@ export default function FileBrowser({ adapter, workspaceId }) {
               percentage,
             });
           },
+          signal,
         );
 
         completedBytes += file.size;
@@ -236,11 +244,25 @@ export default function FileBrowser({ adapter, workspaceId }) {
 
         //toast.success("File Uploaded", `${file.name} uploaded successfully`);
       } catch (error) {
+        if (signal.aborted) {
+          break;
+        }
+
         toast.error(
           error.response?.data?.message ?? error.message ?? "Upload failed",
         );
       }
     }
+
+    if (signal.aborted) {
+      setUploadProgress(null);
+      uploadAbortController.current = null;
+
+      toast.info("Upload Cancelled", "The upload was cancelled.");
+
+      return;
+    }
+
     const folderNames = [
       ...new Set(
         uploadItems
@@ -338,6 +360,12 @@ export default function FileBrowser({ adapter, workspaceId }) {
     return `${value.toFixed(index === 0 ? 0 : 2)} ${units[index]}`;
   };
 
+  const cancelUpload = () => {
+    if (!uploadAbortController.current) return;
+
+    uploadAbortController.current.abort();
+  };
+
   useEffect(() => {
     const resetDrag = () => {
       dragCounter.current = 0;
@@ -405,7 +433,7 @@ export default function FileBrowser({ adapter, workspaceId }) {
         <div className="upload-progress-card">
           <div className="upload-progress-header">
             <div>
-              <div className="upload-progress-title">Uploading files</div>
+              <div className="upload-progress-title">Uploading</div>
 
               <div className="upload-progress-subtitle">
                 {uploadProgress.completedFiles} of {uploadProgress.totalFiles}{" "}
@@ -413,8 +441,18 @@ export default function FileBrowser({ adapter, workspaceId }) {
               </div>
             </div>
 
-            <div className="upload-progress-percentage">
-              {uploadProgress.percentage}%
+            <div className="upload-progress-actions">
+              <div className="upload-progress-percentage">
+                {uploadProgress.percentage}%
+              </div>
+
+              <button
+                type="button"
+                className="upload-cancel-button"
+                onClick={cancelUpload}
+              >
+                Cancel
+              </button>
             </div>
           </div>
 

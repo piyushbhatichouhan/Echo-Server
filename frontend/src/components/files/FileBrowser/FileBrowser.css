@@ -309,3 +309,34 @@
         max-width: 50%;
     }
 }
+
+.upload-progress-actions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.upload-cancel-button {
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.06);
+    color: #ddd;
+    padding: 7px 13px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        color 0.2s ease;
+}
+
+.upload-cancel-button:hover {
+    background: rgba(220, 80, 50, 0.15);
+    border-color: rgba(220, 80, 50, 0.4);
+    color: #ffb09a;
+}
+
+.upload-cancel-button:active {
+    transform: scale(0.97);
+}
