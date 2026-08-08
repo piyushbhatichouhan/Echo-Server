@@ -8,6 +8,7 @@ const filesystem = require("../services/filesystem.service");
 const storageService = require("./storage.service");
 const fs = require("fs/promises");
 const storageAllocation = require("./storageAllocation.service");
+const { resolveCloudStoragePath } = require("../utils/storagePath");
 const {
   normalizeRelativePath,
   relativeDirname,
@@ -177,8 +178,8 @@ const loadFileContent = async (fileId, ownerId) => {
   const result = await pool.query(
     `
     SELECT
-        storage_path,
         original_name,
+        relative_path,
         mime_type
     FROM cloud_files
     WHERE
@@ -197,7 +198,9 @@ const loadFileContent = async (fileId, ownerId) => {
 
   const file = result.rows[0];
 
-  const content = await filesystem.readContent(file.storage_path, "utf8");
+  const storagePath = resolveCloudStoragePath(ownerId, file.relative_path);
+
+  const content = await filesystem.readContent(storagePath, "utf8");
 
   return {
     name: file.original_name,
