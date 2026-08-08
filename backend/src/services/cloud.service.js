@@ -451,7 +451,10 @@ const movePath = async (ownerId, sourceRelative, destinationRelative, type) => {
     ownerId,
     destinationRelative,
   );
-  await filesystem.ensureDirectory(relativeDirname(destinationStorage));
+
+  await fs.mkdir(path.dirname(destinationStorage), {
+    recursive: true,
+  });
 
   await filesystem.moveUploadedFile(sourceStorage, destinationStorage);
   if (type === "file") {
@@ -792,7 +795,14 @@ VALUES
     }
   }
 
-  await movePath(ownerId, sourceRelative, destinationRelative, clipboard.type);
+  if (clipboard.operation === "cut") {
+    await movePath(
+      ownerId,
+      sourceRelative,
+      destinationRelative,
+      clipboard.type,
+    );
+  }
 
   return {
     success: true,

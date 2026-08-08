@@ -146,9 +146,12 @@ export default function FileBrowser({ adapter, workspaceId }) {
     if (!items || items.length === 0) return;
 
     uploadCancelled.current = false;
-    uploadAbortController.current = new AbortController();
 
-    const { signal } = uploadAbortController.current;
+    const controller = new AbortController();
+
+    uploadAbortController.current = controller;
+
+    const { signal } = controller;
 
     const uploadItems = items.map((item) => {
       const actualFile = item.file || item;
@@ -325,7 +328,10 @@ export default function FileBrowser({ adapter, workspaceId }) {
         setUploadProgress(null);
       }, 1000);
     } finally {
-      uploadAbortController.current = null;
+      if (uploadAbortController.current === controller) {
+        uploadAbortController.current = null;
+      }
+
       uploadCancelled.current = false;
     }
   };
@@ -388,8 +394,14 @@ export default function FileBrowser({ adapter, workspaceId }) {
     if (!uploadAbortController.current) return;
 
     uploadCancelled.current = true;
+
     uploadAbortController.current.abort();
+
+    setUploadProgress(null);
+
+    toast.info("Upload Cancelled", "The upload was cancelled.");
   };
+
   useEffect(() => {
     const resetDrag = () => {
       dragCounter.current = 0;
