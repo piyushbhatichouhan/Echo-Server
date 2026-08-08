@@ -334,13 +334,11 @@ const deleteFile = async (fileId, ownerId) => {
 const renamePath = async (fileId, ownerId, newName) => {
   const result = await pool.query(
     `
-  SELECT *
-  FROM cloud_files
-  WHERE
-      id = $1
-  AND
-      owner_id = $2
-  `,
+    SELECT *
+    FROM cloud_files
+    WHERE id = $1
+      AND owner_id = $2
+    `,
     [fileId, ownerId],
   );
 
@@ -353,16 +351,52 @@ const renamePath = async (fileId, ownerId, newName) => {
   const item = result.rows[0];
 
   const oldPath = item.relative_path;
-
   const folder = relativeDirname(oldPath);
 
   const newPath = folder === "." ? newName : relativeJoin(folder, newName);
+
+  // Don't allow renaming to the same path
+  if (newPath === oldPath) {
+    return;
+  }
+
+  // Make sure destination doesn't already exist
+  const existing = await pool.query(
+    `
+    SELECT id
+    FROM cloud_files
+    WHERE owner_id = $1
+      AND relative_path = $2
+      AND id <> $3
+    `,
+    [ownerId, newPath, fileId],
+  );
+
+  if (existing.rows.length > 0) {
+    const error = new Error("A file or folder with this name already exists.");
+    error.status = 409;
+    throw error;
+  }
 
   const oldStorage = resolveCloudStoragePath(ownerId, oldPath);
 
   const newStorage = resolveCloudStoragePath(ownerId, newPath);
 
-  await filesystem.ensureDirectory(relativeDirname(newStorage));
+  // Make sure the physical source actually exists
+  const sourceExists = await fs
+    .access(oldStorage)
+    .then(() => true)
+    .catch(() => false);
+
+  if (!sourceExists) {
+    const error = new Error(
+      "The file exists in the database but is missing from storage.",
+    );
+    error.status = 404;
+    throw error;
+  }
+
+  await filesystem.ensureDirectory(path.dirname(newStorage));
 
   await filesystem.moveUploadedFile(oldStorage, newStorage);
 
@@ -373,13 +407,13 @@ const renamePath = async (fileId, ownerId, newName) => {
   if (!item.is_directory) {
     await pool.query(
       `
-    UPDATE cloud_files
-    SET
+      UPDATE cloud_files
+      SET
         original_name = $2,
         relative_path = $3,
         storage_path = $4
-    WHERE id = $1
-    `,
+      WHERE id = $1
+      `,
       [fileId, relativeBasename(newPath), newPath, newStorage],
     );
 
@@ -392,31 +426,32 @@ const renamePath = async (fileId, ownerId, newName) => {
 
   const rows = await pool.query(
     `
-  SELECT *
-  FROM cloud_files
-  WHERE
-      owner_id = $1
-  AND
-      relative_path LIKE $2
-  `,
-    [ownerId, `${oldPath}%`],
+    SELECT *
+    FROM cloud_files
+    WHERE owner_id = $1
+      AND (
+        relative_path = $2
+        OR relative_path LIKE $3
+      )
+    `,
+    [ownerId, oldPath, `${oldPath}/%`],
   );
 
   for (const file of rows.rows) {
     const updatedRelative =
       newPath + file.relative_path.substring(oldPath.length);
 
-    const updatedStorage = relativeJoin(root, updatedRelative);
+    const updatedStorage = resolveCloudStoragePath(ownerId, updatedRelative);
 
     await pool.query(
       `
-    UPDATE cloud_files
-    SET
+      UPDATE cloud_files
+      SET
         relative_path = $2,
         storage_path = $3,
         original_name = $4
-    WHERE id = $1
-    `,
+      WHERE id = $1
+      `,
       [
         file.id,
         updatedRelative,

@@ -340,3 +340,30 @@
 .upload-cancel-button:active {
     transform: scale(0.97);
 }
+
+.file-browser {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+}
+
+.file-browser-content {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+}
+
+.cloud-drop-zone {
+    width: 100%;
+    height: 100%;
+}
+
+.cloud-list {
+    width: 100%;
+    min-height: 420px;
+    height: 100%;
+    box-sizing: border-box;
+    border-radius: 12px;
+    overflow: hidden;
+}

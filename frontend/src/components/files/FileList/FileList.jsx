@@ -115,10 +115,13 @@ export default function CloudFileList({
     <div
       className="cloud-list"
       onContextMenu={(e) => {
-        // only if user clicked empty space
-        if (e.target !== e.currentTarget) return;
-
         e.preventDefault();
+
+        // Only show background menu if the click
+        // wasn't on an actual file/folder row.
+        if (e.target.closest(".cloud-row")) {
+          return;
+        }
 
         setBackgroundMenu({
           visible: true,
