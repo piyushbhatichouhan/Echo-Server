@@ -43,7 +43,7 @@ export default function Dashboard() {
     return <h2>Loading...</h2>;
   }
   let quotaUsed;
-  console.log("stats", stats);
+
   if (stats !== null) {
     quotaUsed = `${formatBytes(stats.used)} / ${formatBytes(stats.limit)}`;
   } else {

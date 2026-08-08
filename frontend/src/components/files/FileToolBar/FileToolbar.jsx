@@ -10,8 +10,6 @@ export default function FileToolbar({
   onNewFile,
   clipboard,
 }) {
-  console.log("clipboard", clipboard);
-
   return (
     <div className="cloud-toolbar">
       <div className="cloud-toolbar-left">
