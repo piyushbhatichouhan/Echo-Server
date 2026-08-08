@@ -1,4 +1,4 @@
-const { getProjectFilesDirectory } = require("../storage/storage.manager");
+const { getProjectFilesRoot } = require("../storage/project.storage.manager");
 const { getProjectGitDirectory, copyDirectory } = require("./git.service");
 const { pool } = require("../config/database");
 const fs = require("fs/promises");
@@ -9,7 +9,7 @@ const normalizeRelativePath = (p) => p.split(path.sep).join("/");
 const syncGitToWorkspace = async (projectId) => {
   const gitDirectory = getProjectGitDirectory(projectId);
 
-  const workspaceDirectory = getProjectFilesDirectory(projectId);
+  const workspaceDirectory = getProjectFilesRoot(projectId);
 
   // Remove old workspace completely
   await fs.rm(workspaceDirectory, {

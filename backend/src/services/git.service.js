@@ -8,6 +8,7 @@ const os = require("os");
 const filesystem = require("./filesystem.service");
 const { v4: uuid } = require("uuid");
 const storageService = require("./storage.service");
+const { getGitRoot } = require("../storage/git.storage.manager");
 
 const {
   syncGitToWorkspace,
@@ -203,10 +204,8 @@ const disconnectRepository = async (projectId, ownerId) => {
   );
 };
 
-const GIT_ROOT = path.join(process.cwd(), "storage", "git");
-
 const getProjectGitDirectory = (projectId) => {
-  return path.join(GIT_ROOT, projectId);
+  return getGitRoot(projectId);
 };
 
 const cloneRepository = async (projectId, ownerId) => {
