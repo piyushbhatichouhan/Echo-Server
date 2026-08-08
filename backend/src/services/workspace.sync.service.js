@@ -95,7 +95,7 @@ const indexWorkspace = async (projectId) => {
     [projectId],
   );
 
-  const workspaceDirectory = getProjectFilesDirectory(projectId);
+  const workspaceDirectory = getProjectFilesRoot(projectId);
 
   const scanDirectory = async (absoluteDirectory, relativeDirectory = "") => {
     const entries = await fs.readdir(absoluteDirectory, {
