@@ -469,6 +469,7 @@ const renamePath = async (projectId, ownerId, oldPath, newPath, type) => {
 };
 
 const createFolder = async (projectId, ownerId, relativePath) => {
+  const { verifyProjectOwnership } = require("./project.service");
   await verifyProjectOwnership(projectId, ownerId);
 
   const folderPath = resolveProjectStoragePath(projectId, relativePath);
@@ -502,6 +503,7 @@ const createFolder = async (projectId, ownerId, relativePath) => {
 };
 
 const createEmptyFile = async (projectId, ownerId, relativePath) => {
+  const { verifyProjectOwnership } = require("./project.service");
   await verifyProjectOwnership(projectId, ownerId);
 
   const fullPath = resolveProjectStoragePath(projectId, relativePath);
