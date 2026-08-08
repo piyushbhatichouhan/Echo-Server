@@ -27,7 +27,7 @@ const syncGitToWorkspace = async (projectId) => {
 };
 
 const syncWorkspaceToGit = async (projectId) => {
-  const workspaceDirectory = getProjectFilesDirectory(projectId);
+  const workspaceDirectory = getProjectFilesRoot(projectId);
 
   const gitDirectory = getProjectGitDirectory(projectId);
 
