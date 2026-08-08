@@ -1,9 +1,12 @@
 const { getCloudRoot } = require("../storage/cloud.storage.manager");
 const { relativeJoin } = require("./relativePath");
 
-function resolveCloudStoragePath(ownerId, relativePath) {
-  return relativeJoin(getCloudRoot(ownerId), relativePath);
-}
+const resolveCloudStoragePath = (ownerId, relativePath) => {
+  return relativeJoin(
+    relativeJoin(getCloudRoot(ownerId), "files"),
+    relativePath,
+  );
+};
 
 module.exports = {
   resolveCloudStoragePath,
