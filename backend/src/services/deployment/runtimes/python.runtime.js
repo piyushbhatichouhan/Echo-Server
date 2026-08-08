@@ -113,14 +113,30 @@ async function install(context) {
     cwd,
     command: settings.install_command,
   });
-
+  console.log("[Python Install Result]", {
+    command: settings.install_command,
+    cwd,
+    success: result.success,
+    stdout: result.stdout,
+    stderr: result.stderr,
+    error: result.error,
+    exitCode: result.exitCode,
+  });
   if (!result.success) {
     await context.infrastructure.logger.error(
       deployment.id,
-      result.error || "Install command failed.",
+      result.stderr ||
+        result.error ||
+        result.stdout ||
+        "Install command failed.",
     );
 
-    throw new Error(result.error || "Install command failed.");
+    throw new Error(
+      result.stderr ||
+        result.error ||
+        result.stdout ||
+        "Install command failed.",
+    );
   }
 
   await context.infrastructure.logger.info(
