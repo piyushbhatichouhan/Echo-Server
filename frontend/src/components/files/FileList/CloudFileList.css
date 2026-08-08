@@ -89,3 +89,20 @@
     opacity: .45;
     filter: grayscale(.4);
 }
+
+.cloud-list {
+    width: 100%;
+    min-height: 420px;
+    border-radius: 12px;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+.cloud-list {
+    width: 100%;
+    min-height: 420px;
+    height: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+    box-sizing: border-box;
+}

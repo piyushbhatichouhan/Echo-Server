@@ -437,170 +437,172 @@ export default function FileBrowser({ adapter, workspaceId }) {
   }, []);
 
   return (
-    <div>
-      <FileBreadcrumbs
-        currentFolder={currentFolder}
-        onNavigate={setCurrentFolder}
-      />
-      <input
-        ref={uploadFileRef}
-        type="file"
-        multiple
-        hidden
-        onChange={handleUpload}
-      />
-      <input
-        ref={uploadFolderRef}
-        type="file"
-        webkitdirectory=""
-        multiple
-        hidden
-        onChange={handleUpload}
-      />
-      <FileToolbar
-        onUploadFile={() => uploadFileRef.current.click()}
-        onUploadFolder={() => uploadFolderRef.current.click()}
-        onNewFolder={createFolder}
-        onNewFile={createFile}
-        clipboard={clipboard}
-      />
+    <div className="file-browser">
+      <div>
+        <FileBreadcrumbs
+          currentFolder={currentFolder}
+          onNavigate={setCurrentFolder}
+        />
+        <input
+          ref={uploadFileRef}
+          type="file"
+          multiple
+          hidden
+          onChange={handleUpload}
+        />
+        <input
+          ref={uploadFolderRef}
+          type="file"
+          webkitdirectory=""
+          multiple
+          hidden
+          onChange={handleUpload}
+        />
+        <FileToolbar
+          onUploadFile={() => uploadFileRef.current.click()}
+          onUploadFolder={() => uploadFolderRef.current.click()}
+          onNewFolder={createFolder}
+          onNewFile={createFile}
+          clipboard={clipboard}
+        />
 
-      {uploadProgress && (
-        <div className="upload-progress-card">
-          <div className="upload-progress-header">
-            <div>
-              <div className="upload-progress-title">Uploading</div>
+        {uploadProgress && (
+          <div className="upload-progress-card">
+            <div className="upload-progress-header">
+              <div>
+                <div className="upload-progress-title">Uploading</div>
 
-              <div className="upload-progress-subtitle">
-                {uploadProgress.completedFiles} of {uploadProgress.totalFiles}{" "}
-                files completed
+                <div className="upload-progress-subtitle">
+                  {uploadProgress.completedFiles} of {uploadProgress.totalFiles}{" "}
+                  files completed
+                </div>
+              </div>
+
+              <div className="upload-progress-actions">
+                <div className="upload-progress-percentage">
+                  {uploadProgress.percentage}%
+                </div>
+
+                <button
+                  type="button"
+                  className="upload-cancel-button"
+                  onClick={cancelUpload}
+                >
+                  Cancel
+                </button>
               </div>
             </div>
 
-            <div className="upload-progress-actions">
-              <div className="upload-progress-percentage">
-                {uploadProgress.percentage}%
-              </div>
-
-              <button
-                type="button"
-                className="upload-cancel-button"
-                onClick={cancelUpload}
-              >
-                Cancel
-              </button>
+            <div className="upload-progress-bar">
+              <div
+                className="upload-progress-fill"
+                style={{
+                  width: `${uploadProgress.percentage}%`,
+                }}
+              />
             </div>
-          </div>
 
-          <div className="upload-progress-bar">
-            <div
-              className="upload-progress-fill"
-              style={{
-                width: `${uploadProgress.percentage}%`,
-              }}
-            />
-          </div>
-
-          <div className="upload-progress-info">
-            <span>
-              {formatBytes(uploadProgress.uploadedBytes)} /{" "}
-              {formatBytes(uploadProgress.totalBytes)}
-            </span>
-
-            {uploadProgress.currentFile && (
-              <span className="upload-current-file">
-                {uploadProgress.currentFile}
+            <div className="upload-progress-info">
+              <span>
+                {formatBytes(uploadProgress.uploadedBytes)} /{" "}
+                {formatBytes(uploadProgress.totalBytes)}
               </span>
-            )}
+
+              {uploadProgress.currentFile && (
+                <span className="upload-current-file">
+                  {uploadProgress.currentFile}
+                </span>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {!selectedFile ? (
-        <div
-          className={`cloud-drop-zone ${dragActive ? "drag-active" : ""}`}
-          onDragEnter={(e) => {
-            e.preventDefault();
+        {!selectedFile ? (
+          <div
+            className={`cloud-drop-zone ${dragActive ? "drag-active" : ""}`}
+            onDragEnter={(e) => {
+              e.preventDefault();
 
-            dragCounter.current++;
+              dragCounter.current++;
 
-            setDragActive(true);
-          }}
-          onDragOver={(e) => {
-            e.preventDefault();
-          }}
-          onDragLeave={(e) => {
-            e.preventDefault();
+              setDragActive(true);
+            }}
+            onDragOver={(e) => {
+              e.preventDefault();
+            }}
+            onDragLeave={(e) => {
+              e.preventDefault();
 
-            dragCounter.current--;
+              dragCounter.current--;
 
-            if (dragCounter.current <= 0) {
+              if (dragCounter.current <= 0) {
+                dragCounter.current = 0;
+                setDragActive(false);
+              }
+            }}
+            onDrop={async (e) => {
+              e.preventDefault();
+
               dragCounter.current = 0;
               setDragActive(false);
-            }
-          }}
-          onDrop={async (e) => {
-            e.preventDefault();
 
-            dragCounter.current = 0;
-            setDragActive(false);
+              try {
+                const files = await readDroppedEntries(e.dataTransfer);
 
-            try {
-              const files = await readDroppedEntries(e.dataTransfer);
+                console.log("DROPPED FILES:", files);
+                console.log("DROPPED COUNT:", files.length);
 
-              console.log("DROPPED FILES:", files);
-              console.log("DROPPED COUNT:", files.length);
+                await handleDroppedFiles(files);
+              } catch (error) {
+                console.error("DROP ERROR:", error);
 
-              await handleDroppedFiles(files);
-            } catch (error) {
-              console.error("DROP ERROR:", error);
+                toast.error(
+                  error.response?.data?.message ??
+                    error.message ??
+                    "Could not read dropped files",
+                );
+              }
+            }}
+          >
+            {dragActive && (
+              <div className="cloud-drop-overlay">
+                <Upload size={56} />
 
-              toast.error(
-                error.response?.data?.message ??
-                  error.message ??
-                  "Could not read dropped files",
-              );
-            }
-          }}
-        >
-          {dragActive && (
-            <div className="cloud-drop-overlay">
-              <Upload size={56} />
+                <h2>Drop files to upload</h2>
 
-              <h2>Drop files to upload</h2>
-
-              <p>Upload into this folder</p>
-            </div>
-          )}
-          <FileList
-            files={files}
-            currentFolder={currentFolder}
-            onNavigate={setCurrentFolder}
-            onOpenFile={setSelectedFile}
-            onCopy={handleCopy}
-            onCut={handleCut}
-            onPaste={handlePaste}
-            clipboard={clipboard}
+                <p>Upload into this folder</p>
+              </div>
+            )}
+            <FileList
+              files={files}
+              currentFolder={currentFolder}
+              onNavigate={setCurrentFolder}
+              onOpenFile={setSelectedFile}
+              onCopy={handleCopy}
+              onCut={handleCut}
+              onPaste={handlePaste}
+              clipboard={clipboard}
+              adapter={adapter}
+              refresh={refresh}
+              workspaceId={workspaceId}
+            />
+          </div>
+        ) : (
+          <FileViewer
             adapter={adapter}
-            refresh={refresh}
-            workspaceId={workspaceId}
+            onClose={() => setSelectedFile(null)}
+            file={selectedFile}
+            content={fileContent}
+            dirty={dirty}
+            saving={saving}
+            onChange={handleEditorChange}
+            onSave={saveCurrentFile}
+            onBack={() => setSelectedFile(null)}
+            dirty={dirty}
+            onDownload={() => adapter.downloadFile(selectedFile.id)}
           />
-        </div>
-      ) : (
-        <FileViewer
-          adapter={adapter}
-          onClose={() => setSelectedFile(null)}
-          file={selectedFile}
-          content={fileContent}
-          dirty={dirty}
-          saving={saving}
-          onChange={handleEditorChange}
-          onSave={saveCurrentFile}
-          onBack={() => setSelectedFile(null)}
-          dirty={dirty}
-          onDownload={() => adapter.downloadFile(selectedFile.id)}
-        />
-      )}
+        )}
+      </div>
     </div>
   );
 }
