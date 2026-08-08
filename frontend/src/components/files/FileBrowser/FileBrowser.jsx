@@ -28,6 +28,7 @@ export default function FileBrowser({ adapter, workspaceId }) {
   const uploadFolderRef = useRef();
   const [saving, setSaving] = useState(false);
   const [clipboard, setClipboard] = useState(null);
+  const [uploadProgress, setUploadProgress] = useState(null);
 
   const handleCopy = async (item) => {
     if (!adapter.copyPath) {
@@ -140,8 +141,11 @@ export default function FileBrowser({ adapter, workspaceId }) {
     }
   };
 
-  const uploadFiles = async (files) => {
-    for (const item of files) {
+  const uploadFiles = async (items) => {
+    if (!items || items.length === 0) return;
+    console.log("uploadFiles received:", items);
+    console.log("upload count:", items.length);
+    const uploadItems = items.map((item) => {
       const actualFile = item.file || item;
 
       const sourceRelative =
@@ -151,20 +155,133 @@ export default function FileBrowser({ adapter, workspaceId }) {
         ? `${currentFolder}/${sourceRelative}`
         : sourceRelative;
 
+      return {
+        item,
+        file: actualFile,
+        relativePath,
+      };
+    });
+
+    const isFolderUpload = uploadItems.some(
+      ({ file, relativePath }) =>
+        file.webkitRelativePath?.includes("/") || relativePath.includes("/"),
+    );
+
+    const totalFiles = uploadItems.length;
+
+    const totalBytes = uploadItems.reduce(
+      (sum, item) => sum + item.file.size,
+      0,
+    );
+
+    let completedFiles = 0;
+    let completedBytes = 0;
+
+    setUploadProgress({
+      totalFiles,
+      completedFiles: 0,
+      totalBytes,
+      uploadedBytes: 0,
+      currentFile: uploadItems[0].file.name,
+      percentage: 0,
+    });
+
+    for (const uploadItem of uploadItems) {
+      const { item, file, relativePath } = uploadItem;
+
       try {
-        await adapter.uploadFile(workspaceId, actualFile, relativePath);
-        toast.success(
-          "File Uploaded",
-          `${item.file.name} uploaded succesfully`,
+        setUploadProgress((previous) => ({
+          ...previous,
+          currentFile: file.name,
+        }));
+
+        await adapter.uploadFile(
+          workspaceId,
+          file,
+          relativePath,
+          ({ loaded }) => {
+            const uploadedBytes = completedBytes + loaded;
+
+            const percentage = totalBytes
+              ? Math.round((uploadedBytes / totalBytes) * 100)
+              : 0;
+
+            setUploadProgress({
+              totalFiles,
+              completedFiles,
+              totalBytes,
+              uploadedBytes,
+              currentFile: file.name,
+              percentage,
+            });
+          },
         );
+
+        completedBytes += file.size;
+        completedFiles++;
+
+        setUploadProgress({
+          totalFiles,
+          completedFiles,
+          totalBytes,
+          uploadedBytes: completedBytes,
+          currentFile:
+            completedFiles < totalFiles
+              ? uploadItems[completedFiles].file.name
+              : null,
+          percentage: totalBytes
+            ? Math.round((completedBytes / totalBytes) * 100)
+            : 100,
+        });
+
+        //toast.success("File Uploaded", `${file.name} uploaded successfully`);
       } catch (error) {
         toast.error(
-          error.response?.data?.message ?? error.message ?? "Unknown error",
+          error.response?.data?.message ?? error.message ?? "Upload failed",
         );
       }
     }
+    const folderNames = [
+      ...new Set(
+        uploadItems
+          .filter((item) => item.relativePath?.includes("/"))
+          .map((item) => item.relativePath.split("/")[0]),
+      ),
+    ];
 
-    refresh();
+    //  const isFolderUpload = folderNames.length > 0;
+
+    if (isFolderUpload) {
+      if (folderNames.length === 1) {
+        toast.success(
+          "Folder Uploaded",
+          `${folderNames[0]} uploaded successfully`,
+        );
+      } else {
+        toast.success(
+          "Folders Uploaded",
+          `${folderNames.length} folders uploaded successfully`,
+        );
+      }
+    } else if (items.length === 1) {
+      const uploadedFile = uploadItems[0].file;
+
+      toast.success(
+        "File Uploaded",
+        `${uploadedFile.name} uploaded successfully`,
+      );
+    } else {
+      toast.success(
+        "Upload Complete",
+        `${totalFiles} files uploaded successfully`,
+      );
+    }
+
+    await refresh();
+
+    setTimeout(() => {
+      setUploadProgress(null);
+    }, 1000);
   };
 
   const handleUpload = (e) => {
@@ -179,9 +296,9 @@ export default function FileBrowser({ adapter, workspaceId }) {
     }
   };
 
-  const handleDroppedFiles = (files) => {
+  const handleDroppedFiles = async (files) => {
     try {
-      uploadFiles(files);
+      await uploadFiles(files);
     } catch (error) {
       toast.error(
         error.response?.data?.message ?? error.message ?? "Unknown error",
@@ -207,6 +324,18 @@ export default function FileBrowser({ adapter, workspaceId }) {
     await adapter.createFile(workspaceId, currentFolder, name);
 
     refresh();
+  };
+
+  const formatBytes = (bytes) => {
+    if (!bytes) return "0 B";
+
+    const units = ["B", "KB", "MB", "GB", "TB"];
+
+    const index = Math.floor(Math.log(bytes) / Math.log(1024));
+
+    const value = bytes / Math.pow(1024, index);
+
+    return `${value.toFixed(index === 0 ? 0 : 2)} ${units[index]}`;
   };
 
   useEffect(() => {
@@ -271,6 +400,48 @@ export default function FileBrowser({ adapter, workspaceId }) {
         onNewFile={createFile}
         clipboard={clipboard}
       />
+
+      {uploadProgress && (
+        <div className="upload-progress-card">
+          <div className="upload-progress-header">
+            <div>
+              <div className="upload-progress-title">Uploading files</div>
+
+              <div className="upload-progress-subtitle">
+                {uploadProgress.completedFiles} of {uploadProgress.totalFiles}{" "}
+                files completed
+              </div>
+            </div>
+
+            <div className="upload-progress-percentage">
+              {uploadProgress.percentage}%
+            </div>
+          </div>
+
+          <div className="upload-progress-bar">
+            <div
+              className="upload-progress-fill"
+              style={{
+                width: `${uploadProgress.percentage}%`,
+              }}
+            />
+          </div>
+
+          <div className="upload-progress-info">
+            <span>
+              {formatBytes(uploadProgress.uploadedBytes)} /{" "}
+              {formatBytes(uploadProgress.totalBytes)}
+            </span>
+
+            {uploadProgress.currentFile && (
+              <span className="upload-current-file">
+                {uploadProgress.currentFile}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
       {!selectedFile ? (
         <div
           className={`cloud-drop-zone ${dragActive ? "drag-active" : ""}`}
@@ -300,13 +471,26 @@ export default function FileBrowser({ adapter, workspaceId }) {
             dragCounter.current = 0;
             setDragActive(false);
 
-            const files = await readDroppedEntries(e.dataTransfer.items);
+            try {
+              const files = await readDroppedEntries(e.dataTransfer);
 
-            handleDroppedFiles(files);
+              console.log("DROPPED FILES:", files);
+              console.log("DROPPED COUNT:", files.length);
+
+              await handleDroppedFiles(files);
+            } catch (error) {
+              console.error("DROP ERROR:", error);
+
+              toast.error(
+                error.response?.data?.message ??
+                  error.message ??
+                  "Could not read dropped files",
+              );
+            }
           }}
         >
           {dragActive && (
-            <div classNa="cloud-drop-overlay">
+            <div className="cloud-drop-overlay">
               <Upload size={56} />
 
               <h2>Drop files to upload</h2>

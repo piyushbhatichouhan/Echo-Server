@@ -123,9 +123,14 @@ const deleteFolder = async (ownerId, folderPath) => {
         relative_path = $2
         OR relative_path LIKE $3
       )
-    RETURNING storage_path;
+    RETURNING
+      id,
+      relative_path,
+      file_size,
+      storage_path,
+      is_directory;
     `,
-    [ownerId, folderPath, folderPath + "/%"],
+    [ownerId, folderPath, `${folderPath}/%`],
   );
 
   return result.rows;

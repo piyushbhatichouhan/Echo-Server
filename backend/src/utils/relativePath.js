@@ -2,6 +2,12 @@ const path = require("path");
 
 // normalize DB path to always use /
 function normalizeRelativePath(p) {
+  if (typeof p !== "string") {
+    throw new TypeError(
+      `Expected relative path to be a string, got ${typeof p}`,
+    );
+  }
+
   return p.replace(/\\/g, "/");
 }
 

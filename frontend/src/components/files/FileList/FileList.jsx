@@ -12,7 +12,7 @@ import {
   ClipboardPaste,
   Scissors,
 } from "lucide-react";
-
+import { useToast } from "../../../context/ToastContext";
 export default function CloudFileList({
   files,
   currentFolder,
@@ -27,7 +27,7 @@ export default function CloudFileList({
   onPaste,
 }) {
   const { downloadFile, deletePath, renamePath } = adapter;
-
+  const toast = useToast();
   const [menu, setMenu] = useState({
     visible: false,
     x: 0,
@@ -303,7 +303,19 @@ export default function CloudFileList({
                 return;
               }
 
-              await deletePath(workspaceId, menu.item);
+              try {
+                await deletePath(workspaceId, menu.item);
+
+                toast.success(
+                  "Deleted",
+                  `${menu.item.name} deleted successfully`,
+                );
+              } catch (error) {
+                toast.error(
+                  "Delete Failed",
+                  error.response?.data?.message || error.message,
+                );
+              }
 
               await refresh();
             },
