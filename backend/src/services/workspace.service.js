@@ -1,5 +1,6 @@
 const path = require("path");
 const fs = require("fs/promises");
+const { getCloudRoot } = require("../storage/cloud.storage.manager");
 
 const STORAGE_ROOT = path.resolve(process.cwd(), "storage");
 
@@ -8,7 +9,7 @@ const getProjectPath = (projectId) => {
 };
 
 const getCloudPath = (userId) => {
-  return path.join(STORAGE_ROOT, "cloud", userId.toString());
+  return getCloudRoot(userId);
 };
 
 const getFilesPath = (projectId) => {
