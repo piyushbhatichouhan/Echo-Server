@@ -534,6 +534,7 @@ const deleteFolder = async (ownerId, folderPath) => {
         path.dirname(storagePath),
         filesPath,
       );
+
       await storageAllocation.releaseStorage(ownerId, file.file_size);
     } catch (err) {
       console.warn("Could not delete:", file.storage_path);
@@ -541,7 +542,9 @@ const deleteFolder = async (ownerId, folderPath) => {
     }
   }
 
-  return deleted;
+  return {
+    success: true,
+  };
 };
 
 const copyPath = async (ownerId, relativePath, type) => {

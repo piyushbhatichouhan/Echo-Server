@@ -6,16 +6,32 @@ export const getCloudFiles = async () => {
   return response.data.data;
 };
 
-export const uploadCloudFile = async (folder, file, relativePath) => {
+export const uploadCloudFile = async (
+  folder,
+  file,
+  relativePath,
+  onUploadProgress,
+) => {
   const form = new FormData();
 
   form.append("file", file);
-
   form.append("folder", folder || "");
-
   form.append("relativePath", relativePath || file.name);
 
-  const response = await api.post("/cloud/files", form);
+  const response = await api.post("/cloud/files", form, {
+    onUploadProgress: (progressEvent) => {
+      if (!onUploadProgress) return;
+
+      const loaded = progressEvent.loaded || 0;
+      const total = progressEvent.total || file.size || 0;
+
+      onUploadProgress({
+        loaded,
+        total,
+        percentage: total ? Math.round((loaded / total) * 100) : 0,
+      });
+    },
+  });
 
   return response.data.data;
 };
@@ -63,6 +79,7 @@ export const createCloudFile = async (path) => {
 
   return response.data.data;
 };
+
 export const downloadCloudFile = async (fileId) => {
   const response = await api.get(`/cloud/files/${fileId}/download`, {
     responseType: "blob",
@@ -71,7 +88,6 @@ export const downloadCloudFile = async (fileId) => {
   const url = URL.createObjectURL(response.data);
 
   const a = document.createElement("a");
-
   a.href = url;
 
   let filename = "download";
@@ -79,17 +95,19 @@ export const downloadCloudFile = async (fileId) => {
   const disposition = response.headers["content-disposition"];
 
   if (disposition) {
-    const match = disposition.match(/filename="?([^"]+)"?/);
+    const match = disposition.match(
+      /filename\*=UTF-8''([^;]+)|filename="?([^"]+)"?/i,
+    );
 
-    if (match) filename = match[1];
+    if (match) {
+      filename = decodeURIComponent(match[1] || match[2]);
+    }
   }
 
   a.download = filename;
 
   document.body.appendChild(a);
-
   a.click();
-
   a.remove();
 
   URL.revokeObjectURL(url);

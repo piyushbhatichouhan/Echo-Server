@@ -19,8 +19,8 @@ import { copyCloudPath, cutCloudPath, pasteCloudPath } from "./cloud.api";
 export default createFileWorkspace({
   getFiles: () => getCloudFiles(),
 
-  uploadFile: (folder, file, relativePath) =>
-    uploadCloudFile(folder, file, relativePath),
+  uploadFile: (folder, file, relativePath, onUploadProgress) =>
+    uploadCloudFile(folder, file, relativePath, onUploadProgress),
 
   createFolder: (_workspaceId, currentFolder, name) => {
     const path = currentFolder ? `${currentFolder}/${name}` : name;

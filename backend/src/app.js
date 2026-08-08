@@ -8,7 +8,11 @@ const runtimeMonitor = require("./services/runtime-monitor.service");
 
 const { runUserDeletionJob } = require("./jobs/userDeletion.job");
 // Middleware
-app.use(cors());
+app.use(
+  cors({
+    exposedHeaders: ["Content-Disposition"],
+  }),
+);
 app.use(express.json());
 
 // API Routes
