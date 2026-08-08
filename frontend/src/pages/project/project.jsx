@@ -130,9 +130,6 @@ export default function Project() {
 
   const deploymentState = status?.state ?? "not_deployed";
 
-  console.log("Deployment status:", status);
-  console.log("Deployment state:", deploymentState);
-
   return (
     <div className="eh-project-page">
       <ProjectHeader project={project} status={status} />

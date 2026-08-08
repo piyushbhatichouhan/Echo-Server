@@ -109,9 +109,7 @@ const getCloudFiles = async (ownerId) => {
 };
 
 const createFolder = async (userId, relativePath) => {
-  const root = getCloudRoot(userId);
-
-  const fullPath = relativeJoin(root, relativePath);
+  const fullPath = resolveCloudStoragePath(userId, relativePath);
 
   await filesystem.ensureDirectory(fullPath);
 
@@ -140,9 +138,7 @@ const createFolder = async (userId, relativePath) => {
 };
 
 const createEmptyFile = async (userId, relativePath) => {
-  const root = getCloudRoot(userId);
-
-  const fullPath = relativeJoin(root, relativePath);
+  const fullPath = resolveCloudStoragePath(userId, relativePath);
 
   await filesystem.ensureDirectory(relativeDirname(fullPath));
 
@@ -212,15 +208,15 @@ const loadFileContent = async (fileId, ownerId) => {
 const updateFileContent = async (fileId, ownerId, content) => {
   const result = await pool.query(
     `
-    SELECT
-        storage_path,
-        file_size
-    FROM cloud_files
-    WHERE
-        id = $1
-    AND
-        owner_id = $2
-    `,
+  SELECT
+      relative_path,
+      file_size
+  FROM cloud_files
+  WHERE
+      id = $1
+  AND
+      owner_id = $2
+  `,
     [fileId, ownerId],
   );
 
@@ -237,7 +233,12 @@ const updateFileContent = async (fileId, ownerId, content) => {
 
   await storageAllocation.checkQuota(ownerId, growth);
 
-  await filesystem.writeContent(result.rows[0].storage_path, content, "utf8");
+  const storagePath = resolveCloudStoragePath(
+    ownerId,
+    result.rows[0].relative_path,
+  );
+
+  await filesystem.writeContent(storagePath, content, "utf8");
 
   if (newSize > oldSize)
     storageAllocation.reserveStorage(ownerId, newSize - oldSize);
@@ -266,7 +267,7 @@ const getFileForDownload = async (fileId, ownerId) => {
     SELECT
         id,
         original_name,
-        storage_path,
+        relative_path,
         mime_type
     FROM cloud_files
     WHERE
@@ -283,7 +284,12 @@ const getFileForDownload = async (fileId, ownerId) => {
     throw error;
   }
 
-  return result.rows[0];
+  const file = result.rows[0];
+
+  return {
+    ...file,
+    storage_path: resolveCloudStoragePath(ownerId, file.relative_path),
+  };
 };
 
 const deleteFile = async (fileId, ownerId) => {
@@ -307,10 +313,11 @@ const deleteFile = async (fileId, ownerId) => {
 
   const file = result.rows[0];
 
-  await filesystem.removeDiskFile(file.storage_path);
+  const storagePath = resolveCloudStoragePath(ownerId, file.relative_path);
+
+  await filesystem.removeDiskFile(storagePath);
 
   await storageAllocation.releaseStorage(ownerId, file.file_size);
-
   await pool.query(
     `
     DELETE FROM cloud_files
@@ -351,10 +358,9 @@ const renamePath = async (fileId, ownerId, newName) => {
 
   const newPath = folder === "." ? newName : relativeJoin(folder, newName);
 
-  const root = getCloudRoot(ownerId);
+  const oldStorage = resolveCloudStoragePath(ownerId, oldPath);
 
-  const oldStorage = relativeJoin(root, oldPath);
-  const newStorage = relativeJoin(root, newPath);
+  const newStorage = resolveCloudStoragePath(ownerId, newPath);
 
   await filesystem.ensureDirectory(relativeDirname(newStorage));
 
@@ -439,11 +445,12 @@ const movePath = async (ownerId, sourceRelative, destinationRelative, type) => {
   }
 
   const item = result.rows[0];
-  const root = getCloudRoot(ownerId);
+  const sourceStorage = resolveCloudStoragePath(ownerId, sourceRelative);
 
-  const sourceStorage = relativeJoin(root, sourceRelative);
-
-  const destinationStorage = relativeJoin(root, destinationRelative);
+  const destinationStorage = resolveCloudStoragePath(
+    ownerId,
+    destinationRelative,
+  );
   await filesystem.ensureDirectory(relativeDirname(destinationStorage));
 
   await filesystem.moveUploadedFile(sourceStorage, destinationStorage);
@@ -483,7 +490,7 @@ const movePath = async (ownerId, sourceRelative, destinationRelative, type) => {
     const updatedRelative =
       destinationRelative + file.relative_path.substring(sourceRelative.length);
 
-    const updatedStorage = relativeJoin(root, updatedRelative);
+    const updatedStorage = resolveCloudStoragePath(ownerId, updatedRelative);
 
     await pool.query(
       `
@@ -517,12 +524,14 @@ const deleteFolder = async (ownerId, folderPath) => {
     if (!file.storage_path) continue;
 
     try {
-      const success = await filesystem.removeDiskFile(file.storage_path);
+      const storagePath = resolveCloudStoragePath(ownerId, file.relative_path);
+
+      const success = await filesystem.removeDiskFile(storagePath);
 
       console.log("Delete result:", success);
 
       await filesystem.cleanupEmptyDirectories(
-        path.dirname(file.storage_path),
+        path.dirname(storagePath),
         filesPath,
       );
       await storageAllocation.releaseStorage(ownerId, file.file_size);
@@ -594,11 +603,8 @@ FROM cloud_files
 const pastePath = async (ownerId, clipboard, destination) => {
   await verifyCloudOwnership(ownerId, clipboard.relativePath);
 
-  const workspaceRoot = getCloudRoot(ownerId);
-
   const sourceRelative = clipboard.relativePath;
-
-  const sourcePath = relativeJoin(workspaceRoot, sourceRelative);
+  const sourcePath = resolveCloudStoragePath(ownerId, sourceRelative);
 
   const desiredRelative = relativeJoin(
     destination,
@@ -610,7 +616,7 @@ const pastePath = async (ownerId, clipboard, destination) => {
       ? await generateDuplicatePath(ownerId, desiredRelative)
       : desiredRelative;
 
-  const destinationPath = relativeJoin(workspaceRoot, destinationRelative);
+  const destinationPath = resolveCloudStoragePath(ownerId, destinationRelative);
 
   //
   // Prevent pasting into itself
@@ -719,7 +725,7 @@ ORDER BY LENGTH(relative_path)
           destinationRelative +
           item.relative_path.substring(sourceRelative.length);
 
-        const newStorage = relativeJoin(workspaceRoot, newRelative);
+        const newStorage = resolveCloudStoragePath(ownerId, newRelative);
 
         await pool.query(
           `

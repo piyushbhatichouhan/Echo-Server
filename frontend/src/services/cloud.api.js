@@ -14,10 +14,7 @@ export const uploadCloudFile = async (folder, file, relativePath) => {
   form.append("folder", folder || "");
 
   form.append("relativePath", relativePath || file.name);
-  console.log({
-    folder,
-    relativePath,
-  });
+
   const response = await api.post("/cloud/files", form);
 
   return response.data.data;
@@ -40,23 +37,13 @@ export const deleteCloudFolder = async (folderPath) => {
 };
 
 export const renameCloudFile = async (fileId, newName) => {
-  console.log("=== CLOUD API ===");
-  console.log({ fileId, newName });
-
   try {
-    console.log("Before PUT");
-
     const response = await api.put(`/cloud/files/${fileId}/rename`, {
       name: newName,
     });
 
-    console.log("After PUT");
-    console.log(response);
-
     return response.data.data;
   } catch (err) {
-    console.error("PUT failed");
-    console.error(err);
     throw err;
   }
 };

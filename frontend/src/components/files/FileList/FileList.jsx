@@ -27,8 +27,7 @@ export default function CloudFileList({
   onPaste,
 }) {
   const { downloadFile, deletePath, renamePath } = adapter;
-  console.log(adapter);
-  console.log(Object.keys(adapter));
+
   const [menu, setMenu] = useState({
     visible: false,
     x: 0,

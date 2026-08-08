@@ -1,64 +1,56 @@
 const path = require("path");
 const fs = require("fs/promises");
+
+const {
+  STORAGE_ROOT,
+  getProjectRoot,
+  getProjectFilesRoot,
+  getProjectBuildRoot,
+  getProjectRuntimeRoot,
+  getProjectLogsRoot,
+  ensureProjectWorkspace,
+} = require("../storage/project.storage.manager");
+
 const { getCloudRoot } = require("../storage/cloud.storage.manager");
-
-const STORAGE_ROOT = path.resolve(process.cwd(), "storage");
-
-const getProjectPath = (projectId) => {
-  return path.join(STORAGE_ROOT, "projects", projectId.toString());
-};
 
 const getCloudPath = (userId) => {
   return getCloudRoot(userId);
-};
-
-const getFilesPath = (projectId) => {
-  return path.join(getProjectPath(projectId), "files");
 };
 
 const getCloudFilesPath = (userId) => {
   return path.join(getCloudPath(userId), "files");
 };
 
+const getProjectPath = (projectId) => {
+  return getProjectRoot(projectId);
+};
+
+const getFilesPath = (projectId) => {
+  return getProjectFilesRoot(projectId);
+};
+
 const getBuildPath = (projectId) => {
-  return path.join(getProjectPath(projectId), "build");
+  return getProjectBuildRoot(projectId);
 };
 
 const getRuntimePath = (projectId) => {
-  return path.join(getProjectPath(projectId), "runtime");
+  return getProjectRuntimeRoot(projectId);
 };
 
 const getLogsPath = (projectId) => {
-  return path.join(getProjectPath(projectId), "logs");
+  return getProjectLogsRoot(projectId);
 };
 
 const ensureWorkspace = async (projectId) => {
-  const projectPath = getProjectPath(projectId);
-  const filesPath = getFilesPath(projectId);
-  const buildPath = getBuildPath(projectId);
-  const runtimePath = getRuntimePath(projectId);
-  const logsPath = getLogsPath(projectId);
-
-  const directories = [
-    projectPath,
-    filesPath,
-    buildPath,
-    runtimePath,
-    logsPath,
-  ];
-
-  for (const directory of directories) {
-    await fs.mkdir(directory, {
-      recursive: true,
-    });
-  }
+  const { projectRoot, filesRoot, buildRoot, runtimeRoot, logsRoot } =
+    await ensureProjectWorkspace(projectId);
 
   return {
-    projectPath,
-    filesPath,
-    buildPath,
-    runtimePath,
-    logsPath,
+    projectPath: projectRoot,
+    filesPath: filesRoot,
+    buildPath: buildRoot,
+    runtimePath: runtimeRoot,
+    logsPath: logsRoot,
   };
 };
 

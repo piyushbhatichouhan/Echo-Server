@@ -153,7 +153,10 @@ export default function FileBrowser({ adapter, workspaceId }) {
 
       try {
         await adapter.uploadFile(workspaceId, actualFile, relativePath);
-        toast.success("File Uploaded", `${item.name} uploaded succesfully`);
+        toast.success(
+          "File Uploaded",
+          `${item.file.name} uploaded succesfully`,
+        );
       } catch (error) {
         toast.error(
           error.response?.data?.message ?? error.message ?? "Unknown error",
@@ -222,16 +225,10 @@ export default function FileBrowser({ adapter, workspaceId }) {
   }, []);
 
   useEffect(() => {
-    console.log("Loading file...", selectedFile);
-
     if (!selectedFile) return;
 
     const load = async () => {
-      console.log("Calling adapter.getFileContent");
-
       const text = await adapter.getFileContent(selectedFile.id);
-
-      console.log("Returned:", text);
 
       setFileContent(text);
       setDirty(false);
@@ -240,9 +237,7 @@ export default function FileBrowser({ adapter, workspaceId }) {
     load();
   }, [selectedFile]);
 
-  useEffect(() => {
-    console.log("selectedFile", selectedFile);
-  }, [selectedFile]);
+  useEffect(() => {}, [selectedFile]);
 
   useEffect(() => {
     refresh();
