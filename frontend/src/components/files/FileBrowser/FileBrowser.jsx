@@ -146,11 +146,7 @@ export default function FileBrowser({ adapter, workspaceId }) {
     if (!items || items.length === 0) return;
 
     uploadAbortController.current = new AbortController();
-
     const { signal } = uploadAbortController.current;
-
-    console.log("uploadFiles received:", items);
-    console.log("upload count:", items.length);
 
     const uploadItems = items.map((item) => {
       const actualFile = item.file || item;
@@ -169,10 +165,15 @@ export default function FileBrowser({ adapter, workspaceId }) {
       };
     });
 
-    const isFolderUpload = uploadItems.some(
-      ({ file, relativePath }) =>
-        file.webkitRelativePath?.includes("/") || relativePath.includes("/"),
-    );
+    const folderNames = [
+      ...new Set(
+        uploadItems
+          .filter(({ relativePath }) => relativePath.includes("/"))
+          .map(({ relativePath }) => relativePath.split("/")[0]),
+      ),
+    ];
+
+    const isFolderUpload = folderNames.length > 0;
 
     const totalFiles = uploadItems.length;
 
@@ -194,7 +195,12 @@ export default function FileBrowser({ adapter, workspaceId }) {
     });
 
     for (const uploadItem of uploadItems) {
-      const { item, file, relativePath } = uploadItem;
+      // Check cancellation before starting every file
+      if (signal.aborted) {
+        break;
+      }
+
+      const { file, relativePath } = uploadItem;
 
       try {
         setUploadProgress((previous) => ({
@@ -207,23 +213,32 @@ export default function FileBrowser({ adapter, workspaceId }) {
           file,
           relativePath,
           ({ loaded }) => {
+            if (signal.aborted) return;
+
             const uploadedBytes = completedBytes + loaded;
 
             const percentage = totalBytes
               ? Math.round((uploadedBytes / totalBytes) * 100)
               : 0;
 
-            setUploadProgress({
+            setUploadProgress((previous) => ({
+              ...previous,
               totalFiles,
               completedFiles,
               totalBytes,
               uploadedBytes,
               currentFile: file.name,
               percentage,
-            });
+            }));
           },
           signal,
         );
+
+        // If cancellation happened while the request was finishing,
+        // don't count this file as completed.
+        if (signal.aborted) {
+          break;
+        }
 
         completedBytes += file.size;
         completedFiles++;
@@ -241,38 +256,29 @@ export default function FileBrowser({ adapter, workspaceId }) {
             ? Math.round((completedBytes / totalBytes) * 100)
             : 100,
         });
-
-        //toast.success("File Uploaded", `${file.name} uploaded successfully`);
       } catch (error) {
-        if (signal.aborted) {
+        if (signal.aborted || error.name === "CanceledError") {
           break;
         }
 
         toast.error(
-          error.response?.data?.message ?? error.message ?? "Upload failed",
+          error.response?.data?.message || error.message || "Upload failed",
         );
       }
     }
 
+    // Cancellation
     if (signal.aborted) {
       setUploadProgress(null);
       uploadAbortController.current = null;
 
       toast.info("Upload Cancelled", "The upload was cancelled.");
 
+      await refresh();
       return;
     }
 
-    const folderNames = [
-      ...new Set(
-        uploadItems
-          .filter((item) => item.relativePath?.includes("/"))
-          .map((item) => item.relativePath.split("/")[0]),
-      ),
-    ];
-
-    //  const isFolderUpload = folderNames.length > 0;
-
+    // Normal completion toast
     if (isFolderUpload) {
       if (folderNames.length === 1) {
         toast.success(
@@ -286,11 +292,9 @@ export default function FileBrowser({ adapter, workspaceId }) {
         );
       }
     } else if (items.length === 1) {
-      const uploadedFile = uploadItems[0].file;
-
       toast.success(
         "File Uploaded",
-        `${uploadedFile.name} uploaded successfully`,
+        `${uploadItems[0].file.name} uploaded successfully`,
       );
     } else {
       toast.success(
@@ -300,6 +304,8 @@ export default function FileBrowser({ adapter, workspaceId }) {
     }
 
     await refresh();
+
+    uploadAbortController.current = null;
 
     setTimeout(() => {
       setUploadProgress(null);
