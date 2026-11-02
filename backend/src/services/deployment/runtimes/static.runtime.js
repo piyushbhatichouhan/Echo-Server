@@ -64,6 +64,8 @@ function generateDockerfile(context) {
   return `
 FROM nginx:alpine
 
+RUN echo 'server { listen 80; server_name _; root /usr/share/nginx/html; index index.html; location / { try_files $uri $uri/ /index.html; } }' > /etc/nginx/conf.d/default.conf
+
 COPY ${output}/ /usr/share/nginx/html/
 
 EXPOSE ${module.exports.INTERNAL_PORT}
@@ -93,7 +95,7 @@ async function createDeployment(context) {
 }
 
 async function install(context) {
-  const { settings, cwd, deployment } = context;
+  const { settings, cwd, deployment, environment } = context;
 
   if (!settings.install_command?.trim()) {
     return;
@@ -104,9 +106,14 @@ async function install(context) {
     "Installing Dependencies",
   );
 
+  const envMap = Object.fromEntries(
+    (environment || []).map((e) => [e.key, String(e.value ?? "")]),
+  );
+
   const result = await context.infrastructure.process.runCommand({
     cwd,
     command: settings.install_command,
+    env: envMap,
   });
 
   if (!result.success) {
@@ -125,7 +132,7 @@ async function install(context) {
 }
 
 async function build(context) {
-  const { settings, cwd, deployment } = context;
+  const { settings, cwd, deployment, environment } = context;
 
   if (!settings.build_command?.trim()) {
     return;
@@ -133,9 +140,14 @@ async function build(context) {
 
   await context.infrastructure.logger.stage(deployment.id, "Building Project");
 
+  const envMap = Object.fromEntries(
+    (environment || []).map((e) => [e.key, String(e.value ?? "")]),
+  );
+
   const result = await context.infrastructure.process.runCommand({
     cwd,
     command: settings.build_command,
+    env: envMap,
   });
 
   if (!result.success) {
@@ -251,6 +263,14 @@ async function start(context) {
     "Starting Deployment",
   );
 
+  const containerPort =
+    context.containerPort ||
+    deployment.container_port ||
+    module.exports.INTERNAL_PORT;
+
+  const imageName =
+    context.imageName || deployment.image_name || `echohub-${project.id}`;
+
   // Stop previous container
   await context.infrastructure.container.stopByProject(project.id);
 
@@ -260,10 +280,10 @@ async function start(context) {
   // Create new container
   const container = await context.infrastructure.container.create(
     project.id,
-    context.imageName,
+    imageName,
     environment,
     deployment.port, // host port
-    context.containerPort, // runtime internal port
+    containerPort, // runtime internal port
   );
 
   context.container = container;
@@ -272,7 +292,7 @@ async function start(context) {
     deployment.id,
     container.id,
     container.echoName,
-    context.containerPort,
+    containerPort,
   );
   // Start it
   await context.infrastructure.container.start(container, deployment.id);

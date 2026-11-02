@@ -11,13 +11,30 @@ const createContainer = async (
   hostPort,
   containerPort,
 ) => {
-  const dockerEnvironment = [
-    ...environment.map(({ key, value }) => `${key}=${value}`),
-    `PORT=${containerPort}`,
-    `CONTAINER_PORT=${containerPort}`,
-    "HOST=0.0.0.0",
-    "PYTHONUNBUFFERED=1",
-  ];
+  const safeContainerPort = Number(containerPort) || 3000;
+
+  const envMap = new Map();
+
+  // Set default system environment variables
+  envMap.set("HOST", "0.0.0.0");
+  envMap.set("PYTHONUNBUFFERED", "1");
+
+  // Load project environment variables
+  if (Array.isArray(environment)) {
+    for (const item of environment) {
+      if (item && item.key) {
+        envMap.set(item.key, String(item.value ?? ""));
+      }
+    }
+  }
+
+  // Ensure PORT and CONTAINER_PORT strictly match the container port
+  envMap.set("PORT", String(safeContainerPort));
+  envMap.set("CONTAINER_PORT", String(safeContainerPort));
+
+  const dockerEnvironment = Array.from(envMap.entries()).map(
+    ([key, value]) => `${key}=${value}`,
+  );
 
   const projectPort = String(hostPort);
 
@@ -29,7 +46,7 @@ const createContainer = async (
     Env: dockerEnvironment,
 
     ExposedPorts: {
-      [`${containerPort}/tcp`]: {},
+      [`${safeContainerPort}/tcp`]: {},
     },
 
     HostConfig: {
@@ -38,7 +55,7 @@ const createContainer = async (
       },
 
       PortBindings: {
-        [`${containerPort}/tcp`]: [
+        [`${safeContainerPort}/tcp`]: [
           {
             HostPort: projectPort,
           },
