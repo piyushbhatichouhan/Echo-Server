@@ -26,6 +26,10 @@ const {
   copyPath,
   cutPath,
   pastePath,
+  deletePaths,
+  downloadPaths,
+  getStats,
+  extractArchive,
 } = require("../controllers/file.controller");
 
 router.get("/projects/:id/files", authenticate, listFiles);
@@ -57,6 +61,11 @@ router.get("/files/:id/download", authenticate, downloadFile);
 router.put("/files/:id/rename", authenticate, renameProjectFile);
 router.delete("/projects/:id/path", authenticate, deleteProjectPath);
 router.put("/projects/:id/rename", authenticate, renameProjectPath);
+
+router.get("/projects/:id/stats", authenticate, getStats);
+router.delete("/projects/:id/paths/bulk", authenticate, deletePaths);
+router.post("/projects/:id/paths/bulk/download", authenticate, downloadPaths);
+router.post("/projects/:id/files/extract", authenticate, extractArchive);
 
 router.post("/files/copy", authenticate, copyPath);
 router.post("/files/cut", authenticate, cutPath);

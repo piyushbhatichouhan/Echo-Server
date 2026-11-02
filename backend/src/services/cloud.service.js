@@ -16,8 +16,11 @@ const {
   relativeExt,
   relativeJoin,
 } = require("../utils/relativePath");
+const { ZipArchive } = require("archiver");
+const AdmZip = require("adm-zip");
 
 const verifyCloudOwnership = async (ownerId, relativePath) => {
+  const normalized = normalizeRelativePath(relativePath || "");
   const result = await pool.query(
     `
     SELECT *
@@ -25,18 +28,29 @@ const verifyCloudOwnership = async (ownerId, relativePath) => {
     WHERE
         owner_id = $1
     AND
-        relative_path = $2
+        (relative_path = $2 OR relative_path LIKE $3)
+    AND
+        deleted_at IS NULL
+    LIMIT 1
     `,
-    [ownerId, relativePath],
+    [ownerId, normalized, `${normalized}/%`],
   );
 
   if (result.rows.length === 0) {
-    const error = new Error("Path not found");
-    error.status = 404;
-    throw error;
+    const diskPath = resolveCloudStoragePath(ownerId, normalized);
+    const diskExists = await fs
+      .access(diskPath)
+      .then(() => true)
+      .catch(() => false);
+
+    if (!diskExists) {
+      const error = new Error("Path not found");
+      error.status = 404;
+      throw error;
+    }
   }
 
-  return result.rows[0];
+  return result.rows[0] || null;
 };
 
 const uploadCloudFile = async (
@@ -171,17 +185,21 @@ const createEmptyFile = async (userId, relativePath) => {
 };
 
 const loadFileContent = async (fileId, ownerId) => {
+  const fsSync = require("fs");
   const result = await pool.query(
     `
     SELECT
         original_name,
         relative_path,
+        storage_path,
         mime_type
     FROM cloud_files
     WHERE
         id = $1
     AND
         owner_id = $2
+    AND
+        deleted_at IS NULL
     `,
     [fileId, ownerId],
   );
@@ -194,7 +212,17 @@ const loadFileContent = async (fileId, ownerId) => {
 
   const file = result.rows[0];
 
-  const storagePath = resolveCloudStoragePath(ownerId, file.relative_path);
+  const resolved = resolveCloudStoragePath(ownerId, file.relative_path);
+  let storagePath = resolved;
+  if (!fsSync.existsSync(storagePath) && file.storage_path && fsSync.existsSync(file.storage_path)) {
+    storagePath = file.storage_path;
+  }
+
+  if (!fsSync.existsSync(storagePath)) {
+    const error = new Error("File exists in database but is missing from storage.");
+    error.status = 404;
+    throw error;
+  }
 
   const content = await filesystem.readContent(storagePath, "utf8");
 
@@ -262,18 +290,22 @@ const updateFileContent = async (fileId, ownerId, content) => {
 };
 
 const getFileForDownload = async (fileId, ownerId) => {
+  const fsSync = require("fs");
   const result = await pool.query(
     `
     SELECT
         id,
         original_name,
         relative_path,
+        storage_path,
         mime_type
     FROM cloud_files
     WHERE
         id = $1
     AND
         owner_id = $2
+    AND
+        deleted_at IS NULL
     `,
     [fileId, ownerId],
   );
@@ -286,13 +318,25 @@ const getFileForDownload = async (fileId, ownerId) => {
 
   const file = result.rows[0];
 
+  const resolved = resolveCloudStoragePath(ownerId, file.relative_path);
+  let finalStoragePath = resolved;
+  if (!fsSync.existsSync(finalStoragePath) && file.storage_path && fsSync.existsSync(file.storage_path)) {
+    finalStoragePath = file.storage_path;
+  }
+
+  if (!fsSync.existsSync(finalStoragePath)) {
+    const error = new Error("File exists in database but is missing from storage.");
+    error.status = 404;
+    throw error;
+  }
+
   return {
     ...file,
-    storage_path: resolveCloudStoragePath(ownerId, file.relative_path),
+    storage_path: finalStoragePath,
   };
 };
 
-const deleteFile = async (fileId, ownerId) => {
+const deleteFile = async (fileId, ownerId, permanent = false) => {
   const result = await pool.query(
     `
     SELECT *
@@ -312,6 +356,14 @@ const deleteFile = async (fileId, ownerId) => {
   }
 
   const file = result.rows[0];
+
+  if (!permanent) {
+    await cloudRepository.softDeleteCloudFile(fileId, ownerId);
+    return {
+      success: true,
+      movedToTrash: true,
+    };
+  }
 
   const storagePath = resolveCloudStoragePath(ownerId, file.relative_path);
 
@@ -331,19 +383,46 @@ const deleteFile = async (fileId, ownerId) => {
   };
 };
 
-const renamePath = async (fileId, ownerId, newName) => {
-  const result = await pool.query(
-    `
-    SELECT *
-    FROM cloud_files
-    WHERE id = $1
-      AND owner_id = $2
-    `,
-    [fileId, ownerId],
-  );
+const renamePath = async (identifier, ownerId, newName) => {
+  let result = null;
+  const isUuid =
+    typeof identifier === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      identifier,
+    );
+  const isNumeric =
+    typeof identifier === "number" ||
+    (!isNaN(identifier) && !isNaN(parseInt(identifier)));
 
-  if (result.rows.length === 0) {
-    const error = new Error("File not found");
+  if (isUuid || isNumeric) {
+    result = await pool.query(
+      `
+      SELECT *
+      FROM cloud_files
+      WHERE id = $1
+        AND owner_id = $2
+        AND deleted_at IS NULL
+      `,
+      [identifier, ownerId],
+    );
+  }
+
+  if (!result || result.rows.length === 0) {
+    const norm = normalizeRelativePath(String(identifier || ""));
+    result = await pool.query(
+      `
+      SELECT *
+      FROM cloud_files
+      WHERE relative_path = $1
+        AND owner_id = $2
+        AND deleted_at IS NULL
+      `,
+      [norm, ownerId],
+    );
+  }
+
+  if (!result || result.rows.length === 0) {
+    const error = new Error("File or folder not found");
     error.status = 404;
     throw error;
   }
@@ -369,7 +448,7 @@ const renamePath = async (fileId, ownerId, newName) => {
       AND relative_path = $2
       AND id <> $3
     `,
-    [ownerId, newPath, fileId],
+    [ownerId, newPath, item.id],
   );
 
   if (existing.rows.length > 0) {
@@ -414,7 +493,7 @@ const renamePath = async (fileId, ownerId, newName) => {
         storage_path = $4
       WHERE id = $1
       `,
-      [fileId, relativeBasename(newPath), newPath, newStorage],
+      [item.id, relativeBasename(newPath), newPath, newStorage],
     );
 
     return;
@@ -519,14 +598,17 @@ const movePath = async (ownerId, sourceRelative, destinationRelative, type) => {
   WHERE
       owner_id = $1
   AND
-      relative_path LIKE $2
+      (relative_path = $2 OR relative_path LIKE $3)
   `,
-    [ownerId, `${sourceRelative}%`],
+    [ownerId, sourceRelative, `${sourceRelative}/%`],
   );
 
   for (const file of rows.rows) {
     const updatedRelative =
-      destinationRelative + file.relative_path.substring(sourceRelative.length);
+      file.relative_path === sourceRelative
+        ? destinationRelative
+        : destinationRelative +
+          file.relative_path.substring(sourceRelative.length);
 
     const updatedStorage = resolveCloudStoragePath(ownerId, updatedRelative);
 
@@ -553,32 +635,38 @@ const getStats = async (ownerId) => {
   return await storageService.getUserStorageStats(ownerId);
 };
 
-const deleteFolder = async (ownerId, folderPath) => {
+const deleteFolder = async (ownerId, folderPath, permanent = false) => {
+  if (!permanent) {
+    await cloudRepository.softDeleteFolder(ownerId, folderPath);
+    return {
+      success: true,
+      movedToTrash: true,
+    };
+  }
+
   const { filesPath } = await workspace.ensureCloudWorkspace(ownerId);
 
   const deleted = await cloudRepository.deleteFolder(ownerId, folderPath);
 
   for (const file of deleted) {
-    if (!file.storage_path) continue;
+    if (!file.storage_path || file.is_directory) continue;
 
     try {
       const storagePath = resolveCloudStoragePath(ownerId, file.relative_path);
-
-      const success = await filesystem.removeDiskFile(storagePath);
-
-      console.log("Delete result:", success);
-
-      await filesystem.cleanupEmptyDirectories(
-        path.dirname(storagePath),
-        filesPath,
-      );
-
+      await filesystem.removeDiskFile(storagePath);
       await storageAllocation.releaseStorage(ownerId, file.file_size);
     } catch (err) {
-      console.warn("Could not delete:", file.storage_path);
-      console.warn(err);
+      console.warn("Could not delete:", file.storage_path, err.message);
     }
   }
+
+  // Remove physical directory if it exists
+  const physicalFolder = resolveCloudStoragePath(ownerId, folderPath);
+  await fs.rm(physicalFolder, { recursive: true, force: true }).catch(() => {});
+  await filesystem.cleanupEmptyDirectories(
+    path.dirname(physicalFolder),
+    filesPath,
+  );
 
   return {
     success: true,
@@ -605,7 +693,7 @@ const cutPath = async (ownerId, relativePath, type) => {
   };
 };
 
-const generateDuplicatePath = async (projectId, relativePath) => {
+const generateDuplicatePath = async (ownerId, relativePath) => {
   relativePath = normalizeRelativePath(relativePath);
 
   const extension = relativeExt(relativePath);
@@ -622,14 +710,21 @@ const generateDuplicatePath = async (projectId, relativePath) => {
     const exists = await pool.query(
       `
       SELECT id
-FROM cloud_files
+      FROM cloud_files
       WHERE owner_id = $1
       AND relative_path = $2
+      AND deleted_at IS NULL
       `,
-      [projectId, candidate],
+      [ownerId, candidate],
     );
 
-    if (exists.rows.length === 0) {
+    const fullCandidatePath = resolveCloudStoragePath(ownerId, candidate);
+    const diskExists = await fs
+      .access(fullCandidatePath)
+      .then(() => true)
+      .catch(() => false);
+
+    if (exists.rows.length === 0 && !diskExists) {
       return candidate;
     }
 
@@ -641,16 +736,21 @@ FROM cloud_files
   }
 };
 
-const pastePath = async (ownerId, clipboard, destination) => {
+const pastePath = async (ownerId, clipboard, destination = "") => {
   await verifyCloudOwnership(ownerId, clipboard.relativePath);
 
-  const sourceRelative = clipboard.relativePath;
+  const sourceRelative = normalizeRelativePath(clipboard.relativePath || "");
+  const targetFolder = normalizeRelativePath(destination || "");
+
   const sourcePath = resolveCloudStoragePath(ownerId, sourceRelative);
 
-  const desiredRelative = relativeJoin(
-    destination,
-    relativeBasename(sourceRelative),
-  );
+  const desiredRelative = targetFolder
+    ? relativeJoin(targetFolder, relativeBasename(sourceRelative))
+    : relativeBasename(sourceRelative);
+
+  if (clipboard.operation === "cut" && sourceRelative === desiredRelative) {
+    return { success: true, message: "Item is already at this location" };
+  }
 
   const destinationRelative =
     clipboard.operation === "copy"
@@ -662,8 +762,12 @@ const pastePath = async (ownerId, clipboard, destination) => {
   //
   // Prevent pasting into itself
   //
-  if (clipboard.type === "folder" && destination.startsWith(sourceRelative)) {
-    const error = new Error("Invalid destination");
+  if (
+    clipboard.type === "folder" &&
+    (targetFolder === sourceRelative ||
+      targetFolder.startsWith(sourceRelative + "/"))
+  ) {
+    const error = new Error("Cannot paste a folder into itself or a subfolder");
     error.status = 400;
     throw error;
   }
@@ -683,16 +787,7 @@ const pastePath = async (ownerId, clipboard, destination) => {
   if (clipboard.operation === "copy") {
     if (clipboard.type === "file") {
       await filesystem.copyFile(sourcePath, destinationPath);
-      const exists = await fs
-        .access(destinationPath)
-        .then(() => true)
-        .catch(() => false);
 
-      console.log({
-        sourcePath,
-        destinationPath,
-        copied: exists,
-      });
       const file = await pool.query(
         `
         SELECT *
@@ -701,11 +796,16 @@ const pastePath = async (ownerId, clipboard, destination) => {
             owner_id = $1
         AND
             relative_path = $2
+        AND
+            deleted_at IS NULL
         `,
         [ownerId, sourceRelative],
       );
 
-      const original = file.rows[0];
+      const original = file.rows[0] || {};
+      const stats = await fs.stat(destinationPath).catch(() => ({ size: 0 }));
+      const fileSize = original.file_size || stats.size;
+      const originalName = relativeBasename(destinationRelative);
 
       await pool.query(
         `
@@ -727,18 +827,18 @@ const pastePath = async (ownerId, clipboard, destination) => {
         `,
         [
           ownerId,
-          original.original_name,
+          originalName,
           destinationRelative,
-          original.stored_name,
-          original.mime_type,
-          original.file_size,
+          original.stored_name || null,
+          original.mime_type || null,
+          fileSize,
           destinationPath,
         ],
       );
 
       await storageAllocation.reserveStorage(
         ownerId,
-        Number(original.file_size),
+        Number(fileSize),
       );
     } else {
       //
@@ -748,47 +848,51 @@ const pastePath = async (ownerId, clipboard, destination) => {
 
       const rows = await pool.query(
         `
-SELECT *
-FROM cloud_files
-WHERE
-    owner_id = $1
-AND
-    relative_path LIKE $2
-ORDER BY LENGTH(relative_path)
-`,
-        [ownerId, `${sourceRelative}%`],
+        SELECT *
+        FROM cloud_files
+        WHERE
+            owner_id = $1
+        AND
+            (relative_path = $2 OR relative_path LIKE $3)
+        AND
+            deleted_at IS NULL
+        ORDER BY LENGTH(relative_path)
+        `,
+        [ownerId, sourceRelative, `${sourceRelative}/%`],
       );
 
       let totalBytes = 0;
 
       for (const item of rows.rows) {
         const newRelative =
-          destinationRelative +
-          item.relative_path.substring(sourceRelative.length);
+          item.relative_path === sourceRelative
+            ? destinationRelative
+            : destinationRelative +
+              item.relative_path.substring(sourceRelative.length);
 
         const newStorage = resolveCloudStoragePath(ownerId, newRelative);
 
         await pool.query(
           `
-INSERT INTO cloud_files
-(
-    owner_id,
-    original_name,
-    relative_path,
-    stored_name,
-    mime_type,
-    file_size,
-    storage_path,
-    is_directory
-)
-VALUES
-(
-    $1,$2,$3,$4,$5,$6,$7,$8
-)
-`,
+          INSERT INTO cloud_files
+          (
+              owner_id,
+              original_name,
+              relative_path,
+              stored_name,
+              mime_type,
+              file_size,
+              storage_path,
+              is_directory
+          )
+          VALUES
+          (
+              $1,$2,$3,$4,$5,$6,$7,$8
+          )
+          `,
           [
             ownerId,
-            item.original_name,
+            relativeBasename(newRelative),
             newRelative,
             item.stored_name,
             item.mime_type,
@@ -801,6 +905,37 @@ VALUES
         if (!item.is_directory) totalBytes += Number(item.file_size);
       }
 
+      // If the source directory record itself wasn't in DB, ensure the destination directory record exists
+      const destDirExists = rows.rows.some((r) => r.relative_path === sourceRelative);
+      if (!destDirExists) {
+        await pool.query(
+          `
+          INSERT INTO cloud_files
+          (
+              owner_id,
+              original_name,
+              relative_path,
+              stored_name,
+              mime_type,
+              file_size,
+              storage_path,
+              is_directory
+          )
+          VALUES
+          (
+              $1,$2,$3,NULL,NULL,0,$4,true
+          )
+          ON CONFLICT DO NOTHING
+          `,
+          [
+            ownerId,
+            relativeBasename(destinationRelative),
+            destinationRelative,
+            destinationPath,
+          ],
+        );
+      }
+
       await storageAllocation.reserveStorage(ownerId, totalBytes);
     }
   }
@@ -811,13 +946,15 @@ VALUES
   if (clipboard.operation === "cut") {
     const existing = await pool.query(
       `
-  SELECT id
-  FROM cloud_files
-  WHERE
-      owner_id = $1
-  AND
-      relative_path = $2
-  `,
+      SELECT id
+      FROM cloud_files
+      WHERE
+          owner_id = $1
+      AND
+          relative_path = $2
+      AND
+          deleted_at IS NULL
+      `,
       [ownerId, destinationRelative],
     );
 
@@ -828,9 +965,7 @@ VALUES
       error.status = 409;
       throw error;
     }
-  }
 
-  if (clipboard.operation === "cut") {
     await movePath(
       ownerId,
       sourceRelative,
@@ -841,6 +976,236 @@ VALUES
 
   return {
     success: true,
+  };
+};
+
+const deletePaths = async (ownerId, items, permanent = false) => {
+  if (!Array.isArray(items) || items.length === 0) {
+    const error = new Error("No items selected.");
+    error.status = 400;
+    throw error;
+  }
+
+  for (const item of items) {
+    if (!item.relativePath || !item.type) {
+      const error = new Error("Invalid item.");
+      error.status = 400;
+      throw error;
+    }
+
+    if (item.type === "folder") {
+      await deleteFolder(ownerId, item.relativePath, permanent);
+      continue;
+    }
+
+    if (item.type === "file") {
+      const result = await pool.query(
+        `
+        SELECT id
+        FROM cloud_files
+        WHERE owner_id = $1
+          AND relative_path = $2
+        `,
+        [ownerId, item.relativePath],
+      );
+
+      if (result.rows.length === 0) {
+        const error = new Error(`File not found: ${item.relativePath}`);
+
+        error.status = 404;
+        throw error;
+      }
+
+      await deleteFile(result.rows[0].id, ownerId, permanent);
+      continue;
+    }
+
+    const error = new Error("Invalid item type.");
+    error.status = 400;
+    throw error;
+  }
+
+  return {
+    success: true,
+    count: items.length,
+  };
+};
+
+const createDownloadArchive = async (ownerId, items, output) => {
+  const archive = new ZipArchive({
+    zlib: { level: 9 },
+  });
+
+  archive.on("error", (error) => {
+    output.destroy(error);
+  });
+
+  archive.pipe(output);
+
+  for (const item of items) {
+    const storagePath = resolveCloudStoragePath(ownerId, item.relative_path);
+
+    if (item.is_directory) {
+      archive.directory(storagePath, item.original_name);
+    } else {
+      archive.file(storagePath, {
+        name: item.relative_path,
+      });
+    }
+  }
+
+  await archive.finalize();
+};
+
+const downloadPaths = async (ownerId, items) => {
+  if (!Array.isArray(items) || items.length === 0) {
+    const error = new Error("No items selected.");
+    error.status = 400;
+    throw error;
+  }
+
+  const validItems = [];
+
+  for (const item of items) {
+    const relativePath = item.path || item.file?.relative_path;
+
+    if (!relativePath) {
+      const error = new Error("Invalid selected item.");
+      error.status = 400;
+      throw error;
+    }
+
+    const result = await pool.query(
+      `
+      SELECT *
+      FROM cloud_files
+      WHERE owner_id = $1
+        AND relative_path = $2
+      `,
+      [ownerId, relativePath],
+    );
+
+    if (result.rows.length === 0) {
+      const error = new Error(`Path not found: ${relativePath}`);
+      error.status = 404;
+      throw error;
+    }
+
+    validItems.push(result.rows[0]);
+  }
+
+  return validItems;
+};
+
+const getTrash = async (ownerId) => {
+  return await cloudRepository.getTrashFiles(ownerId);
+};
+
+const restoreFromTrash = async (fileId, ownerId) => {
+  const result = await cloudRepository.restoreTrashFile(fileId, ownerId);
+  if (!result) {
+    const error = new Error("File not found in trash");
+    error.status = 404;
+    throw error;
+  }
+  return { success: true, restored: result };
+};
+
+const emptyTrash = async (ownerId) => {
+  const trashed = await cloudRepository.purgeTrashFiles(ownerId);
+  let totalBytesFreed = 0;
+
+  for (const file of trashed) {
+    if (file.storage_path && !file.is_directory) {
+      try {
+        const storagePath = resolveCloudStoragePath(ownerId, file.relative_path);
+        await filesystem.removeDiskFile(storagePath);
+        totalBytesFreed += Number(file.file_size || 0);
+      } catch (err) {
+        console.warn("Could not delete trashed file:", file.relative_path, err);
+      }
+    }
+  }
+
+  if (totalBytesFreed > 0) {
+    await storageAllocation.releaseStorage(ownerId, totalBytesFreed);
+  }
+
+  return {
+    success: true,
+    purgedCount: trashed.length,
+    freedBytes: totalBytesFreed,
+  };
+};
+
+const extractArchive = async (ownerId, relativePath, destination = "") => {
+  const zipStoragePath = resolveCloudStoragePath(ownerId, relativePath);
+  const destRelative = destination ? normalizeRelativePath(destination) : relativeDirname(relativePath);
+  const destStoragePath = resolveCloudStoragePath(ownerId, destRelative);
+
+  await filesystem.ensureDirectory(destStoragePath);
+
+  const zip = new AdmZip(zipStoragePath);
+  const zipEntries = zip.getEntries();
+
+  let totalUncompressedSize = 0;
+  for (const entry of zipEntries) {
+    if (!entry.isDirectory) {
+      totalUncompressedSize += entry.header.size;
+    }
+  }
+
+  await storageAllocation.checkQuota(ownerId, totalUncompressedSize);
+
+  zip.extractAllTo(destStoragePath, true);
+
+  for (const entry of zipEntries) {
+    const entryRelative = destRelative === "." || !destRelative
+      ? normalizeRelativePath(entry.entryName)
+      : normalizeRelativePath(`${destRelative}/${entry.entryName}`);
+
+    const entryStoragePath = resolveCloudStoragePath(ownerId, entryRelative);
+
+    if (entry.isDirectory) {
+      await pool.query(
+        `
+        INSERT INTO cloud_files
+        (owner_id, original_name, relative_path, stored_name, mime_type, file_size, storage_path, is_directory)
+        VALUES ($1, $2, $3, $4, 'directory', 0, $5, TRUE)
+        ON CONFLICT DO NOTHING
+        `,
+        [ownerId, relativeBasename(entryRelative), entryRelative, relativeBasename(entryRelative), entryStoragePath],
+      );
+    } else {
+      const existing = await pool.query(
+        `SELECT id, file_size FROM cloud_files WHERE owner_id = $1 AND relative_path = $2`,
+        [ownerId, entryRelative],
+      );
+
+      if (existing.rows.length > 0) {
+        await pool.query(
+          `UPDATE cloud_files SET file_size = $1, storage_path = $2, deleted_at = NULL WHERE id = $3`,
+          [entry.header.size, entryStoragePath, existing.rows[0].id],
+        );
+      } else {
+        await pool.query(
+          `
+          INSERT INTO cloud_files
+          (owner_id, original_name, relative_path, stored_name, mime_type, file_size, storage_path, is_directory)
+          VALUES ($1, $2, $3, $4, 'application/octet-stream', $5, $6, FALSE)
+          `,
+          [ownerId, relativeBasename(entryRelative), entryRelative, relativeBasename(entryRelative), entry.header.size, entryStoragePath],
+        );
+      }
+    }
+  }
+
+  await storageAllocation.reserveStorage(ownerId, totalUncompressedSize);
+
+  return {
+    success: true,
+    entriesCount: zipEntries.length,
+    extractedBytes: totalUncompressedSize,
   };
 };
 
@@ -860,4 +1225,11 @@ module.exports = {
   copyPath,
   cutPath,
   pastePath,
+  deletePaths,
+  downloadPaths,
+  createDownloadArchive,
+  getTrash,
+  restoreFromTrash,
+  emptyTrash,
+  extractArchive,
 };

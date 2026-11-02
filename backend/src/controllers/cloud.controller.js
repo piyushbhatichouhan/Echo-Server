@@ -101,11 +101,49 @@ const download = async (req, res, next) => {
       req.user.id,
     );
 
-    res.download(file.storage_path, file.original_name, {
-      headers: {
-        "Content-Type": file.mime_type,
-      },
-    });
+    const fsSync = require("fs");
+    if (!fsSync.existsSync(file.storage_path)) {
+      const error = new Error("File not found on storage disk");
+      error.status = 404;
+      throw error;
+    }
+    const stat = fsSync.statSync(file.storage_path);
+    const fileSize = stat.size;
+    const range = req.headers.range;
+
+    if (range) {
+      const parts = range.replace(/bytes=/, "").split("-");
+      const start = parseInt(parts[0], 10);
+      const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+
+      if (start >= fileSize) {
+        res
+          .status(416)
+          .send("Requested range not satisfiable\n" + start + " >= " + fileSize);
+        return;
+      }
+
+      const chunksize = end - start + 1;
+      const fileStream = fsSync.createReadStream(file.storage_path, {
+        start,
+        end,
+      });
+      const head = {
+        "Content-Range": `bytes ${start}-${end}/${fileSize}`,
+        "Accept-Ranges": "bytes",
+        "Content-Length": chunksize,
+        "Content-Type": file.mime_type || "application/octet-stream",
+      };
+
+      res.writeHead(206, head);
+      fileStream.pipe(res);
+    } else {
+      res.download(file.storage_path, file.original_name, {
+        headers: {
+          "Content-Type": file.mime_type,
+        },
+      });
+    }
   } catch (error) {
     next(error);
   }
@@ -113,12 +151,31 @@ const download = async (req, res, next) => {
 
 const deleteFile = async (req, res, next) => {
   try {
-    const result = await cloudService.deleteFile(req.params.id, req.user.id);
+    const permanent = req.query.permanent === "true";
+    const result = await cloudService.deleteFile(
+      req.params.id,
+      req.user.id,
+      permanent,
+    );
 
     res.json({
       success: true,
       data: result,
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const downloadPaths = async (req, res, next) => {
+  console.log("DOWNLOAD ITEMS:", req.body.items);
+  try {
+    const items = await cloudService.downloadPaths(req.user.id, req.body.items);
+
+    res.setHeader("Content-Type", "application/zip");
+    res.setHeader("Content-Disposition", 'attachment; filename="download.zip"');
+
+    await cloudService.createDownloadArchive(req.user.id, items, res);
   } catch (error) {
     next(error);
   }
@@ -131,6 +188,20 @@ const renameFile = async (req, res, next) => {
       req.user.id,
       req.body.name,
     );
+
+    res.json({
+      success: true,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const renamePath = async (req, res, next) => {
+  try {
+    const identifier = req.body.id || req.body.oldPath || req.body.path;
+    const newName = req.body.newName || req.body.name;
+    await cloudService.renamePath(identifier, req.user.id, newName);
 
     res.json({
       success: true,
@@ -156,16 +227,35 @@ const getStats = async (req, res, next) => {
 const deleteFolder = async (req, res, next) => {
   try {
     const ownerId = req.user.id;
-
     const { path } = req.body;
+    const permanent = req.query.permanent === "true";
 
-    await cloudService.deleteFolder(ownerId, path);
+    const result = await cloudService.deleteFolder(ownerId, path, permanent);
 
     res.json({
       success: true,
+      data: result,
     });
   } catch (err) {
     next(err);
+  }
+};
+
+const deletePaths = async (req, res, next) => {
+  try {
+    const permanent = req.query.permanent === "true";
+    const result = await cloudService.deletePaths(
+      req.user.id,
+      req.body.items,
+      permanent,
+    );
+
+    res.json({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    next(error);
   }
 };
 
@@ -220,6 +310,61 @@ const pasteCloudPath = async (req, res, next) => {
   }
 };
 
+const getTrash = async (req, res, next) => {
+  try {
+    const files = await cloudService.getTrash(req.user.id);
+    res.json({
+      success: true,
+      data: files,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const restoreFromTrash = async (req, res, next) => {
+  try {
+    const result = await cloudService.restoreFromTrash(
+      req.body.fileId,
+      req.user.id,
+    );
+    res.json({
+      success: true,
+      data: result,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const emptyTrash = async (req, res, next) => {
+  try {
+    const result = await cloudService.emptyTrash(req.user.id);
+    res.json({
+      success: true,
+      data: result,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const extractArchive = async (req, res, next) => {
+  try {
+    const result = await cloudService.extractArchive(
+      req.user.id,
+      req.body.relativePath,
+      req.body.destination,
+    );
+    res.json({
+      success: true,
+      data: result,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   upload,
   list,
@@ -230,9 +375,16 @@ module.exports = {
   download,
   deleteFile,
   renameFile,
+  renamePath,
   getStats,
   deleteFolder,
   copyCloudPath,
   pasteCloudPath,
   cutCloudPath,
+  deletePaths,
+  downloadPaths,
+  getTrash,
+  restoreFromTrash,
+  emptyTrash,
+  extractArchive,
 };

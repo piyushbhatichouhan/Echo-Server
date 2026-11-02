@@ -31,50 +31,121 @@ export default function FileBrowser({ adapter, workspaceId }) {
   const [uploadProgress, setUploadProgress] = useState(null);
   const uploadAbortController = useRef(null);
   const uploadCancelled = useRef(false);
+  const [selectedItems, setSelectedItems] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+
   const handleCopy = async (item) => {
-    if (!adapter.copyPath) {
+    if (!adapter.pastePath && !adapter.copyPath) {
       toast.info("Copy isn't supported here yet.");
       return;
     }
 
-    await adapter.copyPath(workspaceId, item.path, item.type);
+    if (adapter.copyPath) {
+      await adapter.copyPath(workspaceId, item.path, item.type).catch(() => {});
+    }
 
     setClipboard({
       operation: "copy",
       type: item.type,
       relativePath: item.path,
+      name: item.name,
     });
 
-    toast.success("Copied");
+    toast.success(`Copied "${item.name}"`);
   };
 
   const handleCut = async (item) => {
-    if (!adapter.copyPath) {
-      toast.info("Copy isn't supported here yet.");
+    if (!adapter.pastePath && !adapter.copyPath) {
+      toast.info("Move isn't supported here yet.");
       return;
     }
 
-    await adapter.cutPath(workspaceId, item.path, item.type);
+    if (adapter.cutPath) {
+      await adapter.cutPath(workspaceId, item.path, item.type).catch(() => {});
+    }
 
     setClipboard({
       operation: "cut",
       type: item.type,
       relativePath: item.path,
+      name: item.name,
     });
 
-    toast.success("Ready to move");
+    toast.success(`Ready to move "${item.name}"`);
+  };
+
+  const handleCopySelected = async () => {
+    if (selectedItems.length === 0) return;
+
+    if (selectedItems.length === 1) {
+      await handleCopy(selectedItems[0]);
+    } else {
+      setClipboard({
+        operation: "copy",
+        items: selectedItems.map((i) => ({
+          path: i.path,
+          type: i.type,
+          name: i.name,
+        })),
+        label: `${selectedItems.length} items`,
+      });
+
+      toast.success(`Copied ${selectedItems.length} items`);
+    }
+
+    setSelectedItems([]);
+  };
+
+  const handleCutSelected = async () => {
+    if (selectedItems.length === 0) return;
+
+    if (selectedItems.length === 1) {
+      await handleCut(selectedItems[0]);
+    } else {
+      setClipboard({
+        operation: "cut",
+        items: selectedItems.map((i) => ({
+          path: i.path,
+          type: i.type,
+          name: i.name,
+        })),
+        label: `${selectedItems.length} items`,
+      });
+
+      toast.success(`Ready to move ${selectedItems.length} items`);
+    }
+
+    setSelectedItems([]);
   };
 
   const handlePaste = async (destination = currentFolder) => {
-    if (!adapter.copyPath) {
-      toast.info("Copy isn't supported here yet.");
+    if (!adapter.pastePath) {
+      toast.info("Paste isn't supported here yet.");
       return;
     }
 
     if (!clipboard) return;
 
     try {
-      await adapter.pastePath(workspaceId, clipboard, destination);
+      const itemsToPaste = clipboard.items || [
+        {
+          path: clipboard.relativePath,
+          type: clipboard.type,
+          name: clipboard.name,
+        },
+      ];
+
+      for (const it of itemsToPaste) {
+        await adapter.pastePath(
+          workspaceId,
+          {
+            operation: clipboard.operation,
+            type: it.type,
+            relativePath: it.path,
+          },
+          destination,
+        );
+      }
 
       if (clipboard.operation === "cut") {
         setClipboard(null);
@@ -82,7 +153,7 @@ export default function FileBrowser({ adapter, workspaceId }) {
 
       await refresh();
 
-      toast.success("Pasted");
+      toast.success("Pasted successfully");
     } catch (err) {
       toast.error(err.response?.data?.message || err.message);
     }
@@ -357,7 +428,10 @@ export default function FileBrowser({ adapter, workspaceId }) {
       );
     }
   };
-
+  const handleNavigate = (path) => {
+    setSelectedItems([]);
+    setCurrentFolder(path);
+  };
   const createFolder = async () => {
     const name = prompt("Folder name");
 
@@ -366,6 +440,44 @@ export default function FileBrowser({ adapter, workspaceId }) {
     await adapter.createFolder(workspaceId, currentFolder, name);
 
     refresh();
+  };
+
+  const handleDeleteSelected = async () => {
+    if (!selectedItems.length) return;
+
+    const names = selectedItems.map((item) => item.name).join(", ");
+
+    if (
+      !window.confirm(
+        `Delete ${selectedItems.length} selected item(s)?\n\n${names}`,
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await adapter.deletePaths(
+        workspaceId,
+        selectedItems.map((item) => ({
+          type: item.type,
+          relativePath: item.path,
+        })),
+      );
+
+      toast.success(
+        "Deleted",
+        `${selectedItems.length} item(s) deleted successfully`,
+      );
+
+      setSelectedItems([]);
+
+      await refresh();
+    } catch (error) {
+      toast.error(
+        "Delete Failed",
+        error.response?.data?.message || error.message,
+      );
+    }
   };
 
   const createFile = async () => {
@@ -402,6 +514,28 @@ export default function FileBrowser({ adapter, workspaceId }) {
     toast.info("Upload Cancelled", "The upload was cancelled.");
   };
 
+  const handleDownloadSelected = async () => {
+    if (!selectedItems || selectedItems.length === 0) {
+      return;
+    }
+
+    try {
+      await adapter.downloadPaths(workspaceId, selectedItems);
+
+      toast.success(
+        "Download Started",
+        `${selectedItems.length} item${
+          selectedItems.length === 1 ? "" : "s"
+        } added to download.`,
+      );
+    } catch (error) {
+      toast.error(
+        "Download Failed",
+        error.response?.data?.message || error.message,
+      );
+    }
+  };
+
   useEffect(() => {
     const resetDrag = () => {
       dragCounter.current = 0;
@@ -430,7 +564,45 @@ export default function FileBrowser({ adapter, workspaceId }) {
     load();
   }, [selectedFile]);
 
-  useEffect(() => {}, [selectedFile]);
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      const tag = document.activeElement?.tagName?.toLowerCase();
+      if (
+        tag === "input" ||
+        tag === "textarea" ||
+        document.activeElement?.isContentEditable
+      ) {
+        return;
+      }
+
+      const isCtrlOrCmd = e.ctrlKey || e.metaKey;
+
+      if (isCtrlOrCmd && e.key.toLowerCase() === "c") {
+        if (selectedItems.length > 0) {
+          e.preventDefault();
+          handleCopySelected();
+        }
+      } else if (isCtrlOrCmd && e.key.toLowerCase() === "x") {
+        if (selectedItems.length > 0) {
+          e.preventDefault();
+          handleCutSelected();
+        }
+      } else if (isCtrlOrCmd && e.key.toLowerCase() === "v") {
+        if (clipboard) {
+          e.preventDefault();
+          handlePaste(currentFolder);
+        }
+      } else if (e.key === "Delete") {
+        if (selectedItems.length > 0) {
+          e.preventDefault();
+          handleDeleteSelected();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedItems, clipboard, currentFolder]);
 
   useEffect(() => {
     refresh();
@@ -441,7 +613,7 @@ export default function FileBrowser({ adapter, workspaceId }) {
       <div>
         <FileBreadcrumbs
           currentFolder={currentFolder}
-          onNavigate={setCurrentFolder}
+          onNavigate={handleNavigate}
         />
         <input
           ref={uploadFileRef}
@@ -464,6 +636,10 @@ export default function FileBrowser({ adapter, workspaceId }) {
           onNewFolder={createFolder}
           onNewFile={createFile}
           clipboard={clipboard}
+          onPaste={() => handlePaste(currentFolder)}
+          onClearClipboard={() => setClipboard(null)}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
         />
 
         {uploadProgress && (
@@ -573,18 +749,80 @@ export default function FileBrowser({ adapter, workspaceId }) {
                 <p>Upload into this folder</p>
               </div>
             )}
+            {selectedItems.length > 0 && (
+              <div className="selection-toolbar">
+                <div className="selection-info">
+                  <strong>{selectedItems.length}</strong>
+                  <span>
+                    {selectedItems.length === 1
+                      ? "item selected"
+                      : "items selected"}
+                  </span>
+                </div>
+
+                <div className="selection-actions">
+                  <button
+                    type="button"
+                    onClick={handleCopySelected}
+                    title="Copy selected items"
+                  >
+                    Copy
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleCutSelected}
+                    title="Cut selected items"
+                  >
+                    Cut
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleDownloadSelected();
+                    }}
+                  >
+                    Download
+                  </button>
+
+                  <button
+                    type="button"
+                    className="selection-delete"
+                    onClick={() => {
+                      handleDeleteSelected();
+                    }}
+                  >
+                    Delete
+                  </button>
+
+                  <button
+                    type="button"
+                    className="selection-clear"
+                    onClick={() => setSelectedItems([])}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
             <FileList
               files={files}
               currentFolder={currentFolder}
-              onNavigate={setCurrentFolder}
+              onNavigate={handleNavigate}
               onOpenFile={setSelectedFile}
               onCopy={handleCopy}
               onCut={handleCut}
               onPaste={handlePaste}
               clipboard={clipboard}
+              selectedItems={selectedItems}
+              onSelectionChange={setSelectedItems}
               adapter={adapter}
               refresh={refresh}
               workspaceId={workspaceId}
+              onDownloadSelected={handleDownloadSelected}
+              searchQuery={searchQuery}
             />
           </div>
         ) : (

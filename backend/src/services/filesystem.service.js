@@ -49,13 +49,16 @@ const moveUploadedFile = async (tempPath, destination) => {
 
 const removeDiskFile = async (filePath) => {
   try {
-    await fs.unlink(filePath);
+    const stat = await fs.stat(filePath).catch(() => null);
+    if (!stat) return true;
+    if (stat.isDirectory()) {
+      await fs.rm(filePath, { recursive: true, force: true });
+    } else {
+      await fs.unlink(filePath);
+    }
     return true;
   } catch (err) {
-    console.error("Failed to delete file:");
-    console.error(filePath);
-    console.error(err);
-
+    console.error("Failed to delete:", filePath, err.message);
     return false;
   }
 };
@@ -91,6 +94,7 @@ const copyFile = async (source, destination) => {
 };
 
 const copyDirectory = async (source, destination) => {
+  await ensureDirectory(path.dirname(destination));
   await fs.cp(source, destination, {
     recursive: true,
   });

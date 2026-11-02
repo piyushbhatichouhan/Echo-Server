@@ -47,7 +47,7 @@ async function prepare(context) {
   context.cwd = workspace.getProjectFilesDirectory(project.id);
 
   context.imageName = `echo-python-${project.id}`;
-  context.containerPort = module.exports.INTERNAL_PORT;
+  context.containerPort = Number(settings.port) || module.exports.INTERNAL_PORT;
   context.containerName = context.infrastructure.container.getContainerName(
     project.id,
   );
@@ -63,13 +63,21 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-COPY . .
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PORT=${context.containerPort}
+ENV HOST=0.0.0.0
 
-${settings.install_command?.trim() ? `RUN ${settings.install_command}` : ""}
+# Install dependencies first for optimal Docker layer caching
+COPY requirements*.txt ./
+RUN if [ -f requirements.txt ]; then pip install --no-cache-dir -r requirements.txt; fi
+
+# Copy application source code
+COPY . .
 
 ${settings.build_command?.trim() ? `RUN ${settings.build_command}` : ""}
 
-EXPOSE ${module.exports.INTERNAL_PORT}
+EXPOSE ${context.containerPort}
 
 CMD ["sh", "-c", "${settings.start_command}"]
 `;
@@ -98,50 +106,18 @@ async function createDeployment(context) {
 }
 
 async function install(context) {
-  const { settings, cwd, deployment } = context;
-
-  if (!settings.install_command?.trim()) {
-    return;
-  }
+  // Dependencies are installed inside the Docker container build
+  // to avoid polluting the host system and prevent PEP 668 errors on Linux.
+  const { deployment } = context;
 
   await context.infrastructure.logger.stage(
     deployment.id,
-    "Installing Dependencies",
+    "Preparing Dependencies",
   );
-
-  const result = await context.infrastructure.process.runCommand({
-    cwd,
-    command: settings.install_command,
-  });
-  console.log("[Python Install Result]", {
-    command: settings.install_command,
-    cwd,
-    success: result.success,
-    stdout: result.stdout,
-    stderr: result.stderr,
-    error: result.error,
-    exitCode: result.exitCode,
-  });
-  if (!result.success) {
-    await context.infrastructure.logger.error(
-      deployment.id,
-      result.stderr ||
-        result.error ||
-        result.stdout ||
-        "Install command failed.",
-    );
-
-    throw new Error(
-      result.stderr ||
-        result.error ||
-        result.stdout ||
-        "Install command failed.",
-    );
-  }
 
   await context.infrastructure.logger.info(
     deployment.id,
-    "Dependencies installed successfully.",
+    "Dependencies will be installed cleanly inside the container environment.",
   );
 }
 

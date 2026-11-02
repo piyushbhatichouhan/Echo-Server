@@ -4,8 +4,6 @@ const proxyService = require("./proxy.service");
 
 const app = express();
 
-app.use(express.json());
-
 app.use(async (req, res) => {
   try {
     console.log("Host Header:", req.headers.host);

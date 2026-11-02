@@ -23,11 +23,17 @@ const {
   relativeExt,
   relativeJoin,
 } = require("../utils/relativePath");
+const { ZipArchive } = require("archiver");
+const AdmZip = require("adm-zip");
 
 const saveFile = async (projectId, ownerId, file) => {
   const { verifyProjectOwnership } = require("./project.service");
 
   await verifyProjectOwnership(projectId, ownerId);
+
+  const relativePath = normalizeRelativePath(
+    file.relativePath || file.originalname,
+  );
 
   const existing = await pool.query(
     `
@@ -41,9 +47,9 @@ const saveFile = async (projectId, ownerId, file) => {
     WHERE
         project_id = $1
     AND
-        original_name = $2
+        relative_path = $2
     `,
-    [projectId, file.originalname],
+    [projectId, relativePath],
   );
 
   const replacingBytes =
@@ -56,10 +62,6 @@ const saveFile = async (projectId, ownerId, file) => {
   const workspaceRoot = getProjectFilesRoot(projectId);
 
   await filesystem.ensureDirectory(workspaceRoot);
-
-  const relativePath = normalizeRelativePath(
-    file.relativePath || file.originalname,
-  );
 
   const finalPath = await workspaceFileService.storeUploadedFile({
     workspaceRoot,
@@ -226,6 +228,11 @@ const deleteFile = async (fileId, ownerId) => {
 
     const file = result.rows[0];
 
+    const storagePath = resolveProjectStoragePath(
+      file.project_id,
+      file.relative_path,
+    );
+
     if (file.is_directory) {
       await client.query(
         `
@@ -238,7 +245,7 @@ const deleteFile = async (fileId, ownerId) => {
         [file.project_id, `${file.relative_path}%`],
       );
 
-      await fs.rm(file.storage_path, {
+      await fs.rm(storagePath, {
         recursive: true,
         force: true,
       });
@@ -251,7 +258,7 @@ const deleteFile = async (fileId, ownerId) => {
         [file.id],
       );
 
-      await filesystem.removeDiskFile(file.storage_path);
+      await filesystem.removeDiskFile(storagePath);
       await storageAllocation.releaseStorage(userId, file.file_size);
     }
 
@@ -274,6 +281,28 @@ const deleteFile = async (fileId, ownerId) => {
 };
 
 const removeProjectDirectory = async (projectId) => {
+  try {
+    const projectRes = await pool.query(
+      `SELECT owner_id FROM projects WHERE id = $1`,
+      [projectId],
+    );
+
+    if (projectRes.rows.length > 0) {
+      const ownerId = projectRes.rows[0].owner_id;
+      const sizeRes = await pool.query(
+        `SELECT COALESCE(SUM(file_size), 0) AS total_bytes FROM files WHERE project_id = $1`,
+        [projectId],
+      );
+      const totalBytes = Number(sizeRes.rows[0].total_bytes || 0);
+
+      if (totalBytes > 0) {
+        await storageAllocation.releaseStorage(ownerId, totalBytes);
+      }
+    }
+  } catch (err) {
+    console.error(`Failed to release storage for project ${projectId}:`, err);
+  }
+
   const projectPath = getProjectRoot(projectId);
 
   await fs.rm(projectPath, {
@@ -435,14 +464,16 @@ const renamePath = async (projectId, ownerId, oldPath, newPath, type) => {
     WHERE
         project_id = $1
     AND
-        relative_path LIKE $2
+        (relative_path = $2 OR relative_path LIKE $3)
     `,
-    [projectId, `${oldPath}%`],
+    [projectId, oldPath, `${oldPath}/%`],
   );
 
   for (const file of rows.rows) {
     const updatedRelative =
-      newPath + file.relative_path.substring(oldPath.length);
+      file.relative_path === oldPath
+        ? newPath
+        : newPath + file.relative_path.substring(oldPath.length);
 
     const updatedStorage = resolveProjectStoragePath(
       projectId,
@@ -607,9 +638,9 @@ const deletePath = async (projectId, ownerId, relativePath, type) => {
     WHERE
         project_id = $1
     AND
-        relative_path LIKE $2
+        (relative_path = $2 OR relative_path LIKE $3)
     `,
-    [projectId, `${relativePath}%`],
+    [projectId, relativePath, `${relativePath}/%`],
   );
 };
 
@@ -637,18 +668,22 @@ const cutPath = async (projectId, ownerId, relativePath, type) => {
   };
 };
 
-const pastePath = async (projectId, ownerId, clipboard, destination) => {
+const pastePath = async (projectId, ownerId, clipboard, destination = "") => {
   const { verifyProjectOwnership } = require("./project.service");
   await verifyProjectOwnership(projectId, ownerId);
 
-  const sourceRelative = clipboard.relativePath;
+  const sourceRelative = normalizeRelativePath(clipboard.relativePath || "");
+  const targetFolder = normalizeRelativePath(destination || "");
 
   const sourcePath = resolveProjectStoragePath(projectId, sourceRelative);
 
-  const desiredRelative = relativeJoin(
-    destination,
-    path.basename(sourceRelative),
-  );
+  const desiredRelative = targetFolder
+    ? relativeJoin(targetFolder, relativeBasename(sourceRelative))
+    : relativeBasename(sourceRelative);
+
+  if (clipboard.operation === "cut" && sourceRelative === desiredRelative) {
+    return { success: true, message: "Item is already at this location" };
+  }
 
   const destinationRelative =
     clipboard.operation === "copy"
@@ -663,8 +698,12 @@ const pastePath = async (projectId, ownerId, clipboard, destination) => {
   //
   // Prevent pasting into itself
   //
-  if (clipboard.type === "folder" && destination.startsWith(sourceRelative)) {
-    const error = new Error("Invalid destination");
+  if (
+    clipboard.type === "folder" &&
+    (targetFolder === sourceRelative ||
+      targetFolder.startsWith(sourceRelative + "/"))
+  ) {
+    const error = new Error("Cannot paste a folder into itself or a subfolder");
     error.status = 400;
     throw error;
   }
@@ -697,7 +736,10 @@ const pastePath = async (projectId, ownerId, clipboard, destination) => {
         [projectId, sourceRelative],
       );
 
-      const original = file.rows[0];
+      const original = file.rows[0] || {};
+      const stats = await fs.stat(destinationPath).catch(() => ({ size: 0 }));
+      const fileSize = original.file_size || stats.size;
+      const originalName = relativeBasename(destinationRelative);
 
       await pool.query(
         `
@@ -719,18 +761,18 @@ const pastePath = async (projectId, ownerId, clipboard, destination) => {
         `,
         [
           projectId,
-          original.original_name,
+          originalName,
           destinationRelative,
-          original.stored_name,
-          original.mime_type,
-          original.file_size,
+          original.stored_name || null,
+          original.mime_type || null,
+          fileSize,
           destinationPath,
         ],
       );
 
       await storageAllocation.reserveStorage(
         ownerId,
-        Number(original.file_size),
+        Number(fileSize),
       );
     } else {
       //
@@ -740,47 +782,49 @@ const pastePath = async (projectId, ownerId, clipboard, destination) => {
 
       const rows = await pool.query(
         `
-SELECT *
-FROM files
-WHERE
-    project_id = $1
-AND
-    relative_path LIKE $2
-ORDER BY LENGTH(relative_path)
-`,
-        [projectId, `${sourceRelative}%`],
+        SELECT *
+        FROM files
+        WHERE
+            project_id = $1
+        AND
+            (relative_path = $2 OR relative_path LIKE $3)
+        ORDER BY LENGTH(relative_path)
+        `,
+        [projectId, sourceRelative, `${sourceRelative}/%`],
       );
 
       let totalBytes = 0;
 
       for (const item of rows.rows) {
         const newRelative =
-          destinationRelative +
-          item.relative_path.substring(sourceRelative.length);
+          item.relative_path === sourceRelative
+            ? destinationRelative
+            : destinationRelative +
+              item.relative_path.substring(sourceRelative.length);
 
         const newStorage = resolveProjectStoragePath(projectId, newRelative);
 
         await pool.query(
           `
-INSERT INTO files
-(
-    project_id,
-    original_name,
-    relative_path,
-    stored_name,
-    mime_type,
-    file_size,
-    storage_path,
-    is_directory
-)
-VALUES
-(
-    $1,$2,$3,$4,$5,$6,$7,$8
-)
-`,
+          INSERT INTO files
+          (
+              project_id,
+              original_name,
+              relative_path,
+              stored_name,
+              mime_type,
+              file_size,
+              storage_path,
+              is_directory
+          )
+          VALUES
+          (
+              $1,$2,$3,$4,$5,$6,$7,$8
+          )
+          `,
           [
             projectId,
-            item.original_name,
+            relativeBasename(newRelative),
             newRelative,
             item.stored_name,
             item.mime_type,
@@ -793,6 +837,37 @@ VALUES
         if (!item.is_directory) totalBytes += Number(item.file_size);
       }
 
+      // If the source directory record itself wasn't in DB, ensure the destination directory record exists
+      const destDirExists = rows.rows.some((r) => r.relative_path === sourceRelative);
+      if (!destDirExists) {
+        await pool.query(
+          `
+          INSERT INTO files
+          (
+              project_id,
+              original_name,
+              relative_path,
+              stored_name,
+              mime_type,
+              file_size,
+              storage_path,
+              is_directory
+          )
+          VALUES
+          (
+              $1,$2,$3,NULL,NULL,0,$4,true
+          )
+          ON CONFLICT DO NOTHING
+          `,
+          [
+            projectId,
+            relativeBasename(destinationRelative),
+            destinationRelative,
+            destinationPath,
+          ],
+        );
+      }
+
       await storageAllocation.reserveStorage(ownerId, totalBytes);
     }
   }
@@ -803,13 +878,13 @@ VALUES
   if (clipboard.operation === "cut") {
     const existing = await pool.query(
       `
-  SELECT id
-  FROM files
-  WHERE
-      project_id = $1
-  AND
-      relative_path = $2
-  `,
+      SELECT id
+      FROM files
+      WHERE
+          project_id = $1
+      AND
+          relative_path = $2
+      `,
       [projectId, destinationRelative],
     );
 
@@ -861,7 +936,13 @@ const generateDuplicatePath = async (projectId, relativePath) => {
       [projectId, candidate],
     );
 
-    if (exists.rows.length === 0) {
+    const fullCandidatePath = resolveProjectStoragePath(projectId, candidate);
+    const diskExists = await fs
+      .access(fullCandidatePath)
+      .then(() => true)
+      .catch(() => false);
+
+    if (exists.rows.length === 0 && !diskExists) {
       return candidate;
     }
 
@@ -914,6 +995,207 @@ const getFileForDownload = async (fileId, ownerId) => {
   };
 };
 
+const deletePaths = async (projectId, ownerId, items) => {
+  const { verifyProjectOwnership } = require("./project.service");
+  await verifyProjectOwnership(projectId, ownerId);
+
+  if (!Array.isArray(items) || items.length === 0) {
+    const error = new Error("No items selected.");
+    error.status = 400;
+    throw error;
+  }
+
+  for (const item of items) {
+    const relativePath = item.relativePath || item.path;
+    if (!relativePath || !item.type) {
+      continue;
+    }
+
+    await deletePath(projectId, ownerId, relativePath, item.type);
+  }
+
+  return {
+    success: true,
+    count: items.length,
+  };
+};
+
+const createDownloadArchive = async (projectId, items, output) => {
+  const archive = new ZipArchive({
+    zlib: { level: 9 },
+  });
+
+  archive.on("error", (error) => {
+    output.destroy(error);
+  });
+
+  archive.pipe(output);
+
+  for (const item of items) {
+    const storagePath = resolveProjectStoragePath(projectId, item.relative_path);
+
+    if (item.is_directory) {
+      archive.directory(storagePath, item.original_name);
+    } else {
+      archive.file(storagePath, {
+        name: item.relative_path,
+      });
+    }
+  }
+
+  await archive.finalize();
+};
+
+const downloadPaths = async (projectId, ownerId, items) => {
+  const { verifyProjectOwnership } = require("./project.service");
+  await verifyProjectOwnership(projectId, ownerId);
+
+  if (!Array.isArray(items) || items.length === 0) {
+    const error = new Error("No items selected.");
+    error.status = 400;
+    throw error;
+  }
+
+  const validItems = [];
+
+  for (const item of items) {
+    const relativePath = item.path || item.relativePath || item.file?.relative_path;
+
+    if (!relativePath) {
+      continue;
+    }
+
+    const result = await pool.query(
+      `
+      SELECT *
+      FROM files
+      WHERE project_id = $1
+        AND relative_path = $2
+      `,
+      [projectId, relativePath],
+    );
+
+    if (result.rows.length === 0) {
+      const folderRes = await pool.query(
+        `SELECT * FROM files WHERE project_id = $1 AND (relative_path = $2 OR relative_path LIKE $3) LIMIT 1`,
+        [projectId, relativePath, `${relativePath}/%`],
+      );
+      if (folderRes.rows.length > 0) {
+        validItems.push({
+          relative_path: relativePath,
+          original_name: relativeBasename(relativePath),
+          is_directory: true,
+        });
+        continue;
+      }
+      continue;
+    }
+
+    validItems.push(result.rows[0]);
+  }
+
+  return validItems;
+};
+
+const getProjectStats = async (projectId, ownerId) => {
+  const { verifyProjectOwnership } = require("./project.service");
+  await verifyProjectOwnership(projectId, ownerId);
+
+  const result = await pool.query(
+    `
+    SELECT
+      COUNT(CASE WHEN is_directory = FALSE THEN 1 END) AS total_files,
+      COUNT(CASE WHEN is_directory = TRUE THEN 1 END) AS total_folders,
+      COALESCE(SUM(CASE WHEN is_directory = FALSE THEN file_size ELSE 0 END), 0) AS total_bytes
+    FROM files
+    WHERE project_id = $1
+    `,
+    [projectId],
+  );
+
+  const stats = result.rows[0];
+  return {
+    totalFiles: parseInt(stats.total_files, 10) || 0,
+    totalFolders: parseInt(stats.total_folders, 10) || 0,
+    totalBytes: parseInt(stats.total_bytes, 10) || 0,
+    projectId,
+  };
+};
+
+const extractArchive = async (projectId, ownerId, relativePath, destination = "") => {
+  const { verifyProjectOwnership } = require("./project.service");
+  await verifyProjectOwnership(projectId, ownerId);
+
+  const zipStoragePath = resolveProjectStoragePath(projectId, relativePath);
+  const destRelative = destination ? normalizeRelativePath(destination) : relativeDirname(relativePath);
+  const destStoragePath = resolveProjectStoragePath(projectId, destRelative);
+
+  await filesystem.ensureDirectory(destStoragePath);
+
+  const zip = new AdmZip(zipStoragePath);
+  const zipEntries = zip.getEntries();
+
+  let totalUncompressedSize = 0;
+  for (const entry of zipEntries) {
+    if (!entry.isDirectory) {
+      totalUncompressedSize += entry.header.size;
+    }
+  }
+
+  await storageAllocation.checkQuota(ownerId, totalUncompressedSize);
+
+  zip.extractAllTo(destStoragePath, true);
+
+  for (const entry of zipEntries) {
+    const entryRelative = destRelative === "." || !destRelative
+      ? normalizeRelativePath(entry.entryName)
+      : normalizeRelativePath(`${destRelative}/${entry.entryName}`);
+
+    const entryStoragePath = resolveProjectStoragePath(projectId, entryRelative);
+
+    if (entry.isDirectory) {
+      await pool.query(
+        `
+        INSERT INTO files
+        (project_id, original_name, relative_path, stored_name, mime_type, file_size, storage_path, is_directory)
+        VALUES ($1, $2, $3, $4, 'directory', 0, $5, TRUE)
+        ON CONFLICT DO NOTHING
+        `,
+        [projectId, relativeBasename(entryRelative), entryRelative, relativeBasename(entryRelative), entryStoragePath],
+      );
+    } else {
+      const existing = await pool.query(
+        `SELECT id, file_size FROM files WHERE project_id = $1 AND relative_path = $2`,
+        [projectId, entryRelative],
+      );
+
+      if (existing.rows.length > 0) {
+        await pool.query(
+          `UPDATE files SET file_size = $1, storage_path = $2 WHERE id = $3`,
+          [entry.header.size, entryStoragePath, existing.rows[0].id],
+        );
+      } else {
+        await pool.query(
+          `
+          INSERT INTO files
+          (project_id, original_name, relative_path, stored_name, mime_type, file_size, storage_path, is_directory)
+          VALUES ($1, $2, $3, $4, 'application/octet-stream', $5, $6, FALSE)
+          `,
+          [projectId, relativeBasename(entryRelative), entryRelative, relativeBasename(entryRelative), entry.header.size, entryStoragePath],
+        );
+      }
+    }
+  }
+
+  await storageAllocation.reserveStorage(ownerId, totalUncompressedSize);
+
+  return {
+    success: true,
+    entriesCount: zipEntries.length,
+    extractedBytes: totalUncompressedSize,
+  };
+};
+
 module.exports = {
   saveFile,
   getProjectFiles,
@@ -927,6 +1209,11 @@ module.exports = {
   createEmptyFile,
   renamePath,
   deletePath,
+  deletePaths,
+  createDownloadArchive,
+  downloadPaths,
+  getProjectStats,
+  extractArchive,
   copyPath,
   cutPath,
   pastePath,

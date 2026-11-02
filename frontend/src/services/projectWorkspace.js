@@ -1,7 +1,7 @@
+import { createFileWorkspace } from "./createFileWorkspace";
 import * as projectApi from "./projectFiles.api";
-import { getCloudStats } from "./cloud.api";
 
-export default {
+export default createFileWorkspace({
   getFiles: (projectId) => projectApi.getProjectFiles(projectId),
   uploadFile: projectApi.uploadProjectFile,
   createFolder: (projectId, currentFolder, name) => {
@@ -28,12 +28,21 @@ export default {
   deletePath: (projectId, item) =>
     projectApi.deleteProjectPath(projectId, item.path, item.type),
 
+  deletePaths: (projectId, items) =>
+    projectApi.deleteProjectPaths(projectId, items),
+
   downloadFile: projectApi.downloadProjectFile,
+  downloadPaths: (projectId, items) =>
+    projectApi.downloadProjectPaths(projectId, items),
+
   getFileBlob: projectApi.getProjectFileBlob,
 
-  getStats: getCloudStats,
+  getStats: (projectId) => projectApi.getProjectStats(projectId),
 
   copyPath: projectApi.copyPath,
   cutPath: projectApi.cutPath,
   pastePath: projectApi.pastePath,
-};
+
+  extractArchive: (projectId, relativePath, destination) =>
+    projectApi.extractProjectArchive(projectId, relativePath, destination),
+});

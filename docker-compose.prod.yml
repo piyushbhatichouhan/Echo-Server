@@ -29,6 +29,9 @@ services:
     env_file:
       - ./backend/.env
 
+    environment:
+      - DOCKER_NETWORK=echo-network
+
     depends_on:
       - postgres
 
@@ -55,11 +58,14 @@ services:
     env_file:
       - ./router/.env
 
+    environment:
+      - ROUTER_TARGET=container
+
     depends_on:
       - backend
 
     ports:
-      - "8080"
+      - "80:8080"
 
     networks:
       - echo-network
@@ -92,3 +98,4 @@ volumes:
 
 networks:
   echo-network:
+    name: echo-network

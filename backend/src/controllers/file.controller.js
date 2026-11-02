@@ -51,8 +51,45 @@ const listFiles = async (req, res, next) => {
 const downloadFile = async (req, res, next) => {
   try {
     const file = await getFileForDownload(req.params.id, req.user.id);
+    const fsSync = require("fs");
+    if (!fsSync.existsSync(file.storage_path)) {
+      const error = new Error("File not found on storage disk");
+      error.status = 404;
+      throw error;
+    }
+    const stat = fsSync.statSync(file.storage_path);
+    const fileSize = stat.size;
+    const range = req.headers.range;
 
-    res.download(file.storage_path, file.original_name);
+    if (range) {
+      const parts = range.replace(/bytes=/, "").split("-");
+      const start = parseInt(parts[0], 10);
+      const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+
+      if (start >= fileSize) {
+        res
+          .status(416)
+          .send("Requested range not satisfiable\n" + start + " >= " + fileSize);
+        return;
+      }
+
+      const chunksize = end - start + 1;
+      const fileStream = fsSync.createReadStream(file.storage_path, {
+        start,
+        end,
+      });
+      const head = {
+        "Content-Range": `bytes ${start}-${end}/${fileSize}`,
+        "Accept-Ranges": "bytes",
+        "Content-Length": chunksize,
+        "Content-Type": file.mime_type || "application/octet-stream",
+      };
+
+      res.writeHead(206, head);
+      fileStream.pipe(res);
+    } else {
+      res.download(file.storage_path, file.original_name);
+    }
   } catch (error) {
     next(error);
   }
@@ -227,6 +264,74 @@ const pastePath = async (req, res, next) => {
   }
 };
 
+const deletePaths = async (req, res, next) => {
+  try {
+    const result = await fileService.deletePaths(
+      req.params.id,
+      req.user.id,
+      req.body.items,
+    );
+
+    res.json({
+      success: true,
+      data: result,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const downloadPaths = async (req, res, next) => {
+  try {
+    const items = await fileService.downloadPaths(
+      req.params.id,
+      req.user.id,
+      req.body.items,
+    );
+
+    res.setHeader("Content-Disposition", 'attachment; filename="download.zip"');
+    res.setHeader("Content-Type", "application/zip");
+
+    await fileService.createDownloadArchive(req.params.id, items, res);
+  } catch (err) {
+    next(err);
+  }
+};
+
+const getStats = async (req, res, next) => {
+  try {
+    const stats = await fileService.getProjectStats(
+      req.params.id,
+      req.user.id,
+    );
+
+    res.json({
+      success: true,
+      data: stats,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const extractArchive = async (req, res, next) => {
+  try {
+    const result = await fileService.extractArchive(
+      req.params.id,
+      req.user.id,
+      req.body.relativePath,
+      req.body.destination,
+    );
+
+    res.json({
+      success: true,
+      data: result,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   uploadFile,
   listFiles,
@@ -243,4 +348,8 @@ module.exports = {
   copyPath,
   cutPath,
   pastePath,
+  deletePaths,
+  downloadPaths,
+  getStats,
+  extractArchive,
 };

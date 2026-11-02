@@ -50,7 +50,7 @@ async function prepare(context) {
   context.cwd = workspace.getProjectFilesDirectory(project.id);
 
   context.imageName = `echo-${project.id}`;
-  context.containerPort = module.exports.INTERNAL_PORT;
+  context.containerPort = Number(settings.port) || module.exports.INTERNAL_PORT;
   context.containerName = context.infrastructure.container.getContainerName(
     project.id,
   );
@@ -76,7 +76,7 @@ COPY . .
 
 ${settings.build_command?.trim() ? `RUN ${settings.build_command}` : ""}
 
-EXPOSE ${module.exports.INTERNAL_PORT}
+EXPOSE ${context.containerPort}
 
 CMD ["sh", "-c", "${settings.start_command}"]
 `;
