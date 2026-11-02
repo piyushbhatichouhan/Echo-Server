@@ -25,6 +25,54 @@ const {
   process: processInfrastructure,
 } = infrastructure;
 
+const buildExecutionContext = (project, settings, userEnvironment = []) => {
+  const runtime = runtimeResolver.getRuntimeHandler(settings.runtime);
+
+  // Dynamic port resolution: User env PORT -> Settings port -> Runtime default
+  let resolvedPort = runtime.INTERNAL_PORT;
+  if (settings.runtime !== "static") {
+    const userPort = userEnvironment.find((e) => e.key === "PORT")?.value;
+    if (userPort && !isNaN(Number(userPort)) && Number(userPort) > 0) {
+      resolvedPort = Number(userPort);
+    } else if (
+      settings?.port &&
+      !isNaN(Number(settings.port)) &&
+      Number(settings.port) > 0
+    ) {
+      resolvedPort = Number(settings.port);
+    }
+  }
+
+  const runtimeEnvironment = runtimeEnvironmentService.buildRuntimeEnvironment(
+    project,
+    settings,
+    resolvedPort,
+  );
+
+  // Merge runtime defaults, user overrides, enforce resolved PORT
+  const envMap = new Map();
+  for (const item of runtimeEnvironment) {
+    if (item?.key) envMap.set(item.key, String(item.value ?? ""));
+  }
+  for (const item of userEnvironment) {
+    if (item?.key) envMap.set(item.key, String(item.value ?? ""));
+  }
+  envMap.set("PORT", resolvedPort.toString());
+
+  const environment = Array.from(envMap.entries()).map(([key, value]) => ({
+    key,
+    value,
+  }));
+
+  return {
+    project,
+    settings,
+    environment,
+    resolvedPort,
+    infrastructure,
+  };
+};
+
 const deployProject = async (projectId, ownerId) => {
   await projectService.verifyProjectOwnership(projectId, ownerId);
 
@@ -46,21 +94,13 @@ const deployProject = async (projectId, ownerId) => {
     ownerId,
   );
 
-  const runtimeEnvironment = runtimeEnvironmentService.buildRuntimeEnvironment(
+  const deploymentContext = buildExecutionContext(
     project,
     settings,
+    userEnvironment,
   );
 
-  const environment = [...userEnvironment, ...runtimeEnvironment];
-
   const runtime = runtimeResolver.getRuntimeHandler(settings.runtime);
-
-  const deploymentContext = {
-    project,
-    settings,
-    environment,
-    infrastructure,
-  };
 
   const deployment = await runtime.deploy(deploymentContext);
 
@@ -80,19 +120,14 @@ const stopProject = async (projectId, ownerId) => {
     ownerId,
   );
 
-  const environment = await environmentService.getEnvironmentVariables(
+  const userEnvironment = await environmentService.getEnvironmentVariables(
     projectId,
     ownerId,
   );
 
-  const runtime = runtimeResolver.getRuntimeHandler(settings.runtime);
+  const context = buildExecutionContext(project, settings, userEnvironment);
 
-  const context = {
-    project,
-    settings,
-    environment,
-    infrastructure,
-  };
+  const runtime = runtimeResolver.getRuntimeHandler(settings.runtime);
 
   return await runtime.stop(context);
 };
@@ -107,19 +142,14 @@ const startProject = async (projectId, ownerId) => {
     ownerId,
   );
 
-  const environment = await environmentService.getEnvironmentVariables(
+  const userEnvironment = await environmentService.getEnvironmentVariables(
     projectId,
     ownerId,
   );
 
-  const runtime = runtimeResolver.getRuntimeHandler(settings.runtime);
+  const context = buildExecutionContext(project, settings, userEnvironment);
 
-  const context = {
-    project,
-    settings,
-    environment,
-    infrastructure,
-  };
+  const runtime = runtimeResolver.getRuntimeHandler(settings.runtime);
 
   return await runtime.start(context);
 };
@@ -134,19 +164,14 @@ const restartProject = async (projectId, ownerId) => {
     ownerId,
   );
 
-  const environment = await environmentService.getEnvironmentVariables(
+  const userEnvironment = await environmentService.getEnvironmentVariables(
     projectId,
     ownerId,
   );
 
-  const runtime = runtimeResolver.getRuntimeHandler(settings.runtime);
+  const context = buildExecutionContext(project, settings, userEnvironment);
 
-  const context = {
-    project,
-    settings,
-    environment,
-    infrastructure,
-  };
+  const runtime = runtimeResolver.getRuntimeHandler(settings.runtime);
 
   return await runtime.restart(context);
 };

@@ -47,7 +47,10 @@ async function prepare(context) {
   context.cwd = workspace.getProjectFilesDirectory(project.id);
 
   context.imageName = `echo-python-${project.id}`;
-  context.containerPort = Number(settings.port) || module.exports.INTERNAL_PORT;
+  context.containerPort =
+    context.resolvedPort ||
+    Number(settings?.port) ||
+    module.exports.INTERNAL_PORT;
   context.containerName = context.infrastructure.container.getContainerName(
     project.id,
   );
@@ -122,7 +125,7 @@ async function install(context) {
 }
 
 async function build(context) {
-  const { settings, cwd, deployment } = context;
+  const { settings, cwd, deployment, environment } = context;
 
   if (!settings.build_command?.trim()) {
     return;
@@ -130,9 +133,14 @@ async function build(context) {
 
   await context.infrastructure.logger.stage(deployment.id, "Building Project");
 
+  const envMap = Object.fromEntries(
+    (environment || []).map((e) => [e.key, String(e.value ?? "")]),
+  );
+
   const result = await context.infrastructure.process.runCommand({
     cwd,
     command: settings.build_command,
+    env: envMap,
   });
 
   if (!result.success) {
@@ -261,6 +269,16 @@ async function start(context) {
     throw new Error("No deployment found.");
   }
 
+  const containerPort =
+    context.containerPort ||
+    deployment.container_port ||
+    context.resolvedPort ||
+    Number(settings?.port) ||
+    module.exports.INTERNAL_PORT;
+
+  const imageName =
+    context.imageName || deployment.image_name || `echohub-${project.id}`;
+
   await context.infrastructure.logger.stage(
     deployment.id,
     "Starting Deployment",
@@ -278,10 +296,10 @@ async function start(context) {
 
   const container = await context.infrastructure.container.create(
     project.id,
-    context.imageName,
+    imageName,
     environment,
     deployment.port, // host port
-    context.containerPort, // runtime internal port
+    containerPort, // runtime internal port
   );
 
   context.container = container;
@@ -294,7 +312,7 @@ async function start(context) {
     deployment.id,
     container.id,
     container.echoName,
-    context.containerPort,
+    containerPort,
   );
 
   await context.infrastructure.deployment.markStoppedByUser(project.id, false);
