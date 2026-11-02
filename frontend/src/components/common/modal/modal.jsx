@@ -1,7 +1,8 @@
 import "./modal.css";
 
-export default function Modal({ open, title, children, onClose }) {
-  if (!open) return null;
+export default function Modal({ open, isOpen, title, children, onClose }) {
+  const isVisible = open ?? isOpen;
+  if (!isVisible) return null;
 
   return (
     <div className="eh-modal-overlay" onClick={onClose}>
