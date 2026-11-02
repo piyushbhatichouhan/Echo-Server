@@ -12,11 +12,18 @@ export default function ConfirmActionModal({
   confirmText = "Delete",
   confirmVariant = "danger",
   loading = false,
+  zIndex = 1250,
 }) {
   if (!isOpen) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={title}>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={title}
+      overlayClassName="confirm-modal-overlay-top"
+      zIndex={zIndex}
+    >
       <div className="confirm-modal-body">
         <div className="confirm-modal-icon-wrapper">
           <Trash2 size={28} className="confirm-modal-icon" />

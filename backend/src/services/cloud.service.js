@@ -1132,19 +1132,24 @@ const emptyTrash = async (ownerId) => {
   let totalBytesFreed = 0;
 
   for (const file of trashed) {
-    if (file.storage_path && !file.is_directory) {
-      try {
-        const storagePath = resolveCloudStoragePath(ownerId, file.relative_path);
-        await filesystem.removeDiskFile(storagePath);
-      } catch (err) {
-        console.warn("Could not delete trashed file:", file.relative_path, err);
-      }
+    try {
+      const storagePath =
+        file.storage_path || resolveCloudStoragePath(ownerId, file.relative_path);
+      await filesystem.removeDiskFile(storagePath);
+    } catch (err) {
+      console.warn("Could not delete trashed path from disk:", file.relative_path, err.message);
+    }
+    if (!file.is_directory) {
       totalBytesFreed += Number(file.file_size || 0);
     }
   }
 
   if (totalBytesFreed > 0) {
-    await storageAllocation.releaseStorage(ownerId, totalBytesFreed);
+    try {
+      await storageAllocation.releaseStorage(ownerId, totalBytesFreed);
+    } catch (err) {
+      console.warn("Could not release storage allocation:", err.message);
+    }
   }
 
   return {

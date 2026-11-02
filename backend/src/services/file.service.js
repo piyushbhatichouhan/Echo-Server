@@ -1439,7 +1439,11 @@ const emptyProjectTrash = async (projectId, ownerId) => {
   }
 
   if (totalBytesFreed > 0) {
-    await storageAllocation.releaseStorage(ownerId, totalBytesFreed);
+    try {
+      await storageAllocation.releaseStorage(ownerId, totalBytesFreed);
+    } catch (err) {
+      console.warn("Could not release storage allocation:", err.message);
+    }
   }
 
   return {
