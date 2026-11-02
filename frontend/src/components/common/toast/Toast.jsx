@@ -17,7 +17,7 @@ export default function Toast({ toast, onClose }) {
     <div className={`eh-toast ${toast.type}`}>
       <div className="eh-toast-icon">
         <Icon size={22} />
-      </div>
+       </div>
 
       <div className="eh-toast-content">
         <strong>{toast.title}</strong>

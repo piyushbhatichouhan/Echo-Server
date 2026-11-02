@@ -17,7 +17,7 @@ export default function Settings({ projectId }) {
   const { project, settings, loading, save } = useProjectSettings(projectId);
 
   const toast = useToast();
-
+ 
   const [form, setForm] = useState(null);
   const [saving, setSaving] = useState(false);
   const navigate = useNavigate();

@@ -17,7 +17,7 @@ export default function EnvironmentItem({ variable, onEdit, onDelete }) {
 
       toast.error("Error", message);
     }
-  };
+  }; 
 
   return (
     <div className="eh-env-item">

@@ -18,5 +18,5 @@ export default function FileViewer(props) {
       return <PdfViewer {...props} />;
     default:
       return <BinaryViewer {...props} />;
-  }
+  } 
 }

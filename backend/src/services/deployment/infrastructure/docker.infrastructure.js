@@ -14,3 +14,4 @@ module.exports = {
   remove,
   getImageName: imageService.getImageName,
 };
+ 

@@ -17,7 +17,7 @@ const STATUS = {
     label: "Added",
     icon: Plus,
     className: "added",
-  },
+  }, 
 
   deleted: {
     label: "Deleted",

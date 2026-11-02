@@ -9,3 +9,4 @@ module.exports = {
   verification: require("./verification.infrastructure"),
   process: require("./process.infrastructure"),
 };
+ 

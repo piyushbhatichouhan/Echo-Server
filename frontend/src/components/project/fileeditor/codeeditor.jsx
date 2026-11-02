@@ -12,7 +12,7 @@ export default function CodeEditor({
   const saveKeymap = Prec.high(
     keymap.of([
       {
-        key: "Mod-s",
+         key: "Mod-s",
         run() {
           onSave?.();
           return true;

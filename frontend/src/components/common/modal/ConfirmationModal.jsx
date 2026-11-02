@@ -12,7 +12,7 @@ export default function ConfirmationModal({
   onDelete,
 }) {
   const [confirmation, setConfirmation] = useState("");
-
+ 
   useEffect(() => {
     if (open) {
       setConfirmation("");

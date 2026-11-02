@@ -7,3 +7,4 @@ const publishStaticSite = async (context) => {
 module.exports = {
   publishStaticSite,
 };
+ 

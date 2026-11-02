@@ -17,7 +17,7 @@ export default function ImageViewer({ file, adapter, onBack, onDownload }) {
       setImageUrl(url);
     };
 
-    load();
+    load(); 
 
     return () => {
       if (url) {

@@ -18,7 +18,7 @@
     grid-template-columns: 230px 1fr;
     gap: 28px;
     align-items: start;
-}
+} 
 
 .storageSidebar {
     background: var(--surface-primary);

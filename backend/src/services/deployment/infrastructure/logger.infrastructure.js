@@ -17,7 +17,7 @@ const stage = async (deploymentId, stageName) =>
 
 module.exports = {
   info,
-  warn,
+  warn, 
   error,
   stage,
 };

@@ -13,7 +13,7 @@ import {
   Trash2,
   Terminal,
 } from "lucide-react";
-
+ 
 export default function LogsCard({ logs, onClear }) {
   const consoleRef = useRef(null);
 

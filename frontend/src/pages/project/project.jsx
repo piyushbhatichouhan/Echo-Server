@@ -11,7 +11,7 @@ import {
   redeployProject,
   startProject,
   stopProject,
-  restartProject,
+  restartProject, 
 } from "../../services/deployment.api";
 import DeploymentCard from "../../components/project/deploymentcard/deploymentcard";
 import useLogStream from "../../hooks/useLogStream";

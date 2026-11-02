@@ -14,6 +14,6 @@ export default function ProjectTabs({ activeTab, onTabChange }) {
           {tab.charAt(0).toUpperCase() + tab.slice(1)}
         </button>
       ))}
-    </div>
+    </div> 
   );
 }

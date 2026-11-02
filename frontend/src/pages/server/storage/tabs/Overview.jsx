@@ -14,7 +14,7 @@ export default function Overview({ overview, loading }) {
 
     return `${value.toFixed(value >= 10 ? 0 : 1)} ${units[unit]}`;
   };
-
+ 
   if (loading) {
     return (
       <div className="overviewLoading">Loading storage information...</div>

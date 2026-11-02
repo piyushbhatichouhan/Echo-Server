@@ -15,7 +15,7 @@ export default function RepositoryConnectionCard({
   repository,
 
   validation,
-
+  
   validating,
   connecting,
   cloning,

@@ -17,5 +17,5 @@ export default function BinaryViewer({ file, onBack, onDownload }) {
         <Button onClick={onDownload}>Download File</Button>
       </div>
     </div>
-  );
+  ); 
 }

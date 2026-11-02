@@ -11,7 +11,7 @@ export default function Card({
     <div className="eh-card">
       {(title || actions) && (
         <div className="eh-card-header">
-          <h3>{title}</h3>
+           <h3>{title}</h3>
 
           {actions}
         </div>

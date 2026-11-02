@@ -5,7 +5,7 @@ export default function Dropdown({ trigger, children }) {
   const [open, setOpen] = useState(false);
 
   const ref = useRef();
-
+ 
   useEffect(() => {
     const handleClick = (e) => {
       if (!ref.current?.contains(e.target)) {

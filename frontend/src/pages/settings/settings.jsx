@@ -20,7 +20,7 @@ export default function Settings() {
   const [stats, setStats] = useState(null);
 
   const [deleteOpen, setDeleteOpen] = useState(false);
-
+ 
   const [deleting, setDeleting] = useState(false);
 
   const sendResetEmail = async () => {

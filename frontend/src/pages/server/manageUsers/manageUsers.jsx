@@ -17,7 +17,7 @@ export default function ManageUsers() {
     refresh,
     restoreUser,
   } = useUsers();
-
+ 
   const [search, setSearch] = useState("");
   const toast = useToast();
   const visibleUsers = users.filter((user) => !user.is_owner);

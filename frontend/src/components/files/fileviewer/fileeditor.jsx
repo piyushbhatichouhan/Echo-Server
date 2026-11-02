@@ -15,7 +15,7 @@ export default function FileEditor({
   onDelete,
   onBack,
   dirty,
-}) {
+}) { 
   return (
     <Card>
       <div className="eh-editor">

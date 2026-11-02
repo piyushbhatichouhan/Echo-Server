@@ -10,7 +10,7 @@ export default function DeploymentCard({ status }) {
           <span>Status</span>
           <strong>{status?.status ?? "Unknown"}</strong>
         </div>
-
+ 
         <div className="eh-info-row">
           <span>Restart Count</span>
           <strong>{status?.restartCount ?? 0}</strong>

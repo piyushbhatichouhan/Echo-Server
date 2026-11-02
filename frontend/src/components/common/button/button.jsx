@@ -9,7 +9,7 @@ export default function Button({
   disabled = false,
   type = "button",
 }) {
-  return (
+  return ( 
     <button
       type={type}
       disabled={disabled || loading}

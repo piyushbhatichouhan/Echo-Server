@@ -17,7 +17,7 @@ export default function Server() {
       available: true,
       route: "/server/users",
     },
-    {
+    { 
       title: "Storage",
       description: "View storage usage.",
       available: true,
