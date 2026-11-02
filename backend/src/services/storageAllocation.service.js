@@ -1,6 +1,7 @@
 const serverSettingsRepository = require("../repositories/serverSettings.repository");
 const diskService = require("./disk.service");
 const userRepository = require("../repositories/user.repository");
+const { pool } = require("../config/database");
 
 const getStorageOverview = async () => {
   const settings = await serverSettingsRepository.getSettings();
@@ -96,31 +97,105 @@ const changeUserQuota = async (userId, newQuota) => {
   return await userRepository.updateUserQuota(userId, newQuota);
 };
 
+const recalculateUserStorage = async (userId) => {
+  try {
+    const projectFilesResult = await pool.query(
+      `
+      SELECT COALESCE(SUM(f.file_size), 0) AS total_bytes
+      FROM files f
+      JOIN projects p ON f.project_id = p.id
+      WHERE p.owner_id = $1
+        AND f.is_directory = FALSE
+      `,
+      [userId],
+    );
+
+    const cloudFilesResult = await pool.query(
+      `
+      SELECT COALESCE(SUM(file_size), 0) AS total_bytes
+      FROM cloud_files
+      WHERE owner_id = $1
+        AND is_directory = FALSE
+        AND deleted_at IS NULL
+      `,
+      [userId],
+    );
+
+    const projectBytes = Number(projectFilesResult.rows[0]?.total_bytes || 0);
+    const cloudBytes = Number(cloudFilesResult.rows[0]?.total_bytes || 0);
+    const totalUsed = projectBytes + cloudBytes;
+
+    await pool.query(
+      `
+      UPDATE users
+      SET used_bytes = $2
+      WHERE id = $1
+      `,
+      [userId, totalUsed],
+    );
+
+    return totalUsed;
+  } catch (err) {
+    console.error(`Failed to recalculate storage for user ${userId}:`, err);
+    return 0;
+  }
+};
+
 const reserveStorage = async (userId, bytes) => {
+  const bytesNum = Math.max(0, Number(bytes) || 0);
+  if (bytesNum === 0) return;
+
   const user = await userRepository.getUserById(userId);
-
-  const used = Number(user.used_bytes);
-  const quota = Number(user.quota_bytes);
-
-  if (used + bytes > quota) {
-    throw new Error("Storage quota exceeded.");
+  if (!user) {
+    throw new Error("User not found.");
   }
 
-  await userRepository.incrementUsedBytes(userId, bytes);
+  // Owner accounts are not constrained by per-user quota
+  if (!user.is_owner) {
+    const used = Number(user.used_bytes || 0);
+    const quota = Number(user.quota_bytes || 0);
+
+    if (quota > 0 && used + bytesNum > quota) {
+      throw new Error("Storage quota exceeded.");
+    }
+  }
+
+  await userRepository.incrementUsedBytes(userId, bytesNum);
 };
 
 const releaseStorage = async (userId, bytes) => {
-  await userRepository.decrementUsedBytes(userId, bytes);
+  const bytesNum = Math.max(0, Number(bytes) || 0);
+  if (bytesNum === 0) return;
+
+  await userRepository.decrementUsedBytes(userId, bytesNum);
 };
 
 const checkQuota = async (userId, incomingBytes) => {
+  const bytesNum = Math.max(0, Number(incomingBytes) || 0);
+  if (bytesNum === 0) return;
+
   const user = await userRepository.getUserById(userId);
+  if (!user) {
+    const error = new Error("User not found.");
+    error.status = 404;
+    throw error;
+  }
 
-  const used = Number(user.used_bytes);
+  // Owner accounts are not constrained by user quota, only physical disk
+  if (user.is_owner) {
+    const disk = await diskService.getDiskInfo().catch(() => null);
+    if (disk && disk.free < bytesNum) {
+      const error = new Error("Server disk is full.");
+      error.status = 507;
+      throw error;
+    }
+    return;
+  }
 
-  const quota = Number(user.quota_bytes);
+  const used = Number(user.used_bytes || 0);
+  const quota = Number(user.quota_bytes || 0);
 
-  if (used + incomingBytes > quota) {
+  if (quota > 0 && used + bytesNum > quota) {
     const error = new Error("Storage quota exceeded.");
     error.status = 400;
     throw error;
@@ -138,4 +213,5 @@ module.exports = {
   reserveStorage,
   releaseStorage,
   checkQuota,
+  recalculateUserStorage,
 };

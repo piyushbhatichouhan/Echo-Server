@@ -9,20 +9,28 @@ import cloudWorkspace from "../../services/cloudWorkspace";
 export default function CloudStorage() {
   const [stats, setStats] = useState(null);
 
-  useEffect(() => {
-    const load = async () => {
+  const refreshStats = async () => {
+    try {
       const data = await cloudWorkspace.getStats();
       setStats(data);
-    };
+    } catch (e) {
+      console.error("Failed to load cloud storage stats:", e);
+    }
+  };
 
-    load();
+  useEffect(() => {
+    refreshStats();
   }, []);
 
   return (
     <div>
       <StorageStats stats={stats} />
 
-      <FileBrowser adapter={cloudWorkspace} mode="cloud" />
+      <FileBrowser
+        adapter={cloudWorkspace}
+        mode="cloud"
+        onStorageChange={refreshStats}
+      />
     </div>
   );
 }

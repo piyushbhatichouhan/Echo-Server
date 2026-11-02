@@ -13,7 +13,7 @@ import "./FileBrowser.css";
 import FileViewer from "../fileviewer/FileViewer";
 import FileToolbar from "../FileToolBar/FileToolbar";
 
-export default function FileBrowser({ adapter, workspaceId }) {
+export default function FileBrowser({ adapter, workspaceId, onStorageChange }) {
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -152,6 +152,7 @@ export default function FileBrowser({ adapter, workspaceId }) {
       }
 
       await refresh();
+      onStorageChange?.();
 
       toast.success("Pasted successfully");
     } catch (err) {
@@ -186,6 +187,7 @@ export default function FileBrowser({ adapter, workspaceId }) {
       await adapter.saveFileContent(selectedFile.id, fileContent);
 
       setDirty(false);
+      onStorageChange?.();
 
       toast.success(
         "Saved",
@@ -394,6 +396,7 @@ export default function FileBrowser({ adapter, workspaceId }) {
       }
 
       await refresh();
+      onStorageChange?.();
 
       setTimeout(() => {
         setUploadProgress(null);
@@ -472,6 +475,7 @@ export default function FileBrowser({ adapter, workspaceId }) {
       setSelectedItems([]);
 
       await refresh();
+      onStorageChange?.();
     } catch (error) {
       toast.error(
         "Delete Failed",
@@ -823,6 +827,7 @@ export default function FileBrowser({ adapter, workspaceId }) {
               workspaceId={workspaceId}
               onDownloadSelected={handleDownloadSelected}
               searchQuery={searchQuery}
+              onStorageChange={onStorageChange}
             />
           </div>
         ) : (

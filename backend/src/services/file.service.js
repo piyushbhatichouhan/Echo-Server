@@ -7,6 +7,7 @@ const {
   resolveProjectStoragePath,
   getProjectRoot,
 } = require("../storage/project.storage.manager");
+const storage = require("../config/storage");
 
 //const { resolveProjectStoragePath } = require("../utils/storagePath");
 
@@ -207,7 +208,8 @@ const deleteFile = async (fileId, ownerId) => {
         f.project_id,
         f.storage_path,
         f.relative_path,
-        f.is_directory
+        f.is_directory,
+        f.file_size
     FROM files f
     INNER JOIN projects p
         ON p.id = f.project_id
@@ -234,21 +236,44 @@ const deleteFile = async (fileId, ownerId) => {
     );
 
     if (file.is_directory) {
+      const dirPrefix = file.relative_path.endsWith("/")
+        ? file.relative_path
+        : `${file.relative_path}/`;
+
+      const sizeRes = await client.query(
+        `
+        SELECT COALESCE(SUM(file_size), 0) AS total_size
+        FROM files
+        WHERE project_id = $1
+          AND (relative_path = $2 OR relative_path LIKE $3)
+        `,
+        [file.project_id, file.relative_path, `${dirPrefix}%`],
+      );
+      const freedBytes = Number(sizeRes.rows[0]?.total_size || 0);
+
       await client.query(
         `
     DELETE FROM files
     WHERE
         project_id = $1
     AND
-        relative_path LIKE $2
+        (relative_path = $2 OR relative_path LIKE $3)
     `,
-        [file.project_id, `${file.relative_path}%`],
+        [file.project_id, file.relative_path, `${dirPrefix}%`],
       );
 
-      await fs.rm(storagePath, {
-        recursive: true,
-        force: true,
-      });
+      try {
+        await fs.rm(storagePath, {
+          recursive: true,
+          force: true,
+        });
+      } catch (err) {
+        console.warn("Could not delete directory from disk:", storagePath, err.message);
+      }
+
+      if (freedBytes > 0) {
+        await storageAllocation.releaseStorage(ownerId, freedBytes);
+      }
     } else {
       await client.query(
         `
@@ -258,8 +283,16 @@ const deleteFile = async (fileId, ownerId) => {
         [file.id],
       );
 
-      await filesystem.removeDiskFile(storagePath);
-      await storageAllocation.releaseStorage(userId, file.file_size);
+      try {
+        await filesystem.removeDiskFile(storagePath);
+      } catch (err) {
+        console.warn("Could not delete file from disk:", storagePath, err.message);
+      }
+
+      const freedBytes = Number(file.file_size || 0);
+      if (freedBytes > 0) {
+        await storageAllocation.releaseStorage(ownerId, freedBytes);
+      }
     }
 
     await client.query("COMMIT");
@@ -281,6 +314,7 @@ const deleteFile = async (fileId, ownerId) => {
 };
 
 const removeProjectDirectory = async (projectId) => {
+  let projectOwnerId = null;
   try {
     const projectRes = await pool.query(
       `SELECT owner_id FROM projects WHERE id = $1`,
@@ -288,7 +322,7 @@ const removeProjectDirectory = async (projectId) => {
     );
 
     if (projectRes.rows.length > 0) {
-      const ownerId = projectRes.rows[0].owner_id;
+      projectOwnerId = projectRes.rows[0].owner_id;
       const sizeRes = await pool.query(
         `SELECT COALESCE(SUM(file_size), 0) AS total_bytes FROM files WHERE project_id = $1`,
         [projectId],
@@ -296,19 +330,39 @@ const removeProjectDirectory = async (projectId) => {
       const totalBytes = Number(sizeRes.rows[0].total_bytes || 0);
 
       if (totalBytes > 0) {
-        await storageAllocation.releaseStorage(ownerId, totalBytes);
+        await storageAllocation.releaseStorage(projectOwnerId, totalBytes);
       }
     }
   } catch (err) {
     console.error(`Failed to release storage for project ${projectId}:`, err);
   }
 
+  // Remove project directory
   const projectPath = getProjectRoot(projectId);
+  try {
+    await fs.rm(projectPath, {
+      recursive: true,
+      force: true,
+    });
+  } catch (err) {
+    console.warn(`Could not delete project directory ${projectPath}:`, err.message);
+  }
 
-  await fs.rm(projectPath, {
-    recursive: true,
-    force: true,
-  });
+  // Remove git repository if exists
+  if (storage.git) {
+    const gitPath = path.join(storage.git, projectId.toString());
+    try {
+      await fs.rm(gitPath, {
+        recursive: true,
+        force: true,
+      });
+    } catch (err) {}
+  }
+
+  // Auto-reconcile owner's storage
+  if (projectOwnerId && storageAllocation.recalculateUserStorage) {
+    await storageAllocation.recalculateUserStorage(projectOwnerId).catch(() => {});
+  }
 };
 const loadFileContent = async (fileId, ownerId) => {
   const result = await pool.query(
@@ -395,9 +449,9 @@ const updateFileContent = async (fileId, ownerId, content) => {
   await filesystem.writeContent(storagePath, content, "utf8");
 
   if (newSize > oldSize)
-    storageAllocation.reserveStorage(ownerId, newSize - oldSize);
+    await storageAllocation.reserveStorage(ownerId, newSize - oldSize);
   else if (newSize < oldSize)
-    storageAllocation.releaseStorage(ownerId, oldSize - newSize);
+    await storageAllocation.releaseStorage(ownerId, oldSize - newSize);
 
   await pool.query(
     `
@@ -606,9 +660,16 @@ const deletePath = async (projectId, ownerId, relativePath, type) => {
       file.relative_path,
     );
 
-    await storageAllocation.releaseStorage(ownerId, Number(file.file_size));
+    try {
+      await filesystem.removeDiskFile(storagePath);
+    } catch (err) {
+      console.warn("Could not delete file from disk:", storagePath, err.message);
+    }
 
-    await filesystem.removeDiskFile(storagePath);
+    const freedBytes = Number(file.file_size || 0);
+    if (freedBytes > 0) {
+      await storageAllocation.releaseStorage(ownerId, freedBytes);
+    }
 
     await pool.query(
       `
@@ -622,15 +683,38 @@ const deletePath = async (projectId, ownerId, relativePath, type) => {
   }
 
   const folderPath = resolveProjectStoragePath(projectId, relativePath);
+  let folderSize = 0;
+  try {
+    folderSize = await filesystem.calculateDirectorySize(folderPath);
+  } catch (err) {
+    folderSize = 0;
+  }
 
-  const folderSize = await filesystem.calculateDirectorySize(folderPath);
+  const dirPrefix = relativePath.endsWith("/") ? relativePath : `${relativePath}/`;
+  const dbSizeRes = await pool.query(
+    `
+    SELECT COALESCE(SUM(file_size), 0) AS total_size
+    FROM files
+    WHERE project_id = $1
+      AND (relative_path = $2 OR relative_path LIKE $3)
+    `,
+    [projectId, relativePath, `${dirPrefix}%`],
+  );
+  const dbFolderSize = Number(dbSizeRes.rows[0]?.total_size || 0);
+  const freedBytes = Math.max(folderSize, dbFolderSize);
 
-  await storageAllocation.releaseStorage(ownerId, folderSize);
+  if (freedBytes > 0) {
+    await storageAllocation.releaseStorage(ownerId, freedBytes);
+  }
 
-  await fs.rm(folderPath, {
-    recursive: true,
-    force: true,
-  });
+  try {
+    await fs.rm(folderPath, {
+      recursive: true,
+      force: true,
+    });
+  } catch (err) {
+    console.warn("Could not delete folder from disk:", folderPath, err.message);
+  }
 
   await pool.query(
     `
@@ -640,7 +724,7 @@ const deletePath = async (projectId, ownerId, relativePath, type) => {
     AND
         (relative_path = $2 OR relative_path LIKE $3)
     `,
-    [projectId, relativePath, `${relativePath}/%`],
+    [projectId, relativePath, `${dirPrefix}%`],
   );
 };
 

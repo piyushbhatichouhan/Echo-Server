@@ -29,6 +29,7 @@ export default function CloudFileList({
   onSelectionChange,
   onDownSelected,
   searchQuery = "",
+  onStorageChange,
 }) {
   const { downloadFile, deletePath, renamePath } = adapter;
   const toast = useToast();
@@ -414,6 +415,7 @@ export default function CloudFileList({
                         "Archive extracted successfully.",
                       );
                       await refresh();
+                      onStorageChange?.();
                     } catch (err) {
                       toast.error(
                         "Extraction Failed",
@@ -463,6 +465,7 @@ export default function CloudFileList({
               }
 
               await refresh();
+              onStorageChange?.();
             },
           },
         ]}
