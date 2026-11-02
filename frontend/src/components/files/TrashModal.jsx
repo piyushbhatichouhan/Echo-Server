@@ -58,7 +58,8 @@ export default function TrashModal({ isOpen, onClose, adapter, workspaceId, onRe
   const handleRestore = async (item) => {
     try {
       setActionLoading(true);
-      await adapter.restoreTrash(workspaceId, item.id);
+      const targetId = item.id || item.fileId;
+      await adapter.restoreTrash(workspaceId, targetId);
       toast.success("Restored", `"${item.original_name}" has been restored.`);
       await loadTrash();
       onRestored?.();

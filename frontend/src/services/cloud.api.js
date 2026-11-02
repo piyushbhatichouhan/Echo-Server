@@ -37,14 +37,17 @@ export const uploadCloudFile = async (
   return response.data.data;
 };
 
-export const deleteCloudFile = async (fileId) => {
-  const response = await api.delete(`/cloud/files/${fileId}`);
+export const deleteCloudFile = async (fileId, permanent = false) => {
+  const response = await api.delete(`/cloud/files/${fileId}`, {
+    params: { permanent },
+  });
 
   return response.data;
 };
 
-export const deleteCloudFolder = async (folderPath) => {
+export const deleteCloudFolder = async (folderPath, permanent = false) => {
   const response = await api.delete("/cloud/folder", {
+    params: { permanent },
     data: {
       path: folderPath,
     },
@@ -227,7 +230,8 @@ export const getCloudTrash = async () => {
 };
 
 export const restoreCloudTrash = async (fileId) => {
-  const res = await api.post("/cloud/trash/restore", { fileId });
+  const id = typeof fileId === "object" ? (fileId?.id || fileId?.fileId) : fileId;
+  const res = await api.post("/cloud/trash/restore", { fileId: id, id });
   return res.data;
 };
 

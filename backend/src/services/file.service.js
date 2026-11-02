@@ -1332,6 +1332,31 @@ const getProjectTrash = async (projectId, ownerId) => {
   return result.rows;
 };
 
+const restoreProjectParentDirectories = async (projectId, relativePath) => {
+  if (!relativePath) return;
+  const parts = String(relativePath).split("/").filter(Boolean);
+  if (parts.length <= 1) return;
+
+  const parentPaths = [];
+  let cur = "";
+  for (let i = 0; i < parts.length - 1; i++) {
+    cur = cur ? `${cur}/${parts[i]}` : parts[i];
+    parentPaths.push(cur);
+  }
+
+  if (parentPaths.length > 0) {
+    await pool.query(
+      `
+      UPDATE files
+      SET deleted_at = NULL
+      WHERE project_id = $1
+        AND relative_path = ANY($2::text[])
+      `,
+      [projectId, parentPaths],
+    );
+  }
+};
+
 const restoreProjectTrash = async (projectId, ownerId, fileId) => {
   const { verifyProjectOwnership } = require("./project.service");
   await verifyProjectOwnership(projectId, ownerId);
@@ -1362,6 +1387,7 @@ const restoreProjectTrash = async (projectId, ownerId, fileId) => {
       `,
       [projectId, file.relative_path, `${dirPrefix}%`],
     );
+    await restoreProjectParentDirectories(projectId, file.relative_path);
     return { success: true, restored: result.rows };
   }
 
@@ -1374,6 +1400,7 @@ const restoreProjectTrash = async (projectId, ownerId, fileId) => {
     `,
     [fileId, projectId],
   );
+  await restoreProjectParentDirectories(projectId, file.relative_path);
   return { success: true, restored: result.rows[0] };
 };
 
