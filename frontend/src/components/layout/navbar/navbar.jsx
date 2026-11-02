@@ -17,7 +17,7 @@ export default function Navbar() {
     if (location.pathname.startsWith("/projects/")) return "Project";
 
     if (location.pathname === "/settings") return "Settings";
-
+ 
     return "EchoHub";
   };
 

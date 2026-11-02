@@ -16,7 +16,7 @@ export default function EnvironmentModal({ open, onClose, onSave, variable }) {
       setValue("");
     }
   }, [variable, open]);
-
+ 
   const handleSave = async () => {
     try {
       if (!key.trim()) return;

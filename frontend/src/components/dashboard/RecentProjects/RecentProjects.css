@@ -20,7 +20,7 @@
     color: white;
     margin-bottom: 22px;
 }
-
+ 
 .recentProjects-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));

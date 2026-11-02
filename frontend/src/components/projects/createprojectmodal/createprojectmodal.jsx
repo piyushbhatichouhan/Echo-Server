@@ -12,7 +12,7 @@ import {
   GitBranch,
   PlugZap,
 } from "lucide-react";
-
+ 
 const APPLICATIONS = {
   node: {
     title: "Node.js",

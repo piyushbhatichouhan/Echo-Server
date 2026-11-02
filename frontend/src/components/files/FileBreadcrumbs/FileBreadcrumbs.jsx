@@ -17,7 +17,7 @@ export default function Breadcrumbs({ currentFolder, onNavigate }) {
         return (
           <div className="eh-breadcrumb-item" key={path}>
             <ChevronRight size={15} />
-
+ 
             <button
               className="eh-breadcrumb-button"
               onClick={() => onNavigate(path)}

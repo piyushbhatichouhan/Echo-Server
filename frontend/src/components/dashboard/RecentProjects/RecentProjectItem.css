@@ -19,7 +19,7 @@
 
     transition: all var(--transition);
 }
-
+ 
 .eh-recent-project:hover {
     border-color: var(--accent);
 

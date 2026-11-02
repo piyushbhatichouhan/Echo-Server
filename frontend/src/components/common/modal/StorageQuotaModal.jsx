@@ -15,7 +15,7 @@ export default function StorageQuotaModal({
     if (!user) return;
 
     const quota = Number(user.quotaBytes || 0);
-
+ 
     if (quota >= 1024 * 1024 * 1024) {
       setStorageUnit("GB");
       setStorageValue(Number((quota / (1024 * 1024 * 1024)).toFixed(2)));

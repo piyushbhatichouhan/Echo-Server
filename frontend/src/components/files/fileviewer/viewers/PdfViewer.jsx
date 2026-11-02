@@ -15,7 +15,7 @@ export default function PdfViewer({ adapter, file, onBack }) {
   const [pageCount, setPageCount] = useState(0);
   const [pageNumber, setPageNumber] = useState(1);
   const [pdfUrl, setPdfUrl] = useState(null);
-
+ 
   useEffect(() => {
     let objectUrl;
 

@@ -18,7 +18,7 @@ export default function Users({ users, loading, refresh, updateQuota }) {
       value /= 1024;
       unit++;
     }
-
+ 
     return `${value.toFixed(value >= 10 ? 0 : 1)} ${units[unit]}`;
   };
 

@@ -7,7 +7,7 @@ export default function CodeEditor({
   height = "500px",
   readOnly = false,
   language,
-}) {
+}) { 
   return (
     <div className="code-editor">
       <Editor

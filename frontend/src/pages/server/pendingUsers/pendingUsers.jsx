@@ -18,7 +18,7 @@ export default function PendingUsers() {
   if (loading) {
     return <h2>Loading...</h2>;
   }
-
+ 
   return (
     <div className="pendingUsersPage">
       <h1>Pending Users</h1>

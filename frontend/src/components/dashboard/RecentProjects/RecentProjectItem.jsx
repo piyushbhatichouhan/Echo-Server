@@ -16,7 +16,7 @@ import timeAgo from "../../../utils/timeAgo";
 
 export default function RecentProjectItem({ project }) {
   const navigate = useNavigate();
-
+ 
   return (
     <div
       className="eh-recent-project"

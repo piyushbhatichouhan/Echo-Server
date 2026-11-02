@@ -5,7 +5,7 @@ export default function ContextMenu({ x, y, visible, items, onClose }) {
   if (!visible) return null;
 
   const menuRef = useRef(null);
-
+ 
   const [position, setPosition] = useState({ left: x, top: y });
 
   useEffect(() => {

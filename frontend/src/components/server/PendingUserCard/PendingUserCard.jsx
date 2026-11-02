@@ -19,5 +19,5 @@ export default function PendingUserCard({ user, onApprove, onReject }) {
         </button>
       </div>
     </div>
-  );
+  ); 
 }

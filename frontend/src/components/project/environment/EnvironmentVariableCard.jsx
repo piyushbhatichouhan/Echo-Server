@@ -14,7 +14,7 @@ export default function EnvironmentVariableCard({
   const copyValue = async () => {
     await navigator.clipboard.writeText(variable.value);
   };
-
+ 
   return (
     <div className="eh-env-card">
       <div className="eh-env-header">

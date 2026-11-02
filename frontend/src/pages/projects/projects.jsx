@@ -12,7 +12,7 @@ export default function Projects() {
   const [open, setOpen] = useState(false);
 
   const [stats, setStats] = useState(null);
-
+ 
   const refreshStats = async () => {
     const statsData = await projectWorkspace.getStats();
     setStats(statsData);

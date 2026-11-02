@@ -16,7 +16,7 @@ export default function CommitCard({
   pulling,
   pushing,
   fetching,
-
+ 
   onCommit,
   onPull,
   onPush,

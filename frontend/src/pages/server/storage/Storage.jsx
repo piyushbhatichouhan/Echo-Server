@@ -20,7 +20,7 @@ export default function Storage() {
   return (
     <div className="storagePage">
       <div className="storageHeader">
-        <div>
+         <div>
           <h1>Storage Management</h1>
 
           <p>

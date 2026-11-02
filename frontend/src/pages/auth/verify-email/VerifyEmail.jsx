@@ -18,7 +18,7 @@ export default function VerifyEmail() {
       setMessage("Invalid verification link.");
       return;
     }
-
+ 
     const run = async () => {
       try {
         const res = await verifyEmail(token);

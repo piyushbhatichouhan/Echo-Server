@@ -15,7 +15,7 @@ import Card from "../card/card";
 import StatusBadge from "../statusbadge/statusbadge";
 
 import timeAgo from "../../../utils/timeAgo";
-
+ 
 export default function ProjectCard({ project }) {
   return (
     <Link to={`/projects/${project.id}`} className="eh-project-link">

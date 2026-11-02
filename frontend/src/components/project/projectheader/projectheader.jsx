@@ -14,7 +14,7 @@ import Button from "../../common/button/button";
 import StatusBadge from "../../common/statusbadge/statusbadge";
 
 import useProject from "../../../context/ProjectContext";
-
+ 
 export default function ProjectHeader({ project }) {
   return (
     <div className="eh-project-header">

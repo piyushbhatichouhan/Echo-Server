@@ -10,7 +10,7 @@ const create = async (projectId, image, container) => {
     container,
     hostPort,
   );
-};
+}; 
 
 const stopPreviousDeployments = async (projectId) =>
   deploymentRepository.stopDeployments(projectId);

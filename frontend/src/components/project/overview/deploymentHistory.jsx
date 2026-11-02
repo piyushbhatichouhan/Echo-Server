@@ -12,7 +12,7 @@ const statusIcon = (status) => {
     case "creating_container":
     case "starting_container":
       return <Hammer className="eh-history-icon building" size={18} />;
-
+ 
     case "failed":
       return <AlertCircle className="eh-history-icon failed" size={18} />;
 

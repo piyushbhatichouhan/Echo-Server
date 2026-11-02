@@ -5,3 +5,4 @@ export default function StatusBadge({ status }) {
 
   return <span className={`eh-status-badge ${cls}`}>{status}</span>;
 }
+ 

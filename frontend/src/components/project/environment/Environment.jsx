@@ -18,7 +18,7 @@ export default function Environment({ projectId }) {
   const { variables, loading, createVariable, updateVariable, removeVariable } =
     useEnvironment(projectId);
   const [modalOpen, setModalOpen] = useState(false);
-
+ 
   const [editingVariable, setEditingVariable] = useState(null);
   return (
     <div className="eh-environment">

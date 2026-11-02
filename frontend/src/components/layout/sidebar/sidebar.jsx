@@ -15,7 +15,7 @@ export default function Sidebar() {
 
         <p>Self Hosted Platform</p>
       </div>
-
+ 
       <nav className="eh-sidebar-nav">
         <NavigationItem to="/dashboard" icon={Home}>
           Dashboard

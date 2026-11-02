@@ -16,7 +16,7 @@ export default function RepositoryInfoCard({ validation }) {
           <p>Detected information from GitHub.</p>
         </div>
       </div>
-
+ 
       <div className="eh-repository-info-grid">
         <div className="eh-info-tile">
           <FolderGit2 size={18} />

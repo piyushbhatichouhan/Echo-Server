@@ -17,7 +17,7 @@ export default function GitStatusCard({ gitStatus }) {
   const [expanded, setExpanded] = useState(false);
 
   if (!gitStatus) return null;
-
+ 
   if (gitStatus.clean) {
     return (
       <div className="eh-git-status-card">

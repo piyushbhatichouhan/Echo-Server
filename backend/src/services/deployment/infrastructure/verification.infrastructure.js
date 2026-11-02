@@ -7,3 +7,4 @@ const verifyStaticDeployment = async (publishedDirectory) => {
 module.exports = {
   verifyStaticDeployment,
 };
+ 
