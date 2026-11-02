@@ -196,20 +196,25 @@ const applyDetectedPreset = async (req, res, next) => {
       projectId,
       ownerId,
       {
-        runtime: detection.runtime,
-        install_command: detection.install_command,
-        build_command: detection.build_command,
-        start_command: detection.start_command,
-        output_directory: detection.output_directory,
-        port: detection.port,
+        runtime: detection.runtime || "node",
+        working_directory: detection.working_directory || ".",
+        install_command: detection.install_command ?? "",
+        build_command: detection.build_command ?? "",
+        start_command: detection.start_command ?? "",
+        output_directory: detection.output_directory || ".",
+        dockerfile: detection.dockerfile ?? "",
       },
     );
 
+    if (detection.runtime) {
+      await projectService.updateApplicationType(projectId, detection.runtime);
+    }
+
     res.json({
       success: true,
-      message: `Applied ${detection.framework} preset successfully.`,
+      message: `Applied ${detection.framework || detection.runtime} preset successfully.`,
       data: {
-        framework: detection.framework,
+        framework: detection.framework || detection.runtime,
         settings: updated,
       },
     });

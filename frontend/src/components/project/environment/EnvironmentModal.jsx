@@ -19,11 +19,15 @@ export default function EnvironmentModal({ open, onClose, onSave, variable }) {
  
   const handleSave = async () => {
     try {
-      if (!key.trim()) return;
+      const trimmedKey = key.trim();
+      if (!trimmedKey) {
+        toast.error("Validation Error", "Environment variable key cannot be empty.");
+        return;
+      }
 
       await onSave({
-        key,
-        value,
+        key: trimmedKey,
+        value: value ?? "",
       });
 
       onClose();

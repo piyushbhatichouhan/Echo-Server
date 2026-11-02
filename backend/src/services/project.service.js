@@ -255,6 +255,19 @@ const deleteProjectCompletelyInternal = async (projectId, client) => {
   await projectRepository.deleteProjectRecordTx(client, projectId);
 };
 
+const updateApplicationType = async (projectId, applicationType) => {
+  if (!applicationType) return;
+  await pool.query(
+    `
+    UPDATE projects
+    SET application_type = $2,
+        updated_at = NOW()
+    WHERE id = $1
+    `,
+    [projectId, applicationType],
+  );
+};
+
 module.exports = {
   createProject,
   getProjects,
@@ -265,4 +278,5 @@ module.exports = {
   deleteProjectInternal,
   deleteProjectRecord,
   deleteProjectCompletelyInternal,
+  updateApplicationType,
 };

@@ -44,8 +44,34 @@ async function checkDatabase() {
   console.log("Checking PostgreSQL...");
 
   const client = await pool.connect();
+  try {
+    // Ensure deployments.port is nullable so dead/stopped deployments don't violate not-null
+    // and project_settings columns have robust defaults
+    await client.query(`
+      DO $$
+      BEGIN
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'deployments' AND column_name = 'port' AND is_nullable = 'NO'
+        ) THEN
+          ALTER TABLE deployments ALTER COLUMN port DROP NOT NULL;
+        END IF;
 
-  client.release();
+        IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'project_settings') THEN
+          ALTER TABLE project_settings ALTER COLUMN working_directory SET DEFAULT '.';
+          ALTER TABLE project_settings ALTER COLUMN output_directory SET DEFAULT '.';
+          ALTER TABLE project_settings ALTER COLUMN dockerfile SET DEFAULT '';
+          ALTER TABLE project_settings ALTER COLUMN install_command SET DEFAULT '';
+          ALTER TABLE project_settings ALTER COLUMN build_command SET DEFAULT '';
+          ALTER TABLE project_settings ALTER COLUMN start_command SET DEFAULT '';
+        END IF;
+      END $$;
+    `);
+  } catch (err) {
+    console.warn("[Validator] Schema alignment notice:", err.message);
+  } finally {
+    client.release();
+  }
 
   console.log("✓ PostgreSQL OK");
 }

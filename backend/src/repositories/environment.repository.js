@@ -34,7 +34,9 @@ const deleteEnvironmentByProjectId = async (projectId) => {
 };
 
 const createEnvironmentVariables = async (projectId, variables) => {
+  if (!Array.isArray(variables)) return;
   for (const variable of variables) {
+    if (!variable || !variable.key) continue;
     await pool.query(
       `
       INSERT INTO environment_variables
@@ -50,7 +52,7 @@ const createEnvironmentVariables = async (projectId, variables) => {
         $3
       )
       `,
-      [projectId, variable.key, variable.value],
+      [projectId, String(variable.key).trim(), String(variable.value ?? "")],
     );
   }
 };
@@ -93,6 +95,9 @@ const getEnvironmentVariableByKey = async (projectId, key) => {
 };
 
 const createEnvironmentVariable = async (projectId, key, value) => {
+  const safeKey = String(key || "").trim();
+  const safeValue = String(value ?? "");
+
   const result = await pool.query(
     `
     INSERT INTO environment_variables
@@ -112,13 +117,16 @@ const createEnvironmentVariable = async (projectId, key, value) => {
       variable_key AS key,
       variable_value AS value
     `,
-    [projectId, key, value],
+    [projectId, safeKey, safeValue],
   );
 
   return result.rows[0];
 };
 
 const updateEnvironmentVariable = async (variableId, key, value) => {
+  const safeKey = String(key || "").trim();
+  const safeValue = String(value ?? "");
+
   const result = await pool.query(
     `
   UPDATE environment_variables
@@ -132,7 +140,7 @@ const updateEnvironmentVariable = async (variableId, key, value) => {
     variable_key AS key,
     variable_value AS value
   `,
-    [variableId, key, value],
+    [variableId, safeKey, safeValue],
   );
 
   return result.rows[0];

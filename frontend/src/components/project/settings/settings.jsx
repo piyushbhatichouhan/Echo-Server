@@ -56,10 +56,19 @@ export default function Settings({ projectId }) {
     try {
       setApplyingPreset(true);
       const res = await applyDetectedPreset(projectId);
-      setForm((prev) => ({
-        ...prev,
-        ...res.data.settings,
-      }));
+      if (res.data?.settings) {
+        setForm((prev) => ({
+          ...prev,
+          ...res.data.settings,
+          runtime: res.data.settings.runtime || prev?.runtime || "node",
+          working_directory: res.data.settings.working_directory || ".",
+          install_command: res.data.settings.install_command ?? "",
+          build_command: res.data.settings.build_command ?? "",
+          start_command: res.data.settings.start_command ?? "",
+          output_directory: res.data.settings.output_directory || ".",
+          dockerfile: res.data.settings.dockerfile ?? "",
+        }));
+      }
       toast.success(
         "Preset Applied",
         `Applied ${res.data.framework} configuration preset.`,
@@ -126,7 +135,15 @@ export default function Settings({ projectId }) {
 
   useEffect(() => {
     if (settings) {
-      setForm(settings);
+      setForm({
+        runtime: settings.runtime || "node",
+        working_directory: settings.working_directory || ".",
+        install_command: settings.install_command ?? "npm install",
+        build_command: settings.build_command ?? "npm run build",
+        start_command: settings.start_command ?? "npm start",
+        output_directory: settings.output_directory || ".",
+        dockerfile: settings.dockerfile ?? "",
+      });
     }
   }, [settings]);
 
@@ -139,6 +156,38 @@ export default function Settings({ projectId }) {
       ...previous,
       [key]: value,
     }));
+  };
+
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      const sanitized = {
+        runtime: form.runtime || "node",
+        working_directory:
+          form.working_directory && form.working_directory.trim()
+            ? form.working_directory.trim()
+            : ".",
+        install_command: form.install_command ?? "",
+        build_command: form.build_command ?? "",
+        start_command: form.start_command ?? "",
+        output_directory:
+          form.output_directory && form.output_directory.trim()
+            ? form.output_directory.trim()
+            : ".",
+        dockerfile: form.dockerfile ?? "",
+      };
+
+      await save(sanitized);
+
+      toast.success("Success", "Settings saved successfully");
+    } catch (error) {
+      toast.error(
+        "Error",
+        error.response?.data?.message || error.message,
+      );
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -154,22 +203,7 @@ export default function Settings({ projectId }) {
 
         <Button
           loading={saving}
-          onClick={async () => {
-            try {
-              setSaving(true);
-
-              await save(form);
-
-              toast.success("Success", "Settings saved successfully");
-            } catch (error) {
-              toast.error(
-                "Error",
-                error.response?.data?.message || error.message,
-              );
-            } finally {
-              setSaving(false);
-            }
-          }}
+          onClick={handleSave}
         >
           Save Settings
         </Button>
@@ -223,6 +257,10 @@ export default function Settings({ projectId }) {
             <div>
               <span className="eh-det-label">Port</span>
               <code>{detectionResult.port}</code>
+            </div>
+            <div>
+              <span className="eh-det-label">Working Directory</span>
+              <code>{detectionResult.working_directory || "."}</code>
             </div>
             <div>
               <span className="eh-det-label">Install Command</span>
@@ -287,14 +325,14 @@ export default function Settings({ projectId }) {
             <div className="eh-setting">
               <label>Runtime</label>
 
-              <input value={form.runtime} readOnly />
+              <input value={form.runtime || "node"} readOnly />
             </div>
 
             <div className="eh-setting eh-span-2">
               <label>Working Directory</label>
 
               <input
-                value={form.working_directory}
+                value={form.working_directory ?? "."}
                 onChange={(e) => update("working_directory", e.target.value)}
               />
             </div>
@@ -304,7 +342,7 @@ export default function Settings({ projectId }) {
                 <label>Output Directory</label>
 
                 <input
-                  value={form.output_directory}
+                  value={form.output_directory ?? "."}
                   onChange={(e) => update("output_directory", e.target.value)}
                 />
               </div>
@@ -326,7 +364,7 @@ export default function Settings({ projectId }) {
 
               <textarea
                 rows={3}
-                value={form.install_command}
+                value={form.install_command ?? ""}
                 onChange={(e) => update("install_command", e.target.value)}
               />
             </div>
@@ -337,7 +375,7 @@ export default function Settings({ projectId }) {
 
                 <textarea
                   rows={3}
-                  value={form.build_command}
+                  value={form.build_command ?? ""}
                   onChange={(e) => update("build_command", e.target.value)}
                 />
               </div>
@@ -349,7 +387,7 @@ export default function Settings({ projectId }) {
 
                 <textarea
                   rows={3}
-                  value={form.start_command}
+                  value={form.start_command ?? ""}
                   onChange={(e) => update("start_command", e.target.value)}
                 />
               </div>
@@ -378,7 +416,7 @@ export default function Settings({ projectId }) {
 
           <CodeEditor
             language="dockerfile"
-            value={form.dockerfile}
+            value={form.dockerfile ?? ""}
             onChange={(value) => update("dockerfile", value)}
           />
         </section>
