@@ -10,37 +10,60 @@ import {
   Box,
   CheckCircle2,
   GitBranch,
-  PlugZap,
+  Zap,
+  Layers,
 } from "lucide-react";
- 
+
 const APPLICATIONS = {
   node: {
     title: "Node.js",
     icon: <Server size={28} />,
-    description: "Express, Fastify, NestJS and other Node applications.",
-    runtime: "Node.js",
+    description: "Express, Fastify, NestJS, and Node.js backend servers.",
+    runtime: "Node.js (node:22-alpine)",
     install: "npm install",
     build: "npm run build",
     start: "npm start",
     output: "-",
   },
 
+  vite: {
+    title: "Vite (React / Vue)",
+    icon: <Zap size={28} />,
+    description: "Modern Single Page Apps served through high-performance Nginx.",
+    runtime: "Multi-stage Nginx",
+    install: "npm install",
+    build: "npm run build",
+    start: "Automatic Nginx SPA router",
+    output: "dist/",
+  },
+
+  next: {
+    title: "Next.js",
+    icon: <Layers size={28} />,
+    description: "Next.js SSR and full-stack React applications.",
+    runtime: "Node.js (node:22-alpine)",
+    install: "npm install",
+    build: "npm run build",
+    start: "npm start",
+    output: ".next",
+  },
+
   static: {
     title: "Static Website",
     icon: <Globe size={28} />,
-    description: "HTML, CSS, JavaScript, Vite or other static websites.",
-    runtime: "Static Website",
-    install: "npm install",
-    build: "npm run build",
-    start: "Served automatically",
-    output: "dist/",
+    description: "Pure HTML, CSS, JavaScript files or pre-built static assets.",
+    runtime: "Nginx Alpine",
+    install: "-",
+    build: "-",
+    start: "Automatic Nginx static server",
+    output: "./",
   },
 
   python: {
     title: "Python",
     icon: <Terminal size={28} />,
-    description: "Flask, FastAPI, Django and Python web applications.",
-    runtime: "Python",
+    description: "FastAPI, Flask, Django, and Python web applications.",
+    runtime: "Python 3.12 Slim",
     install: "pip install -r requirements.txt",
     build: "-",
     start: "python app.py",
@@ -48,10 +71,10 @@ const APPLICATIONS = {
   },
 
   custom: {
-    title: "Custom",
+    title: "Custom Docker",
     icon: <Box size={28} />,
-    description: "Configure runtime and commands manually.",
-    runtime: "Custom",
+    description: "User-defined Dockerfile or custom container settings.",
+    runtime: "Custom Dockerfile",
     install: "Custom",
     build: "Custom",
     start: "Custom",

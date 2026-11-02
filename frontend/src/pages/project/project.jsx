@@ -28,6 +28,7 @@ import * as projectFile from "../../services/projectFiles.api";
 import PublicationStatus from "../../components/project/publication/PublicationStatus";
 import usePublication from "../../hooks/usePublication";
 import * as publicationApi from "../../services/publication.api";
+import ProjectTerminal from "../../components/project/terminal/ProjectTerminal";
 
 export default function Project() {
   const { id } = useParams();
@@ -153,7 +154,7 @@ export default function Project() {
                 onRestart={() => runAction(restartProject, "restart")}
               />
 
-              <DeploymentCard status={status} />
+              <DeploymentCard status={status} projectId={id} />
             </div>
             <PublicationStatus
               publication={publication}
@@ -162,7 +163,7 @@ export default function Project() {
               onUnpublish={handleUnpublish}
               refresh={pubrefresh}
             />
-            <LogsCard logs={logs} onClear={() => setLogs([])} />
+            <LogsCard status={status} logs={logs} onClear={() => setLogs([])} />
           </>
         )}
         {activeTab === "files" && (
@@ -173,9 +174,21 @@ export default function Project() {
           />
         )}
         {activeTab === "deployments" && (
-          <>
+          <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
             <Deployments projectId={id} />
-          </>
+            <DeploymentHistory
+              deployments={deployments}
+              projectId={id}
+              onRollback={() => {
+                refreshStatus();
+                refreshLogs();
+              }}
+            />
+          </div>
+        )}
+
+        {activeTab === "terminal" && (
+          <ProjectTerminal projectId={id} isRunning={isRunning} />
         )}
 
         {activeTab === "environment" && <Environment projectId={project.id} />}

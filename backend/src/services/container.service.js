@@ -255,6 +255,88 @@ const getContainerIPAddress = async (projectId) => {
   return firstNetwork.IPAddress;
 };
 
+const getContainerTelemetry = async (projectId) => {
+  try {
+    const container = getContainer(projectId);
+    const stats = await container.stats({ stream: false });
+
+    const memoryUsed = stats.memory_stats?.usage || 0;
+    const memoryLimit = stats.memory_stats?.limit || 0;
+
+    let cpuPercent = 0;
+    const cpuDelta =
+      (stats.cpu_stats?.cpu_usage?.total_usage || 0) -
+      (stats.precpu_stats?.cpu_usage?.total_usage || 0);
+    const systemDelta =
+      (stats.cpu_stats?.system_cpu_usage || 0) -
+      (stats.precpu_stats?.system_cpu_usage || 0);
+    const onlineCpus =
+      stats.cpu_stats?.online_cpus ||
+      stats.cpu_stats?.cpu_usage?.percpu_usage?.length ||
+      1;
+
+    if (systemDelta > 0 && cpuDelta > 0) {
+      cpuPercent = Math.min(
+        100,
+        Math.round((cpuDelta / systemDelta) * onlineCpus * 1000) / 10,
+      );
+    }
+
+    return {
+      running: true,
+      memoryUsed,
+      memoryLimit,
+      cpuPercent,
+      pids: stats.pids_stats?.current || 0,
+    };
+  } catch {
+    return {
+      running: false,
+      memoryUsed: 0,
+      memoryLimit: 0,
+      cpuPercent: 0,
+      pids: 0,
+    };
+  }
+};
+
+const executeTerminalCommand = async (projectId, command) => {
+  const container = getContainer(projectId);
+  const exec = await container.exec({
+    Cmd: ["sh", "-c", command],
+    AttachStdout: true,
+    AttachStderr: true,
+  });
+
+  const stream = await exec.start({ hijack: true, stdin: false });
+
+  return new Promise((resolve, reject) => {
+    let output = "";
+    stream.on("data", (chunk) => {
+      // Strip docker multiplex header (first 8 bytes per frame) if present
+      if (chunk.length > 8 && (chunk[0] === 1 || chunk[0] === 2)) {
+        output += chunk.slice(8).toString("utf8");
+      } else {
+        output += chunk.toString("utf8");
+      }
+    });
+
+    stream.on("end", async () => {
+      try {
+        const inspect = await exec.inspect();
+        resolve({
+          output: output.trim() || "(Command executed with no output)",
+          exitCode: inspect.ExitCode ?? 0,
+        });
+      } catch (err) {
+        resolve({ output: output.trim(), exitCode: 0 });
+      }
+    });
+
+    stream.on("error", (err) => reject(err));
+  });
+};
+
 module.exports = {
   getContainerName,
   createContainer,
@@ -272,4 +354,6 @@ module.exports = {
   startContainerByProject,
   waitUntilContainerRunning,
   getContainerIPAddress,
+  getContainerTelemetry,
+  executeTerminalCommand,
 };

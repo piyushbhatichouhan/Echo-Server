@@ -6,7 +6,11 @@ import useProjectSettings from "../../../hooks/useProjectSettings";
 import { useToast } from "../../../context/ToastContext";
 import CodeEditor from "../../common/CodeEditor/CodeEditor";
 
-import { deleteProject } from "../../../services/project.api";
+import {
+  deleteProject,
+  detectFramework,
+  applyDetectedPreset,
+} from "../../../services/project.api";
 import { useNavigate } from "react-router-dom";
 import ConfirmationModal from "../../common/modal/ConfirmationModal";
 import PublicationStatus from "../publication/PublicationStatus";
@@ -17,14 +21,59 @@ export default function Settings({ projectId }) {
   const { project, settings, loading, save } = useProjectSettings(projectId);
 
   const toast = useToast();
- 
+
   const [form, setForm] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [detecting, setDetecting] = useState(false);
+  const [detectionResult, setDetectionResult] = useState(null);
+  const [applyingPreset, setApplyingPreset] = useState(false);
   const navigate = useNavigate();
 
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   const [deleting, setDeleting] = useState(false);
+
+  const handleDetect = async () => {
+    try {
+      setDetecting(true);
+      const res = await detectFramework(projectId);
+      setDetectionResult(res);
+      toast.success(
+        "Framework Detected",
+        `Identified ${res.framework} (${Math.round(res.confidence * 100)}% match)`,
+      );
+    } catch (err) {
+      toast.error(
+        "Detection Failed",
+        err.response?.data?.message || err.message,
+      );
+    } finally {
+      setDetecting(false);
+    }
+  };
+
+  const handleApplyPreset = async () => {
+    try {
+      setApplyingPreset(true);
+      const res = await applyDetectedPreset(projectId);
+      setForm((prev) => ({
+        ...prev,
+        ...res.data.settings,
+      }));
+      toast.success(
+        "Preset Applied",
+        `Applied ${res.data.framework} configuration preset.`,
+      );
+      setDetectionResult(null);
+    } catch (err) {
+      toast.error(
+        "Failed to Apply Preset",
+        err.response?.data?.message || err.message,
+      );
+    } finally {
+      setApplyingPreset(false);
+    }
+  };
 
   const {
     publication,
@@ -125,6 +174,75 @@ export default function Settings({ projectId }) {
           Save Settings
         </Button>
       </div>
+
+      {/* Framework Auto-Detector Section */}
+      <div className="eh-autodetect-card">
+        <div className="eh-autodetect-left">
+          <div className="eh-autodetect-sparkle">✨</div>
+          <div>
+            <h3>Zero-Config Framework Detector</h3>
+            <p>
+              Automatically inspect your project files to configure runtime, build commands, and output directories.
+            </p>
+          </div>
+        </div>
+
+        <div className="eh-autodetect-actions">
+          <button
+            type="button"
+            className="eh-autodetect-btn"
+            onClick={handleDetect}
+            disabled={detecting}
+          >
+            {detecting ? "Scanning repository..." : "Auto-Detect Framework"}
+          </button>
+        </div>
+      </div>
+
+      {detectionResult && (
+        <div className="eh-detection-result-card">
+          <div className="eh-detection-result-header">
+            <div>
+              <span className="eh-detection-badge">Framework Detected</span>
+              <h4>{detectionResult.framework}</h4>
+            </div>
+            <button
+              type="button"
+              className="eh-apply-preset-btn"
+              onClick={handleApplyPreset}
+              disabled={applyingPreset}
+            >
+              {applyingPreset ? "Applying..." : "Apply Detected Preset"}
+            </button>
+          </div>
+          <div className="eh-detection-grid">
+            <div>
+              <span className="eh-det-label">Runtime</span>
+              <code>{detectionResult.runtime}</code>
+            </div>
+            <div>
+              <span className="eh-det-label">Port</span>
+              <code>{detectionResult.port}</code>
+            </div>
+            <div>
+              <span className="eh-det-label">Install Command</span>
+              <code>{detectionResult.install_command || "None"}</code>
+            </div>
+            <div>
+              <span className="eh-det-label">Build Command</span>
+              <code>{detectionResult.build_command || "None"}</code>
+            </div>
+            <div>
+              <span className="eh-det-label">Start Command</span>
+              <code>{detectionResult.start_command || "None"}</code>
+            </div>
+            <div>
+              <span className="eh-det-label">Output Directory</span>
+              <code>{detectionResult.output_directory || "."}</code>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="eh-top-row">
         {/* Runtime */}

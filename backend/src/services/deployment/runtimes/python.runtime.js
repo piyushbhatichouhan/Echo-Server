@@ -89,8 +89,7 @@ CMD ["sh", "-c", "${settings.start_command}"]
 async function createDeployment(context) {
   const { project, settings } = context;
 
-  await context.infrastructure.deployment.stopPreviousDeployments(project.id);
-
+  // Blue/Green: Keep previous deployment running until new build passes health check
   context.deployment = await context.infrastructure.deployment.create(
     project.id,
     context.imageName,
@@ -125,36 +124,20 @@ async function install(context) {
 }
 
 async function build(context) {
-  const { settings, cwd, deployment, environment } = context;
+  const { settings, deployment } = context;
 
   if (!settings.build_command?.trim()) {
     return;
   }
 
-  await context.infrastructure.logger.stage(deployment.id, "Building Project");
-
-  const envMap = Object.fromEntries(
-    (environment || []).map((e) => [e.key, String(e.value ?? "")]),
+  await context.infrastructure.logger.stage(
+    deployment.id,
+    "Configuring Isolated Build",
   );
-
-  const result = await context.infrastructure.process.runCommand({
-    cwd,
-    command: settings.build_command,
-    env: envMap,
-  });
-
-  if (!result.success) {
-    await context.infrastructure.logger.error(
-      deployment.id,
-      result.error || "Build command failed.",
-    );
-
-    throw new Error(result.error || "Build command failed.");
-  }
 
   await context.infrastructure.logger.info(
     deployment.id,
-    "Project built successfully.",
+    `Build command (${settings.build_command}) will execute inside isolated container environment.`,
   );
 }
 
@@ -216,7 +199,13 @@ async function verify(context) {
 }
 
 async function finishDeployment(context) {
-  const { deployment } = context;
+  const { deployment, project } = context;
+
+  // Blue/Green: Mark all previous deployments stopped except the newly healthy one
+  await context.infrastructure.deployment.stopPreviousDeployments(
+    project.id,
+    deployment.id,
+  );
 
   await context.infrastructure.logger.stage(
     deployment.id,
@@ -263,7 +252,8 @@ async function start(context) {
   const { project, environment, settings } = context;
 
   const deployment =
-    await context.infrastructure.deployment.getLatestDeployment(project.id);
+    context.deployment ||
+    (await context.infrastructure.deployment.getLatestDeployment(project.id));
 
   if (!deployment) {
     throw new Error("No deployment found.");

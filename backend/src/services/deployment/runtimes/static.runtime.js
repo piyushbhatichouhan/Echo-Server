@@ -59,24 +59,75 @@ async function prepare(context) {
 }
 
 function generateDockerfile(context) {
-  const output = context.settings.output_directory || "dist";
+  const { settings, environment } = context;
+  const rawOutput = (settings.output_directory || "").trim();
+  const output = rawOutput && rawOutput !== "." ? rawOutput : "dist";
 
+  const hasBuildStep = Boolean(
+    settings.build_command?.trim() || settings.install_command?.trim()
+  );
+
+  const envDeclarations = (environment || [])
+    .filter((e) => e && e.key)
+    .map((e) => {
+      const sanitized = String(e.value ?? "").replace(/"/g, '\\"');
+      return `ARG ${e.key}="${sanitized}"\nENV ${e.key}="${sanitized}"`;
+    })
+    .join("\n");
+
+  if (hasBuildStep) {
+    // Multi-stage isolated container build for SPAs (Vite, React, Vue, etc.)
+    return `
+FROM node:22-alpine AS builder
+
+WORKDIR /app
+
+RUN apk add --no-cache python3 make g++ libc6-compat
+
+# Copy dependency manifests
+COPY package*.json yarn.lock* pnpm-lock.yaml* bun.lockb* ./
+
+${settings.install_command?.trim() ? `RUN ${settings.install_command}` : "RUN npm install"}
+
+# Copy source
+COPY . .
+
+${envDeclarations}
+
+${settings.build_command?.trim() ? `RUN ${settings.build_command}` : "RUN npm run build"}
+
+# Stage 2: Unified Static Nginx Server with SPA fallback
+FROM nginx:alpine
+
+RUN echo 'server { listen 80; server_name _; root /usr/share/nginx/html; index index.html; location / { try_files $uri $uri/ /index.html; } error_page 500 502 503 504 /50x.html; location = /50x.html { root /usr/share/nginx/html; } }' > /etc/nginx/conf.d/default.conf
+
+COPY --from=builder /app/${output}/ /usr/share/nginx/html/
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
+`;
+  }
+
+  // Pure static site (HTML/CSS/JS directly without build tool)
+  const sourceDir = rawOutput && rawOutput !== "." ? `${rawOutput}/` : ".";
   return `
 FROM nginx:alpine
 
 RUN echo 'server { listen 80; server_name _; root /usr/share/nginx/html; index index.html; location / { try_files $uri $uri/ /index.html; } }' > /etc/nginx/conf.d/default.conf
 
-COPY ${output}/ /usr/share/nginx/html/
+COPY ${sourceDir} /usr/share/nginx/html/
 
-EXPOSE ${module.exports.INTERNAL_PORT}
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
 `;
 }
 
 async function createDeployment(context) {
-  const { project, settings } = context;
+  const { project } = context;
 
-  await context.infrastructure.deployment.stopPreviousDeployments(project.id);
-
+  // Blue/Green: Keep previous deployment running until new build is verified
   context.deployment = await context.infrastructure.deployment.create(
     project.id,
     null,
@@ -95,7 +146,7 @@ async function createDeployment(context) {
 }
 
 async function install(context) {
-  const { settings, cwd, deployment, environment } = context;
+  const { settings, deployment } = context;
 
   if (!settings.install_command?.trim()) {
     return;
@@ -103,65 +154,30 @@ async function install(context) {
 
   await context.infrastructure.logger.stage(
     deployment.id,
-    "Installing Dependencies",
+    "Configuring Isolated Dependencies",
   );
-
-  const envMap = Object.fromEntries(
-    (environment || []).map((e) => [e.key, String(e.value ?? "")]),
-  );
-
-  const result = await context.infrastructure.process.runCommand({
-    cwd,
-    command: settings.install_command,
-    env: envMap,
-  });
-
-  if (!result.success) {
-    await context.infrastructure.logger.error(
-      deployment.id,
-      result.error || "Install command failed.",
-    );
-
-    throw new Error(result.error || "Install command failed.");
-  }
 
   await context.infrastructure.logger.info(
     deployment.id,
-    "Dependencies installed successfully.",
+    `Install command (${settings.install_command}) will execute inside isolated container environment.`,
   );
 }
 
 async function build(context) {
-  const { settings, cwd, deployment, environment } = context;
+  const { settings, deployment } = context;
 
   if (!settings.build_command?.trim()) {
     return;
   }
 
-  await context.infrastructure.logger.stage(deployment.id, "Building Project");
-
-  const envMap = Object.fromEntries(
-    (environment || []).map((e) => [e.key, String(e.value ?? "")]),
+  await context.infrastructure.logger.stage(
+    deployment.id,
+    "Configuring Isolated Build",
   );
-
-  const result = await context.infrastructure.process.runCommand({
-    cwd,
-    command: settings.build_command,
-    env: envMap,
-  });
-
-  if (!result.success) {
-    await context.infrastructure.logger.error(
-      deployment.id,
-      result.error || "Build command failed.",
-    );
-
-    throw new Error(result.error || "Build command failed.");
-  }
 
   await context.infrastructure.logger.info(
     deployment.id,
-    "Project built successfully.",
+    `Build command (${settings.build_command}) will execute inside isolated container environment.`,
   );
 }
 
@@ -215,7 +231,13 @@ async function verify(context) {
 }
 
 async function finishDeployment(context) {
-  const { deployment } = context;
+  const { deployment, project } = context;
+
+  // Blue/Green: Mark all previous deployments stopped except the newly healthy one
+  await context.infrastructure.deployment.stopPreviousDeployments(
+    project.id,
+    deployment.id,
+  );
 
   await context.infrastructure.logger.stage(
     deployment.id,
@@ -252,7 +274,8 @@ async function start(context) {
   const { project, environment } = context;
 
   const deployment =
-    await context.infrastructure.deployment.getLatestDeployment(project.id);
+    context.deployment ||
+    (await context.infrastructure.deployment.getLatestDeployment(project.id));
 
   if (!deployment) {
     throw new Error("No deployment found.");

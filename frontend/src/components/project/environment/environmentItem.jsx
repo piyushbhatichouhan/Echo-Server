@@ -5,9 +5,19 @@ import { Eye, EyeOff, Copy, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "../../../context/ToastContext";
 
-export default function EnvironmentItem({ variable, onEdit, onDelete }) {
+export default function EnvironmentItem({
+  variable,
+  onEdit,
+  onDelete,
+  forcedVisible,
+}) {
   const [visible, setVisible] = useState(false);
   const toast = useToast();
+
+  const isShown = forcedVisible !== undefined && forcedVisible !== null
+    ? forcedVisible
+    : visible;
+
   const copyValue = async () => {
     try {
       await navigator.clipboard.writeText(variable.value);
@@ -25,15 +35,15 @@ export default function EnvironmentItem({ variable, onEdit, onDelete }) {
         <div className="eh-env-key">{variable.key}</div>
 
         <div className="eh-env-value">
-          {visible
+          {isShown
             ? variable.value
-            : "•".repeat(Math.max(variable.value.length, 14))}
+            : "•".repeat(Math.max(variable.value?.length || 8, 14))}
         </div>
       </div>
 
       <div className="eh-env-actions">
-        <button onClick={() => setVisible(!visible)}>
-          {visible ? <EyeOff size={18} /> : <Eye size={18} />}
+        <button onClick={() => setVisible(!isShown)}>
+          {isShown ? <EyeOff size={18} /> : <Eye size={18} />}
         </button>
 
         <button onClick={copyValue}>

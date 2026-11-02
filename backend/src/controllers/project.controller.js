@@ -162,6 +162,130 @@ const streamLogs = async (req, res, next) => {
   }
 };
 
+const frameworkDetector = require("../services/frameworkDetector.service");
+const projectSettingsService = require("../services/projectSettings.service");
+const containerService = require("../services/container.service");
+
+const detectFramework = async (req, res, next) => {
+  try {
+    const { projectId } = req.params;
+    const ownerId = req.user.id;
+
+    await projectService.verifyProjectOwnership(projectId, ownerId);
+
+    const detection = await frameworkDetector.detectFramework(projectId);
+
+    res.json({
+      success: true,
+      data: detection,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const applyDetectedPreset = async (req, res, next) => {
+  try {
+    const { projectId } = req.params;
+    const ownerId = req.user.id;
+
+    await projectService.verifyProjectOwnership(projectId, ownerId);
+
+    const detection = await frameworkDetector.detectFramework(projectId);
+    const updated = await projectSettingsService.updateProjectSettings(
+      projectId,
+      ownerId,
+      {
+        runtime: detection.runtime,
+        install_command: detection.install_command,
+        build_command: detection.build_command,
+        start_command: detection.start_command,
+        output_directory: detection.output_directory,
+        port: detection.port,
+      },
+    );
+
+    res.json({
+      success: true,
+      message: `Applied ${detection.framework} preset successfully.`,
+      data: {
+        framework: detection.framework,
+        settings: updated,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const rollbackDeployment = async (req, res, next) => {
+  try {
+    const { projectId, deploymentId } = req.params;
+    const ownerId = req.user.id;
+
+    const rolledBack = await deploymentService.rollbackDeployment(
+      projectId,
+      ownerId,
+      deploymentId,
+    );
+
+    res.json({
+      success: true,
+      message: "Deployment rolled back successfully.",
+      data: rolledBack,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getTelemetry = async (req, res, next) => {
+  try {
+    const { projectId } = req.params;
+    const ownerId = req.user.id;
+
+    await projectService.verifyProjectOwnership(projectId, ownerId);
+
+    const telemetry = await containerService.getContainerTelemetry(projectId);
+
+    res.json({
+      success: true,
+      data: telemetry,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const executeTerminal = async (req, res, next) => {
+  try {
+    const { projectId } = req.params;
+    const { command } = req.body;
+    const ownerId = req.user.id;
+
+    await projectService.verifyProjectOwnership(projectId, ownerId);
+
+    if (!command || typeof command !== "string") {
+      return res.status(400).json({
+        success: false,
+        message: "Command string is required.",
+      });
+    }
+
+    const result = await containerService.executeTerminalCommand(
+      projectId,
+      command,
+    );
+
+    res.json({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   create,
   list,
@@ -172,4 +296,9 @@ module.exports = {
   getProjectDeployments,
   getDeploymentStatus,
   streamLogs,
+  detectFramework,
+  applyDetectedPreset,
+  rollbackDeployment,
+  getTelemetry,
+  executeTerminal,
 };

@@ -1,0 +1,216 @@
+.eh-web-terminal-container {
+  width: 100%;
+  margin: 0 auto;
+}
+
+.eh-terminal-window {
+  background: #0d0e11;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  height: 600px;
+}
+
+.eh-terminal-titlebar {
+  background: #16181d;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.eh-terminal-dots {
+  display: flex;
+  gap: 8px;
+}
+
+.eh-terminal-dots .dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+}
+
+.eh-terminal-dots .dot.red { background: #ef4444; }
+.eh-terminal-dots .dot.yellow { background: #f59e0b; }
+.eh-terminal-dots .dot.green { background: #10b981; }
+
+.eh-terminal-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: monospace;
+  font-size: 0.85rem;
+  color: #a1a1aa;
+}
+
+.eh-terminal-clear-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #a1a1aa;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.eh-terminal-clear-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+}
+
+.eh-terminal-offline-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(239, 68, 68, 0.12);
+  border-bottom: 1px solid rgba(239, 68, 68, 0.25);
+  color: #fca5a5;
+  padding: 10px 18px;
+  font-size: 0.88rem;
+}
+
+.eh-terminal-quick-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  background: #111317;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  overflow-x: auto;
+}
+
+.eh-quick-label {
+  font-size: 0.75rem;
+  color: #71717a;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.eh-quick-cmd-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #d4d4d8;
+  font-family: monospace;
+  font-size: 0.8rem;
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: 0.15s ease;
+  white-space: nowrap;
+}
+
+.eh-quick-cmd-btn:hover:not(:disabled) {
+  background: rgba(255, 140, 0, 0.15);
+  border-color: rgba(255, 140, 0, 0.4);
+  color: #ff8c00;
+}
+
+.eh-quick-cmd-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.eh-terminal-screen {
+  flex: 1;
+  padding: 18px;
+  overflow-y: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: #e4e4e7;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.eh-terminal-row {
+  display: flex;
+  align-items: flex-start;
+  word-break: break-all;
+  white-space: pre-wrap;
+}
+
+.eh-terminal-prompt {
+  color: #10b981;
+  font-weight: 600;
+  margin-right: 8px;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.eh-terminal-row.command .eh-terminal-text {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.eh-terminal-row.output .eh-terminal-text {
+  color: #d4d4d8;
+}
+
+.eh-terminal-row.error .eh-terminal-text {
+  color: #f87171;
+}
+
+.eh-terminal-row.system .eh-terminal-text {
+  color: #60a5fa;
+  font-style: italic;
+}
+
+.eh-terminal-cursor {
+  color: #f59e0b;
+  font-style: italic;
+}
+
+.eh-terminal-input-bar {
+  display: flex;
+  align-items: center;
+  background: #14161b;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 10px 18px;
+}
+
+.eh-terminal-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.9rem;
+  color: #ffffff;
+}
+
+.eh-terminal-input::placeholder {
+  color: #52525b;
+}
+
+.eh-terminal-send-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  color: #e4e4e7;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.15s ease;
+}
+
+.eh-terminal-send-btn:hover:not(:disabled) {
+  background: #ff8c00;
+  color: #000;
+}
+
+.eh-terminal-send-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}

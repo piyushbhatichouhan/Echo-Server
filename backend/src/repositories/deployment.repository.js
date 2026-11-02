@@ -58,16 +58,29 @@ const getLatestDeployment = async (projectId) => {
 
   return result.rows[0];
 };
-const stopDeployments = async (projectId) => {
-  await pool.query(
-    `
-    UPDATE deployments
-    SET status = 'stopped'
-    WHERE project_id = $1
-      AND status = 'running'
-    `,
-    [projectId],
-  );
+const stopDeployments = async (projectId, exceptDeploymentId = null) => {
+  if (exceptDeploymentId) {
+    await pool.query(
+      `
+      UPDATE deployments
+      SET status = 'stopped'
+      WHERE project_id = $1
+        AND status = 'running'
+        AND id != $2
+      `,
+      [projectId, exceptDeploymentId],
+    );
+  } else {
+    await pool.query(
+      `
+      UPDATE deployments
+      SET status = 'stopped'
+      WHERE project_id = $1
+        AND status = 'running'
+      `,
+      [projectId],
+    );
+  }
 };
 
 const getProjectDeployments = async (projectId) => {
@@ -94,9 +107,7 @@ const getProjectDeployments = async (projectId) => {
 const getDeploymentById = async (deploymentId) => {
   const result = await pool.query(
     `
-    SELECT
-        id,
-        project_id
+    SELECT *
     FROM deployments
     WHERE id = $1
     `,

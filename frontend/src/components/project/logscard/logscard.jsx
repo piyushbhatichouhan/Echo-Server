@@ -4,6 +4,7 @@ import Card from "../../common/card/card";
 import { useRef } from "react";
 import { useEffect, useState } from "react";
 import Button from "../../common/button/button";
+import DeploymentStepper from "../deploymentstepper/DeploymentStepper";
 import {
   Rocket,
   RefreshCw,
@@ -13,8 +14,8 @@ import {
   Trash2,
   Terminal,
 } from "lucide-react";
- 
-export default function LogsCard({ logs, onClear }) {
+
+export default function LogsCard({ logs, onClear, status }) {
   const consoleRef = useRef(null);
 
   const bottomRef = useRef(null);
@@ -42,6 +43,8 @@ export default function LogsCard({ logs, onClear }) {
   return (
     <Card>
       <div className="eh-logs-card">
+        <DeploymentStepper status={status} logs={logs} />
+
         <div className="eh-logs-header">
           <div className="eh-logs-title">
             <h3>Deployment Logs</h3>

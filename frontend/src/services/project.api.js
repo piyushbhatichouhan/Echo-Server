@@ -23,3 +23,30 @@ export const deleteProject = async (id) => {
 
   return res.data;
 };
+
+export const detectFramework = async (projectId) => {
+  const res = await api.get(`/projects/${projectId}/detect-framework`);
+  return res.data.data;
+};
+
+export const applyDetectedPreset = async (projectId) => {
+  const res = await api.post(`/projects/${projectId}/apply-detected-preset`);
+  return res.data;
+};
+
+export const rollbackDeployment = async (projectId, deploymentId) => {
+  const res = await api.post(
+    `/projects/${projectId}/deployments/${deploymentId}/rollback`,
+  );
+  return res.data;
+};
+
+export const getContainerTelemetry = async (projectId) => {
+  const res = await api.get(`/projects/${projectId}/telemetry`);
+  return res.data.data;
+};
+
+export const executeTerminalCommand = async (projectId, command) => {
+  const res = await api.post(`/projects/${projectId}/terminal`, { command });
+  return res.data.data;
+};
