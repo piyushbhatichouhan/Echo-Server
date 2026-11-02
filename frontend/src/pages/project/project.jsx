@@ -166,7 +166,11 @@ export default function Project() {
           </>
         )}
         {activeTab === "files" && (
-          <FileBrowser adapter={projectWorkspace} workspaceId={id} />
+          <FileBrowser
+            adapter={projectWorkspace}
+            workspaceId={id}
+            onStorageChange={() => refresh?.()}
+          />
         )}
         {activeTab === "deployments" && (
           <>

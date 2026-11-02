@@ -19,3 +19,8 @@ export const updateQuota = (userId, quota) =>
   api.put(`/admin/users/${userId}/quota`, {
     quota,
   });
+
+export const getMyStorageStats = async () => {
+  const res = await api.get("/storage/my-stats");
+  return res.data.data;
+};

@@ -7,15 +7,19 @@ import Button from "../../components/common/button/button";
 import Modal from "../../components/common/modal/modal";
 import CreateProjectModal from "../../components/projects/createprojectmodal/createprojectmodal";
 import StorageStats from "../../components/cloud/StorageStats/StorageStats";
-import projectWorkspace from "../../services/projectWorkspace";
+import { getMyStorageStats } from "../../services/storage.api";
 export default function Projects() {
   const [open, setOpen] = useState(false);
 
   const [stats, setStats] = useState(null);
  
   const refreshStats = async () => {
-    const statsData = await projectWorkspace.getStats();
-    setStats(statsData);
+    try {
+      const statsData = await getMyStorageStats();
+      setStats(statsData);
+    } catch (e) {
+      console.error("Failed to load storage stats:", e);
+    }
   };
 
   useEffect(() => {

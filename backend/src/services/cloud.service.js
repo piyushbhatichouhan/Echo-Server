@@ -269,9 +269,9 @@ const updateFileContent = async (fileId, ownerId, content) => {
   await filesystem.writeContent(storagePath, content, "utf8");
 
   if (newSize > oldSize)
-    storageAllocation.reserveStorage(ownerId, newSize - oldSize);
+    await storageAllocation.reserveStorage(ownerId, newSize - oldSize);
   else if (newSize < oldSize)
-    storageAllocation.releaseStorage(ownerId, oldSize - newSize);
+    await storageAllocation.releaseStorage(ownerId, oldSize - newSize);
 
   await pool.query(
     `
@@ -367,9 +367,17 @@ const deleteFile = async (fileId, ownerId, permanent = false) => {
 
   const storagePath = resolveCloudStoragePath(ownerId, file.relative_path);
 
-  await filesystem.removeDiskFile(storagePath);
+  try {
+    await filesystem.removeDiskFile(storagePath);
+  } catch (err) {
+    console.warn("Could not delete cloud file from disk:", storagePath, err.message);
+  }
 
-  await storageAllocation.releaseStorage(ownerId, file.file_size);
+  const freedBytes = Number(file.file_size || 0);
+  if (freedBytes > 0) {
+    await storageAllocation.releaseStorage(ownerId, freedBytes);
+  }
+
   await pool.query(
     `
     DELETE FROM cloud_files
@@ -654,9 +662,17 @@ const deleteFolder = async (ownerId, folderPath, permanent = false) => {
     try {
       const storagePath = resolveCloudStoragePath(ownerId, file.relative_path);
       await filesystem.removeDiskFile(storagePath);
-      await storageAllocation.releaseStorage(ownerId, file.file_size);
     } catch (err) {
-      console.warn("Could not delete:", file.storage_path, err.message);
+      console.warn("Could not delete from disk:", file.storage_path, err.message);
+    }
+
+    const freedBytes = Number(file.file_size || 0);
+    if (freedBytes > 0) {
+      try {
+        await storageAllocation.releaseStorage(ownerId, freedBytes);
+      } catch (err) {
+        console.error("Error releasing storage:", err);
+      }
     }
   }
 
@@ -1120,10 +1136,10 @@ const emptyTrash = async (ownerId) => {
       try {
         const storagePath = resolveCloudStoragePath(ownerId, file.relative_path);
         await filesystem.removeDiskFile(storagePath);
-        totalBytesFreed += Number(file.file_size || 0);
       } catch (err) {
         console.warn("Could not delete trashed file:", file.relative_path, err);
       }
+      totalBytesFreed += Number(file.file_size || 0);
     }
   }
 

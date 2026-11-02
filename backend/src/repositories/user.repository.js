@@ -167,24 +167,28 @@ const updateUserQuota = async (userId, quotaBytes) => {
 };
 
 const incrementUsedBytes = async (userId, bytes) => {
+  const safeBytes = Math.max(0, Number(bytes) || 0);
+  if (safeBytes === 0) return;
   await pool.query(
     `
         UPDATE users
-        SET used_bytes = used_bytes + $2
+        SET used_bytes = COALESCE(used_bytes, 0) + $2
         WHERE id = $1
         `,
-    [userId, bytes],
+    [userId, safeBytes],
   );
 };
 
 const decrementUsedBytes = async (userId, bytes) => {
+  const safeBytes = Math.max(0, Number(bytes) || 0);
+  if (safeBytes === 0) return;
   await pool.query(
     `
         UPDATE users
-        SET used_bytes = GREATEST(0, used_bytes - $2)
+        SET used_bytes = GREATEST(0, COALESCE(used_bytes, 0) - $2)
         WHERE id = $1
         `,
-    [userId, bytes],
+    [userId, safeBytes],
   );
 };
 

@@ -5,6 +5,8 @@ const projectRepository = require("../repositories/project.repository");
 const storage = require("../config/storage");
 const os = require("os");
 const userRepository = require("../repositories/user.repository");
+const diskService = require("./disk.service");
+const { pool } = require("../config/database");
 
 const getOverview = async () => {
   const projects = await getStorageCategorySize(storage.projects);
@@ -52,7 +54,26 @@ const getUserStorageUsage = async (userId) => {
 
 const getUserStorageStats = async (userId) => {
   const user = await userRepository.getUserById(userId);
-  const projectsUsed = await getUserStorageUsage(userId);
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  let projectsUsed = await getUserStorageUsage(userId);
+  if (projectsUsed === 0) {
+    // Fallback to database files table if disk folders are empty or unmounted
+    const res = await pool.query(
+      `
+      SELECT COALESCE(SUM(f.file_size), 0) AS total
+      FROM files f
+      JOIN projects p ON f.project_id = p.id
+      WHERE p.owner_id = $1
+        AND f.is_directory = FALSE
+      `,
+      [userId],
+    );
+    projectsUsed = Number(res.rows[0]?.total || 0);
+  }
+
   const cloudRoot = path.join(storage.cloud, userId);
   let cloudUsed = 0;
 
@@ -61,13 +82,48 @@ const getUserStorageStats = async (userId) => {
   } catch {
     cloudUsed = 0;
   }
+
+  if (cloudUsed === 0) {
+    // Fallback to database cloud_files table
+    const res = await pool.query(
+      `
+      SELECT COALESCE(SUM(file_size), 0) AS total
+      FROM cloud_files
+      WHERE owner_id = $1
+        AND is_directory = FALSE
+        AND deleted_at IS NULL
+      `,
+      [userId],
+    );
+    cloudUsed = Number(res.rows[0]?.total || 0);
+  }
+
   const used = projectsUsed + cloudUsed;
 
-  const limit = user.quota_bytes == null ? 0 : Number(user.quota_bytes);
+  // Auto-synchronize users.used_bytes to ground truth
+  if (Number(user.used_bytes || 0) !== used) {
+    await pool.query(
+      `
+      UPDATE users
+      SET used_bytes = $2
+      WHERE id = $1
+      `,
+      [userId, used],
+    ).catch(() => {});
+  }
 
-  const free = Math.max(0, limit - used);
+  let limit;
+  let free;
 
-  const projects = await projectRepository.getProjectsByOwner(userId);
+  if (user.is_owner) {
+    // Owner is bound by server disk capacity
+    const disk = await diskService.getDiskInfo().catch(() => ({ size: 0, free: 0 }));
+    limit = disk.size || 0;
+    free = disk.free || 0;
+  } else {
+    limit = user.quota_bytes == null ? 0 : Number(user.quota_bytes);
+    free = Math.max(0, limit - used);
+  }
 
   return {
     used,
@@ -75,6 +131,7 @@ const getUserStorageStats = async (userId) => {
     free,
     projectsUsed,
     cloudUsed,
+    isOwner: !!user.is_owner,
   };
 };
 

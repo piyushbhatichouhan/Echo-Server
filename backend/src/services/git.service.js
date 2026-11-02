@@ -186,13 +186,37 @@ const connectRepository = async (projectId, ownerId, repositoryUrl, branch) => {
 };
 
 const disconnectRepository = async (projectId, ownerId) => {
-  const {
-    syncGitToWorkspace,
-    indexWorkspace,
-    syncWorkspaceToGit,
-  } = require("./workspace.sync.service");
   const { verifyProjectOwnership } = require("./project.service");
   await verifyProjectOwnership(projectId, ownerId);
+
+  const gitDirectory = getProjectGitDirectory(projectId);
+  let gitSize = 0;
+  try {
+    gitSize = await filesystem.calculateDirectorySize(gitDirectory);
+    await fs.rm(gitDirectory, {
+      recursive: true,
+      force: true,
+    });
+  } catch (err) {
+    console.warn("Could not delete git directory:", err.message);
+  }
+
+  if (gitSize > 0) {
+    await storageAllocation.releaseStorage(ownerId, gitSize).catch(() => {});
+  }
+
+  await pool.query(
+    `
+    UPDATE projects
+    SET
+        git_connected = FALSE,
+        git_branch = NULL,
+        git_remote_url = NULL,
+        updated_at = NOW()
+    WHERE id = $1
+    `,
+    [projectId],
+  );
 
   await pool.query(
     `
@@ -276,6 +300,7 @@ const cloneRepository = async (projectId, ownerId) => {
       force: true,
     });
     await storageAllocation.reserveStorage(ownerId, cloneSize);
+    reserved = true;
     await checkGit(projectId, "after clone");
 
     await syncGitToWorkspace(projectId);
