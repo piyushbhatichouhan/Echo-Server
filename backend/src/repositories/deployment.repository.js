@@ -33,6 +33,7 @@ const updateDeploymentStatus = async (deploymentId, status) => {
   UPDATE deployments
   SET
       status = $2,
+      port = CASE WHEN $2 IN ('stopped', 'failed') THEN NULL ELSE port END,
       updated_at = NOW()
   WHERE
       id = $1
@@ -63,7 +64,7 @@ const stopDeployments = async (projectId, exceptDeploymentId = null) => {
     await pool.query(
       `
       UPDATE deployments
-      SET status = 'stopped'
+      SET status = 'stopped', port = NULL
       WHERE project_id = $1
         AND status = 'running'
         AND id != $2
@@ -74,7 +75,7 @@ const stopDeployments = async (projectId, exceptDeploymentId = null) => {
     await pool.query(
       `
       UPDATE deployments
-      SET status = 'stopped'
+      SET status = 'stopped', port = NULL
       WHERE project_id = $1
         AND status = 'running'
       `,

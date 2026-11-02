@@ -41,8 +41,24 @@ const rejectUser = async (req, res, next) => {
   }
 };
 
+const portService = require("../services/port.service");
+
+const cleanupPorts = async (req, res, next) => {
+  try {
+    const released = await portService.cleanupPseudoPorts();
+    res.json({
+      success: true,
+      message: `Cleaned up ${released} pseudo-allocated ports.`,
+      releasedCount: released,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getPendingUsers,
   approveUser,
   rejectUser,
+  cleanupPorts,
 };

@@ -2,7 +2,7 @@ const deploymentRepository = require("../../../repositories/deployment.repositor
 const portService = require("../../port.service");
 
 const create = async (projectId, image, container) => {
-  const hostPort = await portService.getAvailablePort();
+  const hostPort = await portService.getAvailablePort(projectId);
 
   return deploymentRepository.createDeployment(
     projectId,

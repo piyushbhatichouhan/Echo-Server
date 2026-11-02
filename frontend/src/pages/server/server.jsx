@@ -1,8 +1,29 @@
 import "./server.css";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "../../context/ToastContext";
+import { cleanupPorts } from "../../services/server.api";
 
 export default function Server() {
   const navigate = useNavigate();
+  const toast = useToast();
+  const [cleaning, setCleaning] = useState(false);
+
+  const handleCleanupPorts = async () => {
+    if (cleaning) return;
+    try {
+      setCleaning(true);
+      const res = await cleanupPorts();
+      toast.success(
+        "Ports Cleaned",
+        res.message || `Cleaned ${res.releasedCount || 0} pseudo-allocated ports.`,
+      );
+    } catch (err) {
+      toast.error("Cleanup Failed", err.response?.data?.message || err.message);
+    } finally {
+      setCleaning(false);
+    }
+  };
 
   const cards = [
     {
@@ -22,6 +43,15 @@ export default function Server() {
       description: "View storage usage.",
       available: true,
       route: "/server/storage",
+    },
+    {
+      title: "Clean Ports",
+      description: cleaning
+        ? "Cleaning up allocated ports..."
+        : "Release pseudo-allocated and orphaned deployment ports.",
+      available: true,
+      onClick: handleCleanupPorts,
+      iconText: cleaning ? "..." : "⚡",
     },
     {
       title: "Logs",
@@ -57,7 +87,11 @@ export default function Server() {
             }`}
             onClick={() => {
               if (card.available) {
-                navigate(card.route);
+                if (card.onClick) {
+                  card.onClick();
+                } else if (card.route) {
+                  navigate(card.route);
+                }
               }
             }}
           >
@@ -67,7 +101,7 @@ export default function Server() {
               <p>{card.description}</p>
             </div>
 
-            <span>{card.available ? "→" : "Soon"}</span>
+            <span>{card.iconText || (card.available ? "→" : "Soon")}</span>
           </div>
         ))}
       </div>

@@ -14,3 +14,8 @@ export const rejectUser = async (id) => {
   const response = await api.post(`/server/users/${id}/reject`);
   return response.data;
 };
+
+export const cleanupPorts = async () => {
+  const response = await api.post("/server/cleanup-ports");
+  return response.data;
+};
