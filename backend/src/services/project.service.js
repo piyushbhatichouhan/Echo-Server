@@ -206,7 +206,15 @@ const deleteProjectInternal = async (projectId) => {
   return await deleteProjectRecord(projectId);
 };
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 const verifyProjectOwnership = async (projectId, ownerId) => {
+  if (!projectId || !UUID_REGEX.test(String(projectId))) {
+    const error = new Error("Invalid project ID");
+    error.status = 400;
+    throw error;
+  }
+
   const project = await pool.query(
     `
         SELECT id
