@@ -8,22 +8,41 @@ const normalizeRelativePath = (p) => p.split(path.sep).join("/");
 
 const syncGitToWorkspace = async (projectId) => {
   const gitDirectory = getProjectGitDirectory(projectId);
-
   const workspaceDirectory = getProjectFilesRoot(projectId);
 
-  // Remove old workspace completely
-  await fs.rm(workspaceDirectory, {
-    recursive: true,
-    force: true,
-  });
-
-  // Recreate it
   await fs.mkdir(workspaceDirectory, {
     recursive: true,
   });
 
-  // Copy everything except .git
-  await copyDirectory(gitDirectory, workspaceDirectory);
+  const syncDir = async (src, dest) => {
+    await fs.mkdir(dest, { recursive: true });
+    const entries = await fs.readdir(src, { withFileTypes: true });
+
+    for (const entry of entries) {
+      if (IGNORED_NAMES.has(entry.name)) {
+        continue;
+      }
+
+      const srcPath = path.join(src, entry.name);
+      const destPath = path.join(dest, entry.name);
+
+      if (entry.isDirectory()) {
+        await syncDir(srcPath, destPath);
+      } else {
+        try {
+          const destStat = await fs.stat(destPath);
+          const srcStat = await fs.stat(srcPath);
+          if (destStat.size !== srcStat.size || destStat.mtimeMs < srcStat.mtimeMs) {
+            await fs.copyFile(srcPath, destPath);
+          }
+        } catch {
+          await fs.copyFile(srcPath, destPath);
+        }
+      }
+    }
+  };
+
+  await syncDir(gitDirectory, workspaceDirectory);
 };
 
 const IGNORED_NAMES = new Set([

@@ -296,3 +296,158 @@
     }
 
 }
+
+/* ---------- Recent Commits Card ---------- */
+
+.eh-commits-card {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 24px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+}
+
+.eh-commits-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.eh-commits-title {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+}
+
+.eh-commits-title svg {
+    color: var(--accent);
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+.eh-commits-title h2 {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 4px 0;
+}
+
+.eh-commits-title p {
+    color: var(--text-secondary);
+    font-size: 0.88rem;
+    margin: 0;
+    line-height: 1.4;
+}
+
+.eh-commits-empty {
+    padding: 24px;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.88rem;
+    background: var(--bg-primary, #15171c);
+    border-radius: 8px;
+    border: 1px dashed var(--border);
+}
+
+.eh-commits-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.eh-commit-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 12px 16px;
+    background: var(--bg-primary, #15171c);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    transition: all 0.2s ease;
+}
+
+.eh-commit-item:hover {
+    border-color: rgba(255, 140, 0, 0.35);
+    background: rgba(255, 255, 255, 0.02);
+    transform: translateX(2px);
+}
+
+.eh-commit-item-left {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    min-width: 0;
+    flex: 1;
+}
+
+.eh-commit-icon {
+    color: var(--accent);
+    margin-top: 3px;
+    flex-shrink: 0;
+}
+
+.eh-commit-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.eh-commit-msg {
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.eh-commit-meta {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+}
+
+.eh-commit-author,
+.eh-commit-date {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.eh-commit-hash-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 8px;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.eh-commit-hash-btn:hover {
+    color: var(--text-primary);
+    border-color: var(--accent);
+    background: rgba(255, 140, 0, 0.1);
+}
+
+.eh-commit-short-hash {
+    font-family: 'JetBrains Mono', Consolas, Monaco, monospace;
+    font-weight: 600;
+    color: var(--accent);
+}
+
+.eh-commit-hash-btn svg.copied {
+    color: #2ecc71;
+}

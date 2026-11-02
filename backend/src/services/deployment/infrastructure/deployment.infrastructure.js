@@ -1,14 +1,36 @@
 const deploymentRepository = require("../../../repositories/deployment.repository");
 const portService = require("../../port.service");
+const gitOperations = require("../../../git/git.service");
+const { getGitRoot } = require("../../../storage/git.storage.manager");
 
-const create = async (projectId, image, container) => {
+const create = async (projectId, image, container, gitMeta = null) => {
   const hostPort = await portService.getAvailablePort(projectId);
+
+  let meta = gitMeta ? { ...gitMeta } : {};
+  if (!meta.commitHash) {
+    try {
+      const gitDir = getGitRoot(projectId);
+      const commits = await gitOperations.log(gitDir, 1);
+      const branches = await gitOperations.branches(gitDir);
+      if (commits && commits.length > 0) {
+        meta.commitHash = commits[0].hash;
+        meta.commitMessage = commits[0].message;
+        meta.commitAuthor = commits[0].author_name;
+      }
+      if (branches?.current) {
+        meta.gitBranch = branches.current;
+      }
+    } catch (e) {
+      // not a git project or empty
+    }
+  }
 
   return deploymentRepository.createDeployment(
     projectId,
     image,
     container,
     hostPort,
+    meta,
   );
 }; 
 
