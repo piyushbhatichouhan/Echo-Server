@@ -1,27 +1,57 @@
 const { pool } = require("../config/database");
 
-const createDeployment = async (projectId, imageName, containerName, port) => {
+const createDeployment = async (
+  projectId,
+  imageName,
+  containerName,
+  port,
+  gitMeta = {},
+) => {
+  const {
+    commitHash = null,
+    commitMessage = null,
+    commitAuthor = null,
+    gitBranch = null,
+  } = gitMeta || {};
+
   const result = await pool.query(
     `
     INSERT INTO deployments
-(
-    project_id,
-    image_name,
-    container_name,
-    port,
-    status
-)
-VALUES
-(
-    $1,
-    $2,
-    $3,
-    $4,
-    'building'
-)
-RETURNING *
+    (
+        project_id,
+        image_name,
+        container_name,
+        port,
+        status,
+        commit_hash,
+        commit_message,
+        commit_author,
+        git_branch
+    )
+    VALUES
+    (
+        $1,
+        $2,
+        $3,
+        $4,
+        'building',
+        $5,
+        $6,
+        $7,
+        $8
+    )
+    RETURNING *
     `,
-    [projectId, imageName, containerName, port],
+    [
+      projectId,
+      imageName,
+      containerName,
+      port,
+      commitHash,
+      commitMessage,
+      commitAuthor,
+      gitBranch,
+    ],
   );
 
   return result.rows[0];
@@ -93,6 +123,10 @@ const getProjectDeployments = async (projectId) => {
         container_name,
         port,
         status,
+        commit_hash,
+        commit_message,
+        commit_author,
+        git_branch,
         created_at,
         updated_at
     FROM deployments

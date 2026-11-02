@@ -44,13 +44,28 @@ function directory(path) {
   return parts.join("/") || "/";
 }
 
-export default function GitChangeItem({ change }) {
-  const status = STATUS[change.status];
+export default function GitChangeItem({ change, onViewDiff }) {
+  const status = STATUS[change.status] || {
+    label: change.status,
+    icon: FileText,
+    className: "modified",
+  };
 
   const Icon = status.icon;
 
   return (
-    <div className="eh-change-item">
+    <div
+      className="eh-change-item"
+      onClick={() => onViewDiff?.(change.path)}
+      title="Click to view diff"
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          onViewDiff?.(change.path);
+        }
+      }}
+    >
       <div className="eh-change-left">
         <FileText size={18} />
 
@@ -61,11 +76,14 @@ export default function GitChangeItem({ change }) {
         </div>
       </div>
 
-      <div className={`eh-change-status ${status.className}`}>
-        <Icon size={14} />
-
-        {status.label}
+      <div className="eh-change-right">
+        <div className={`eh-change-status ${status.className}`}>
+          <Icon size={14} />
+          {status.label}
+        </div>
+        <span className="eh-view-diff-hint">Diff</span>
       </div>
     </div>
   );
 }
+

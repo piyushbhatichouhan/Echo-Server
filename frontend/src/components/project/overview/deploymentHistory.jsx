@@ -2,7 +2,16 @@ import React, { useState } from "react";
 import "./deploymentHistory.css";
 
 import Card from "../../common/card/card";
-import { CheckCircle2, AlertCircle, Square, Hammer, Bomb, RotateCcw } from "lucide-react";
+import {
+  CheckCircle2,
+  AlertCircle,
+  Square,
+  Hammer,
+  Bomb,
+  RotateCcw,
+  GitCommit,
+  GitBranch,
+} from "lucide-react";
 import { rollbackDeployment } from "../../../services/project.api";
 import { useToast } from "../../../context/ToastContext";
 
@@ -78,9 +87,30 @@ export default function DeploymentHistory({
                   </div>
 
                   <div className="eh-history-center">
-                    <div className="eh-history-status">
-                      {deployment.status.replaceAll("_", " ").toUpperCase()}
+                    <div className="eh-history-status-row">
+                      <span className="eh-history-status">
+                        {deployment.status.replaceAll("_", " ").toUpperCase()}
+                      </span>
+                      {deployment.git_branch && (
+                        <span className="eh-history-branch">
+                          <GitBranch size={11} /> {deployment.git_branch}
+                        </span>
+                      )}
+                      {deployment.commit_hash && (
+                        <span
+                          className="eh-history-commit"
+                          title={deployment.commit_message || "Git commit"}
+                        >
+                          <GitCommit size={11} /> {deployment.commit_hash.slice(0, 7)}
+                        </span>
+                      )}
                     </div>
+
+                    {deployment.commit_message && (
+                      <div className="eh-history-commit-msg">
+                        {deployment.commit_message}
+                      </div>
+                    )}
 
                     <div className="eh-history-date">
                       {new Date(deployment.created_at).toLocaleString()}

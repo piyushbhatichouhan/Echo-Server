@@ -1,21 +1,10 @@
-const {
-  getRepository,
-  validateRepository,
-  connectRepository,
-  disconnectRepository,
-  cloneRepository,
-  commitChanges,
-  pullRepository,
-  pushRepository,
-  fetchRepository,
-} = require("../services/git.service");
 const gitService = require("../services/git.service");
-
 const { syncWorkspaceToGit } = require("../services/workspace.sync.service");
 
 const getProjectRepository = async (req, res, next) => {
   try {
-    const repository = await getRepository(req.params.id, req.user.id);
+    const projectId = req.params.id || req.params.projectId;
+    const repository = await gitService.getRepository(projectId, req.user.id);
 
     res.json({
       success: true,
@@ -28,11 +17,14 @@ const getProjectRepository = async (req, res, next) => {
 
 const validateProjectRepository = async (req, res, next) => {
   try {
-    const result = await validateRepository(
-      req.params.id,
+    const projectId = req.params.id || req.params.projectId;
+    const token = req.body.token || req.body.accessToken || null;
+    const result = await gitService.validateRepository(
+      projectId,
       req.user.id,
       req.body.url,
       req.body.branch,
+      token,
     );
 
     res.json({
@@ -46,11 +38,14 @@ const validateProjectRepository = async (req, res, next) => {
 
 const connectProjectRepository = async (req, res, next) => {
   try {
+    const projectId = req.params.id || req.params.projectId;
+    const token = req.body.token || req.body.accessToken || null;
     const repository = await gitService.connectRepository(
-      req.params.id,
+      projectId,
       req.user.id,
       req.body.url,
       req.body.branch,
+      token,
     );
 
     res.json({
@@ -64,7 +59,8 @@ const connectProjectRepository = async (req, res, next) => {
 
 const disconnectProjectRepository = async (req, res, next) => {
   try {
-    await disconnectRepository(req.params.id, req.user.id);
+    const projectId = req.params.id || req.params.projectId;
+    await gitService.disconnectRepository(projectId, req.user.id);
 
     res.json({
       success: true,
@@ -76,7 +72,8 @@ const disconnectProjectRepository = async (req, res, next) => {
 
 const cloneProjectRepository = async (req, res, next) => {
   try {
-    await cloneRepository(req.params.id, req.user.id);
+    const projectId = req.params.id || req.params.projectId;
+    await gitService.cloneRepository(projectId, req.user.id);
 
     res.json({
       success: true,
@@ -88,7 +85,8 @@ const cloneProjectRepository = async (req, res, next) => {
 
 const getProjectGitStatus = async (req, res, next) => {
   try {
-    const status = await gitService.getGitStatus(req.params.id, req.user.id);
+    const projectId = req.params.id || req.params.projectId;
+    const status = await gitService.getGitStatus(projectId, req.user.id);
 
     res.json({
       success: true,
@@ -101,6 +99,7 @@ const getProjectGitStatus = async (req, res, next) => {
 
 const commitProjectChanges = async (req, res, next) => {
   try {
+    const projectId = req.params.id || req.params.projectId;
     const { message } = req.body;
 
     if (!message || !message.trim()) {
@@ -109,11 +108,11 @@ const commitProjectChanges = async (req, res, next) => {
       throw error;
     }
 
-    // ⭐ Synchronize workspace → Git
-    await syncWorkspaceToGit(req.params.id);
+    // Synchronize workspace → Git
+    await syncWorkspaceToGit(projectId);
 
     const result = await gitService.commitChanges(
-      req.params.id,
+      projectId,
       req.user.id,
       message.trim(),
     );
@@ -129,8 +128,9 @@ const commitProjectChanges = async (req, res, next) => {
 
 const pullRepositoryController = async (req, res, next) => {
   try {
+    const projectId = req.params.id || req.params.projectId;
     const result = await gitService.pullRepository(
-      req.params.projectId,
+      projectId,
       req.user.id,
     );
 
@@ -142,8 +142,9 @@ const pullRepositoryController = async (req, res, next) => {
 
 const pushRepositoryController = async (req, res, next) => {
   try {
+    const projectId = req.params.id || req.params.projectId;
     const result = await gitService.pushRepository(
-      req.params.projectId,
+      projectId,
       req.user.id,
     );
 
@@ -155,12 +156,78 @@ const pushRepositoryController = async (req, res, next) => {
 
 const fetchRepositoryController = async (req, res, next) => {
   try {
+    const projectId = req.params.id || req.params.projectId;
     const result = await gitService.fetchRepository(
-      req.params.projectId,
+      projectId,
       req.user.id,
     );
 
     res.json(result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+const getProjectCommitsController = async (req, res, next) => {
+  try {
+    const projectId = req.params.id || req.params.projectId;
+    const limit = parseInt(req.query.limit, 10) || 15;
+    const commits = await gitService.getCommits(projectId, req.user.id, limit);
+
+    res.json({
+      success: true,
+      data: commits,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const getProjectBranchesController = async (req, res, next) => {
+  try {
+    const projectId = req.params.id || req.params.projectId;
+    const branches = await gitService.getBranches(projectId, req.user.id);
+
+    res.json({
+      success: true,
+      data: branches,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const switchProjectBranchController = async (req, res, next) => {
+  try {
+    const projectId = req.params.id || req.params.projectId;
+    const { branch } = req.body;
+    if (!branch) {
+      const error = new Error("Branch name is required");
+      error.status = 400;
+      throw error;
+    }
+
+    const result = await gitService.switchBranch(projectId, req.user.id, branch);
+
+    res.json({
+      success: true,
+      data: result,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const getProjectDiffController = async (req, res, next) => {
+  try {
+    const projectId = req.params.id || req.params.projectId;
+    const file = req.query.file || null;
+    const diff = await gitService.getDiff(projectId, req.user.id, file);
+
+    res.json({
+      success: true,
+      data: diff,
+    });
   } catch (err) {
     next(err);
   }
@@ -177,4 +244,8 @@ module.exports = {
   pullRepositoryController,
   pushRepositoryController,
   fetchRepositoryController,
+  getProjectCommitsController,
+  getProjectBranchesController,
+  switchProjectBranchController,
+  getProjectDiffController,
 };

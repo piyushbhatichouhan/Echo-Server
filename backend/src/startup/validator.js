@@ -65,6 +65,17 @@ async function checkDatabase() {
           ALTER TABLE project_settings ALTER COLUMN build_command SET DEFAULT '';
           ALTER TABLE project_settings ALTER COLUMN start_command SET DEFAULT '';
         END IF;
+
+        IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'deployments') THEN
+          ALTER TABLE deployments ADD COLUMN IF NOT EXISTS commit_hash VARCHAR(40);
+          ALTER TABLE deployments ADD COLUMN IF NOT EXISTS commit_message TEXT;
+          ALTER TABLE deployments ADD COLUMN IF NOT EXISTS commit_author VARCHAR(100);
+          ALTER TABLE deployments ADD COLUMN IF NOT EXISTS git_branch VARCHAR(100);
+        END IF;
+
+        IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'project_repository') THEN
+          ALTER TABLE project_repository ADD COLUMN IF NOT EXISTS access_token TEXT;
+        END IF;
       END $$;
     `);
   } catch (err) {

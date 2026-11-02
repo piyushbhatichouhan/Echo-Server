@@ -1,109 +1,159 @@
 .eh-commit-card {
-
-    display: flex;
-
-    flex-direction: column;
-
-    gap: 24px;
-
-    padding: 24px;
-
-    border-radius: var(--radius);
-
-    background: var(--bg-card);
-
-    border: 1px solid var(--border);
-
-    box-shadow: var(--shadow);
-
-}
- 
-.eh-commit-header {
-
-    display: flex;
-
-    gap: 14px;
-
-    align-items: center;
-
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 24px;
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
 }
 
-.eh-commit-header svg {
-
-    color: var(--accent);
-
+/* Sync Toolbar */
+.eh-sync-toolbar-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.eh-commit-header h2 {
-
-    font-size: 1.1rem;
-
-    margin-bottom: 4px;
-
+.eh-sync-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
-.eh-commit-header p {
-
-    color: var(--text-secondary);
-
-    font-size: .9rem;
-
+.eh-sync-branch-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: rgba(255, 140, 0, 0.1);
+  border: 1px solid rgba(255, 140, 0, 0.25);
+  color: var(--accent);
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-family: monospace;
 }
 
-.eh-commit-body {
-
-    display: flex;
-
-    flex-direction: column;
-
-    gap: 18px;
-
+.eh-sync-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  font-size: 0.78rem;
+  font-weight: 500;
 }
 
-.eh-commit-footer {
-
-    display: flex;
-
-    justify-content: flex-end;
-
+.eh-sync-pill.in-sync {
+  background: rgba(46, 204, 113, 0.12);
+  color: #2ecc71;
+  border: 1px solid rgba(46, 204, 113, 0.25);
 }
 
-.eh-sync-section {
-
-    border-top: 1px solid var(--border);
-
-    padding-top: 22px;
-
-    display: flex;
-
-    flex-direction: column;
-
-    gap: 16px;
-
-}
-
-.eh-sync-header h3 {
-
-    color: var(--text-primary);
-
-    margin-bottom: 4px;
-
-}
-
-.eh-sync-header p {
-
-    color: var(--text-secondary);
-
-    font-size: .9rem;
-
+.eh-sync-pill.out-of-sync {
+  background: rgba(241, 196, 15, 0.12);
+  color: #f1c40f;
+  border: 1px solid rgba(241, 196, 15, 0.25);
 }
 
 .eh-sync-actions {
-
-    display: flex;
-
-    gap: 12px;
-
-    flex-wrap: wrap;
-
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
 }
+
+.eh-sync-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.eh-sync-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px 6px;
+  border-radius: 9999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.eh-sync-badge.ahead {
+  background: rgba(46, 204, 113, 0.25);
+  color: #2ecc71;
+  border: 1px solid rgba(46, 204, 113, 0.4);
+}
+
+.eh-sync-badge.behind {
+  background: rgba(231, 76, 60, 0.25);
+  color: #e74c3c;
+  border: 1px solid rgba(231, 76, 60, 0.4);
+}
+
+.eh-spin {
+  animation: eh-spin-anim 1s linear infinite;
+}
+
+@keyframes eh-spin-anim {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.eh-commit-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 0;
+}
+
+/* Commit Section */
+.eh-commit-section {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.eh-commit-header {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.eh-commit-header svg {
+  color: var(--accent);
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.eh-commit-header h2 {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 4px 0;
+}
+
+.eh-commit-header p {
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.eh-commit-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.eh-commit-footer {
+  display: flex;
+  justify-content: flex-end;
+}

@@ -49,7 +49,7 @@ const getRepository = async (projectId, ownerId) => {
   return result.rows[0] ?? null;
 };
 
-const validateRepository = async (projectId, ownerId, url, branch) => {
+const validateRepository = async (projectId, ownerId, url, branch, token = null) => {
   const {
     syncGitToWorkspace,
     indexWorkspace,
@@ -67,9 +67,10 @@ const validateRepository = async (projectId, ownerId, url, branch) => {
   const owner = match[1];
   const repository = match[2];
 
-  const repo = await github.getRepository(owner, repository);
+  const repo = await github.getRepository(owner, repository, token);
 
-  const branchInfo = await github.getBranch(owner, repository, branch);
+  const selectedBranch = branch || repo.default_branch;
+  const branchInfo = await github.getBranch(owner, repository, selectedBranch, token);
 
   return {
     valid: true,
@@ -89,7 +90,7 @@ const validateRepository = async (projectId, ownerId, url, branch) => {
     branch: branchInfo.name,
   };
 };
-const connectRepository = async (projectId, ownerId, repositoryUrl, branch) => {
+const connectRepository = async (projectId, ownerId, repositoryUrl, branch, token = null) => {
   const {
     syncGitToWorkspace,
     indexWorkspace,
@@ -110,7 +111,7 @@ const connectRepository = async (projectId, ownerId, repositoryUrl, branch) => {
   const owner = match[1];
   const repositoryName = match[2];
 
-  const repo = await github.getRepository(owner, repositoryName);
+  const repo = await github.getRepository(owner, repositoryName, token);
 
   const selectedBranch = branch || repo.default_branch;
 
@@ -134,7 +135,8 @@ const connectRepository = async (projectId, ownerId, repositoryUrl, branch) => {
           repository_url=$5,
           clone_url=$6,
           default_branch=$7,
-          branch=$8
+          branch=$8,
+          access_token=$9
       WHERE project_id=$1
       RETURNING *
       `,
@@ -147,6 +149,7 @@ const connectRepository = async (projectId, ownerId, repositoryUrl, branch) => {
         repo.clone_url,
         repo.default_branch,
         selectedBranch,
+        token || null,
       ],
     );
 
@@ -164,10 +167,11 @@ const connectRepository = async (projectId, ownerId, repositoryUrl, branch) => {
         repository_url,
         clone_url,
         default_branch,
-        branch
+        branch,
+        access_token
     )
     VALUES
-    ($1,$2,$3,$4,$5,$6,$7,$8)
+    ($1,$2,$3,$4,$5,$6,$7,$8,$9)
     RETURNING *
     `,
     [
@@ -179,6 +183,7 @@ const connectRepository = async (projectId, ownerId, repositoryUrl, branch) => {
       repo.clone_url,
       repo.default_branch,
       selectedBranch,
+      token || null,
     ],
   );
 
@@ -271,6 +276,7 @@ const cloneRepository = async (projectId, ownerId) => {
     repository.clone_url,
     repository.branch,
     tempDirectory,
+    repository.access_token,
   );
 
   let reserved = false;
@@ -299,6 +305,15 @@ const cloneRepository = async (projectId, ownerId) => {
       recursive: true,
       force: true,
     });
+
+    if (repository.access_token) {
+      await gitOperations.setAuthRemote(
+        gitDirectory,
+        repository.clone_url,
+        repository.access_token,
+      );
+    }
+
     await storageAllocation.reserveStorage(ownerId, cloneSize);
     reserved = true;
     await checkGit(projectId, "after clone");
@@ -432,14 +447,13 @@ const commitChanges = async (projectId, ownerId, message) => {
   await verifyProjectOwnership(projectId, ownerId);
 
   const repository = await getRepository(projectId, ownerId);
+  if (!repository) {
+    throw new Error("Repository not connected");
+  }
 
   const gitDirectory = getProjectGitDirectory(projectId);
 
-  const statusBefore = await git.status();
-
   const result = await gitOperations.commit(gitDirectory, message);
-
-  const statusAfter = await git.status();
 
   return result;
 };
@@ -454,7 +468,20 @@ const pullRepository = async (projectId, ownerId) => {
 
   await verifyProjectOwnership(projectId, ownerId);
 
+  const repository = await getRepository(projectId, ownerId);
+  if (!repository) {
+    throw new Error("Repository not connected");
+  }
+
   const gitDirectory = getProjectGitDirectory(projectId);
+
+  if (repository.access_token) {
+    await gitOperations.setAuthRemote(
+      gitDirectory,
+      repository.clone_url,
+      repository.access_token,
+    );
+  }
 
   await gitOperations.pull(gitDirectory);
 
@@ -472,7 +499,20 @@ const pushRepository = async (projectId, ownerId) => {
 
   await verifyProjectOwnership(projectId, ownerId);
 
+  const repository = await getRepository(projectId, ownerId);
+  if (!repository) {
+    throw new Error("Repository not connected");
+  }
+
   const gitDirectory = getProjectGitDirectory(projectId);
+
+  if (repository.access_token) {
+    await gitOperations.setAuthRemote(
+      gitDirectory,
+      repository.clone_url,
+      repository.access_token,
+    );
+  }
 
   await gitOperations.push(gitDirectory);
 
@@ -486,7 +526,20 @@ const fetchRepository = async (projectId, ownerId) => {
 
   await verifyProjectOwnership(projectId, ownerId);
 
+  const repository = await getRepository(projectId, ownerId);
+  if (!repository) {
+    throw new Error("Repository not connected");
+  }
+
   const gitDirectory = getProjectGitDirectory(projectId);
+
+  if (repository.access_token) {
+    await gitOperations.setAuthRemote(
+      gitDirectory,
+      repository.clone_url,
+      repository.access_token,
+    );
+  }
 
   await gitOperations.fetch(gitDirectory);
 
@@ -512,6 +565,14 @@ const updateRepository = async (projectId, ownerId) => {
 
   const gitDirectory = getProjectGitDirectory(projectId);
 
+  if (repository.access_token) {
+    await gitOperations.setAuthRemote(
+      gitDirectory,
+      repository.clone_url,
+      repository.access_token,
+    );
+  }
+
   await gitOperations.resetHard(gitDirectory, repository.branch);
 
   await syncGitToWorkspace(projectId);
@@ -521,6 +582,86 @@ const updateRepository = async (projectId, ownerId) => {
   return {
     success: true,
   };
+};
+
+const getCommits = async (projectId, ownerId, limit = 15) => {
+  const { verifyProjectOwnership } = require("./project.service");
+  await verifyProjectOwnership(projectId, ownerId);
+
+  const repository = await getRepository(projectId, ownerId);
+  if (!repository) {
+    return [];
+  }
+
+  const gitDirectory = getProjectGitDirectory(projectId);
+  return await gitOperations.log(gitDirectory, limit);
+};
+
+const getBranches = async (projectId, ownerId) => {
+  const { verifyProjectOwnership } = require("./project.service");
+  await verifyProjectOwnership(projectId, ownerId);
+
+  const repository = await getRepository(projectId, ownerId);
+  if (!repository) {
+    return { current: "main", all: ["main"] };
+  }
+
+  const gitDirectory = getProjectGitDirectory(projectId);
+  return await gitOperations.branches(gitDirectory);
+};
+
+const switchBranch = async (projectId, ownerId, branch) => {
+  const { verifyProjectOwnership } = require("./project.service");
+  const {
+    syncGitToWorkspace,
+    indexWorkspace,
+  } = require("./workspace.sync.service");
+
+  await verifyProjectOwnership(projectId, ownerId);
+
+  const repository = await getRepository(projectId, ownerId);
+  if (!repository) {
+    throw new Error("Repository not connected");
+  }
+
+  const gitDirectory = getProjectGitDirectory(projectId);
+  await gitOperations.checkout(gitDirectory, branch);
+
+  await pool.query(
+    `
+    UPDATE project_repository
+    SET branch = $2
+    WHERE project_id = $1
+    `,
+    [projectId, branch],
+  );
+
+  await pool.query(
+    `
+    UPDATE projects
+    SET git_branch = $2, updated_at = NOW()
+    WHERE id = $1
+    `,
+    [projectId, branch],
+  );
+
+  await syncGitToWorkspace(projectId);
+  await indexWorkspace(projectId);
+
+  return { success: true, branch };
+};
+
+const getDiff = async (projectId, ownerId, file = null) => {
+  const { verifyProjectOwnership } = require("./project.service");
+  await verifyProjectOwnership(projectId, ownerId);
+
+  const repository = await getRepository(projectId, ownerId);
+  if (!repository) {
+    return "";
+  }
+
+  const gitDirectory = getProjectGitDirectory(projectId);
+  return await gitOperations.diff(gitDirectory, file);
 };
 
 module.exports = {
@@ -537,9 +678,11 @@ module.exports = {
   copyDirectory,
   updateRepository,
   pullRepository,
-
   pushRepository,
-
   fetchRepository,
   checkGit,
+  getCommits,
+  getBranches,
+  switchBranch,
+  getDiff,
 };
