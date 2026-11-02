@@ -1225,6 +1225,118 @@ const extractArchive = async (ownerId, relativePath, destination = "") => {
   };
 };
 
+const compressCloudPaths = async (
+  ownerId,
+  items,
+  zipName = "archive.zip",
+  destination = "",
+) => {
+  if (!Array.isArray(items) || items.length === 0) {
+    const error = new Error("No items selected to compress");
+    error.status = 400;
+    throw error;
+  }
+
+  let finalName = (zipName || "archive.zip").trim();
+  if (!finalName.toLowerCase().endsWith(".zip")) {
+    finalName += ".zip";
+  }
+
+  const destFolder = destination ? normalizeRelativePath(destination) : "";
+  const targetRelative = destFolder
+    ? relativeJoin(destFolder, finalName)
+    : finalName;
+  const targetDiskPath = resolveCloudStoragePath(ownerId, targetRelative);
+
+  const zip = new AdmZip();
+  for (const item of items) {
+    const rel = normalizeRelativePath(
+      item.relativePath || item.path || item.relative_path || "",
+    );
+    if (!rel) continue;
+    const isDir =
+      item.isDirectory !== undefined ? item.isDirectory : item.type === "folder";
+    const itemDiskPath = resolveCloudStoragePath(ownerId, rel);
+    const bName = relativeBasename(rel);
+
+    if (isDir) {
+      zip.addLocalFolder(itemDiskPath, bName);
+    } else {
+      zip.addLocalFile(itemDiskPath, "", bName);
+    }
+  }
+
+  const buffer = zip.toBuffer();
+  await storageAllocation.checkQuota(ownerId, buffer.length);
+  await filesystem.ensureDirectory(path.dirname(targetDiskPath));
+  await fs.writeFile(targetDiskPath, buffer);
+
+  const existing = await pool.query(
+    `SELECT id FROM cloud_files WHERE owner_id = $1 AND relative_path = $2`,
+    [ownerId, targetRelative],
+  );
+
+  if (existing.rows.length > 0) {
+    await pool.query(
+      `UPDATE cloud_files SET file_size = $1, storage_path = $2, deleted_at = NULL, updated_at = NOW() WHERE id = $3`,
+      [buffer.length, targetDiskPath, existing.rows[0].id],
+    );
+  } else {
+    await pool.query(
+      `INSERT INTO cloud_files
+       (owner_id, original_name, relative_path, stored_name, mime_type, file_size, storage_path, is_directory)
+       VALUES ($1, $2, $3, $4, 'application/zip', $5, $6, FALSE)`,
+      [
+        ownerId,
+        finalName,
+        targetRelative,
+        finalName,
+        buffer.length,
+        targetDiskPath,
+      ],
+    );
+  }
+
+  await storageAllocation.reserveStorage(ownerId, buffer.length);
+
+  return {
+    success: true,
+    fileName: finalName,
+    relativePath: targetRelative,
+    size: buffer.length,
+  };
+};
+
+const searchCloudFiles = async (ownerId, query) => {
+  if (!query || !query.trim()) {
+    return [];
+  }
+
+  const searchTerm = `%${query.trim()}%`;
+  const result = await pool.query(
+    `
+    SELECT
+      id,
+      original_name,
+      relative_path,
+      file_size,
+      mime_type,
+      is_directory,
+      updated_at,
+      created_at
+    FROM cloud_files
+    WHERE owner_id = $1
+      AND deleted_at IS NULL
+      AND (original_name ILIKE $2 OR relative_path ILIKE $2)
+    ORDER BY is_directory DESC, original_name ASC
+    LIMIT 100
+    `,
+    [ownerId, searchTerm],
+  );
+
+  return result.rows;
+};
+
 module.exports = {
   uploadCloudFile,
   getCloudFiles,
@@ -1248,4 +1360,6 @@ module.exports = {
   restoreFromTrash,
   emptyTrash,
   extractArchive,
+  compressCloudPaths,
+  searchCloudFiles,
 };

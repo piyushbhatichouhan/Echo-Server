@@ -44,5 +44,7 @@ router.get("/trash", authenticate, cloudController.getTrash);
 router.post("/trash/restore", authenticate, cloudController.restoreFromTrash);
 router.delete("/trash/empty", authenticate, cloudController.emptyTrash);
 router.post("/extract", authenticate, cloudController.extractArchive);
+router.post("/compress", authenticate, cloudController.compressCloudPaths);
+router.get("/search", authenticate, cloudController.searchCloudFiles);
 
 module.exports = router;

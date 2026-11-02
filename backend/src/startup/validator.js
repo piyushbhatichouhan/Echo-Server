@@ -76,6 +76,10 @@ async function checkDatabase() {
         IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'project_repository') THEN
           ALTER TABLE project_repository ADD COLUMN IF NOT EXISTS access_token TEXT;
         END IF;
+
+        IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'files') THEN
+          ALTER TABLE files ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP;
+        END IF;
       END $$;
     `);
   } catch (err) {

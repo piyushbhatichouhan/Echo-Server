@@ -20,4 +20,13 @@ export const createFileWorkspace = (adapter) => ({
   cutPath: adapter.cutPath,
   pastePath: adapter.pastePath,
   extractArchive: adapter.extractArchive,
+
+  compressPaths: adapter.compressPaths,
+  searchFiles: adapter.searchFiles,
+  getTrash: adapter.getTrash,
+  restoreTrash: adapter.restoreTrash,
+  emptyTrash: adapter.emptyTrash,
+  exportToCloud: adapter.exportToCloud,
+  importToProject: adapter.importToProject,
+  isCloud: adapter.isCloud || false,
 });

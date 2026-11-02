@@ -20,6 +20,8 @@ import {
   getCloudTrash,
   restoreCloudTrash,
   emptyCloudTrash,
+  compressCloudPaths,
+  searchCloudFiles,
 } from "./cloud.api";
 import { copyCloudPath, cutCloudPath, pasteCloudPath } from "./cloud.api";
 
@@ -44,7 +46,7 @@ export default createFileWorkspace({
 
   downloadFile: downloadCloudFile,
   downloadPaths: async (_, items) => downloadCloudPaths(items),
-  deletePath: async (_, item) => {
+  deletePath: async (_, item, permanent = false) => {
     if (item.type === "folder") {
       return deleteCloudFolder(item.path);
     }
@@ -53,7 +55,7 @@ export default createFileWorkspace({
       return deleteCloudFile(item.file.id);
     }
 
-    return deleteCloudPaths([{ relativePath: item.path, type: item.type }]);
+    return deleteCloudPaths([{ relativePath: item.path, type: item.type }], permanent);
   },
 
   renamePath: async (_, item, newName) => {
@@ -78,7 +80,7 @@ export default createFileWorkspace({
   pastePath: async (_, clipboard, destination) =>
     pasteCloudPath(clipboard, destination),
 
-  deletePaths: async (_, items) => deleteCloudPaths(items),
+  deletePaths: async (_, items, permanent = false) => deleteCloudPaths(items, permanent),
 
   extractArchive: async (_, relativePath, destination) =>
     extractCloudArchive(relativePath, destination),
@@ -86,4 +88,9 @@ export default createFileWorkspace({
   getTrash: getCloudTrash,
   restoreTrash: restoreCloudTrash,
   emptyTrash: emptyCloudTrash,
+
+  compressPaths: async (_, items, zipName, destination) =>
+    compressCloudPaths(items, zipName, destination),
+  searchFiles: async (_, query) => searchCloudFiles(query),
+  isCloud: true,
 });
