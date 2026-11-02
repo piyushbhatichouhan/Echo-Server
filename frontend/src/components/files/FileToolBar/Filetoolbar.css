@@ -237,3 +237,87 @@
 .cloud-search-box svg {
     color: #ffb24c;
 }
+
+.cloud-toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.view-mode-toggle {
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 3px;
+    gap: 3px;
+}
+
+.view-toggle-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 7px;
+    background: transparent;
+    border: none;
+    color: rgba(245, 233, 216, 0.55);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.view-toggle-btn:hover {
+    color: #f5e9d8;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.view-toggle-btn.active {
+    background: var(--accent, #ff9b30);
+    color: #1a130d;
+}
+
+.cloud-btn.icon-only {
+    padding: 10px;
+    border-radius: 10px;
+}
+
+.cloud-btn.icon-only.active {
+    background: linear-gradient(180deg, #ff9b30, #ea7f18);
+    color: #1a130d;
+    border-color: #ff9b30;
+}
+
+.cloud-btn.icon-only.active svg {
+    color: #1a130d;
+}
+
+.cloud-btn.trash-btn:hover {
+    border-color: rgba(239, 68, 68, 0.4);
+    box-shadow: 0 0 14px rgba(239, 68, 68, 0.2);
+}
+
+.global-search-badge {
+    background: rgba(255, 155, 48, 0.15);
+    border: 1px solid rgba(255, 155, 48, 0.3);
+    color: var(--accent, #ff9b30);
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 7px;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    transition: all 0.15s ease;
+}
+
+.global-search-badge:hover {
+    background: var(--accent, #ff9b30);
+    color: #1a130d;
+}
+
+.global-search-badge.active {
+    background: var(--accent, #ff9b30);
+    color: #1a130d;
+}

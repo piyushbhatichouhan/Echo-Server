@@ -1,0 +1,83 @@
+.file-props-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.file-props-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+}
+
+.file-props-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.file-props-avatar.folder {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--accent, #f59e0b);
+}
+
+.file-props-avatar.file {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+}
+
+.file-props-title h3 {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary, #fff);
+  word-break: break-all;
+}
+
+.file-props-title span {
+  font-size: 0.8rem;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.file-props-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.file-props-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.88rem;
+}
+
+.file-props-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-secondary, #94a3b8);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.file-props-val {
+  color: var(--text-primary, #e2e8f0);
+  text-align: right;
+  word-break: break-all;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 0.85rem;
+}
+
+.file-props-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+}

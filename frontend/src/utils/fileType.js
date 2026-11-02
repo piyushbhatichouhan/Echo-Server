@@ -7,7 +7,6 @@ const TEXT_EXTENSIONS = [
   "css",
   "scss",
   "html",
-  "md",
   "txt",
   "cpp",
   "c",
@@ -21,7 +20,12 @@ const TEXT_EXTENSIONS = [
   "yaml",
   "xml",
   "env",
+  "sql",
+  "sh",
+  "bash",
 ];
+
+const MARKDOWN_EXTENSIONS = ["md", "markdown"];
 
 const IMAGE_EXTENSIONS = [
   "png",
@@ -36,7 +40,11 @@ const IMAGE_EXTENSIONS = [
 
 const PDF_EXTENSIONS = ["pdf"];
 
-export function getFileType(filename) {
+const VIDEO_EXTENSIONS = ["mp4", "webm", "ogg", "mov", "mkv"];
+
+const AUDIO_EXTENSIONS = ["mp3", "wav", "ogg", "m4a", "flac", "aac"];
+
+export function getFileType(filename = "") {
   const parts = filename.split(".");
 
   const extension =
@@ -48,6 +56,18 @@ export function getFileType(filename) {
 
   if (PDF_EXTENSIONS.includes(extension)) {
     return "pdf";
+  }
+
+  if (VIDEO_EXTENSIONS.includes(extension)) {
+    return "video";
+  }
+
+  if (AUDIO_EXTENSIONS.includes(extension)) {
+    return "audio";
+  }
+
+  if (MARKDOWN_EXTENSIONS.includes(extension)) {
+    return "markdown";
   }
 
   if (

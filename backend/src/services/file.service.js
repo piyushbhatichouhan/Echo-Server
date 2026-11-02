@@ -15,8 +15,10 @@ const { syncWorkspaceToGit } = require("./workspace.sync.service");
 
 const { getProjectGitDirectory } = require("../services/git.service");
 const filesystem = require("./filesystem.service");
+const workspace = require("./workspace.service");
 const workspaceFileService = require("./workspace.file.service");
 const storageAllocation = require("./storageAllocation.service");
+const { resolveCloudStoragePath } = require("../utils/storagePath");
 const {
   normalizeRelativePath,
   relativeDirname,
@@ -166,7 +168,7 @@ const getProjectFiles = async (projectId, ownerId) => {
     file_size,
     created_at
         FROM files
-        WHERE project_id = $1
+        WHERE project_id = $1 AND deleted_at IS NULL
         ORDER BY created_at DESC
         `,
     [projectId],
@@ -632,9 +634,34 @@ const createEmptyFile = async (projectId, ownerId, relativePath) => {
   return result.rows[0];
 };
 
-const deletePath = async (projectId, ownerId, relativePath, type) => {
+const deletePath = async (projectId, ownerId, relativePath, type, permanent = false) => {
   const { verifyProjectOwnership } = require("./project.service");
   await verifyProjectOwnership(projectId, ownerId);
+
+  const dirPrefix = relativePath.endsWith("/") ? relativePath : `${relativePath}/`;
+
+  if (!permanent) {
+    if (type === "file") {
+      await pool.query(
+        `
+        UPDATE files
+        SET deleted_at = NOW()
+        WHERE project_id = $1 AND relative_path = $2
+        `,
+        [projectId, relativePath],
+      );
+    } else {
+      await pool.query(
+        `
+        UPDATE files
+        SET deleted_at = NOW()
+        WHERE project_id = $1 AND (relative_path = $2 OR relative_path LIKE $3)
+        `,
+        [projectId, relativePath, `${dirPrefix}%`],
+      );
+    }
+    return { success: true, movedToTrash: true };
+  }
 
   if (type === "file") {
     const result = await pool.query(
@@ -679,7 +706,7 @@ const deletePath = async (projectId, ownerId, relativePath, type) => {
       [file.id],
     );
 
-    return;
+    return { success: true };
   }
 
   const folderPath = resolveProjectStoragePath(projectId, relativePath);
@@ -690,7 +717,6 @@ const deletePath = async (projectId, ownerId, relativePath, type) => {
     folderSize = 0;
   }
 
-  const dirPrefix = relativePath.endsWith("/") ? relativePath : `${relativePath}/`;
   const dbSizeRes = await pool.query(
     `
     SELECT COALESCE(SUM(file_size), 0) AS total_size
@@ -726,6 +752,7 @@ const deletePath = async (projectId, ownerId, relativePath, type) => {
     `,
     [projectId, relativePath, `${dirPrefix}%`],
   );
+  return { success: true };
 };
 
 const copyPath = async (projectId, ownerId, relativePath, type) => {
@@ -1079,7 +1106,7 @@ const getFileForDownload = async (fileId, ownerId) => {
   };
 };
 
-const deletePaths = async (projectId, ownerId, items) => {
+const deletePaths = async (projectId, ownerId, items, permanent = false) => {
   const { verifyProjectOwnership } = require("./project.service");
   await verifyProjectOwnership(projectId, ownerId);
 
@@ -1095,7 +1122,7 @@ const deletePaths = async (projectId, ownerId, items) => {
       continue;
     }
 
-    await deletePath(projectId, ownerId, relativePath, item.type);
+    await deletePath(projectId, ownerId, relativePath, item.type, permanent);
   }
 
   return {
@@ -1280,6 +1307,443 @@ const extractArchive = async (projectId, ownerId, relativePath, destination = ""
   };
 };
 
+const getProjectTrash = async (projectId, ownerId) => {
+  const { verifyProjectOwnership } = require("./project.service");
+  await verifyProjectOwnership(projectId, ownerId);
+
+  const result = await pool.query(
+    `
+    SELECT
+      id,
+      original_name,
+      relative_path,
+      file_size,
+      mime_type,
+      is_directory,
+      deleted_at
+    FROM files
+    WHERE project_id = $1
+      AND deleted_at IS NOT NULL
+    ORDER BY deleted_at DESC
+    `,
+    [projectId],
+  );
+
+  return result.rows;
+};
+
+const restoreProjectTrash = async (projectId, ownerId, fileId) => {
+  const { verifyProjectOwnership } = require("./project.service");
+  await verifyProjectOwnership(projectId, ownerId);
+
+  const fileRes = await pool.query(
+    `SELECT * FROM files WHERE id = $1 AND project_id = $2`,
+    [fileId, projectId],
+  );
+  if (fileRes.rows.length === 0) {
+    const error = new Error("File not found in trash");
+    error.status = 404;
+    throw error;
+  }
+  const file = fileRes.rows[0];
+
+  if (file.is_directory) {
+    const dirPrefix = file.relative_path.endsWith("/")
+      ? file.relative_path
+      : `${file.relative_path}/`;
+
+    const result = await pool.query(
+      `
+      UPDATE files
+      SET deleted_at = NULL
+      WHERE project_id = $1
+        AND (relative_path = $2 OR relative_path LIKE $3)
+      RETURNING *
+      `,
+      [projectId, file.relative_path, `${dirPrefix}%`],
+    );
+    return { success: true, restored: result.rows };
+  }
+
+  const result = await pool.query(
+    `
+    UPDATE files
+    SET deleted_at = NULL
+    WHERE id = $1 AND project_id = $2
+    RETURNING *
+    `,
+    [fileId, projectId],
+  );
+  return { success: true, restored: result.rows[0] };
+};
+
+const emptyProjectTrash = async (projectId, ownerId) => {
+  const { verifyProjectOwnership } = require("./project.service");
+  await verifyProjectOwnership(projectId, ownerId);
+
+  const result = await pool.query(
+    `
+    DELETE FROM files
+    WHERE project_id = $1 AND deleted_at IS NOT NULL
+    RETURNING id, relative_path, file_size, storage_path, is_directory
+    `,
+    [projectId],
+  );
+
+  const trashed = result.rows;
+  let totalBytesFreed = 0;
+
+  for (const file of trashed) {
+    const storagePath = resolveProjectStoragePath(projectId, file.relative_path);
+    if (file.is_directory) {
+      try {
+        await fs.rm(storagePath, { recursive: true, force: true });
+      } catch (err) {
+        console.warn("Could not delete trashed folder from disk:", storagePath, err.message);
+      }
+    } else {
+      try {
+        await filesystem.removeDiskFile(storagePath);
+      } catch (err) {
+        console.warn("Could not delete trashed file from disk:", storagePath, err.message);
+      }
+      totalBytesFreed += Number(file.file_size || 0);
+    }
+  }
+
+  if (totalBytesFreed > 0) {
+    await storageAllocation.releaseStorage(ownerId, totalBytesFreed);
+  }
+
+  return {
+    success: true,
+    purgedCount: trashed.length,
+    freedBytes: totalBytesFreed,
+  };
+};
+
+const compressProjectPaths = async (
+  projectId,
+  ownerId,
+  items,
+  zipName = "archive.zip",
+  destination = "",
+) => {
+  const { verifyProjectOwnership } = require("./project.service");
+  await verifyProjectOwnership(projectId, ownerId);
+
+  if (!Array.isArray(items) || items.length === 0) {
+    const error = new Error("No items selected to compress");
+    error.status = 400;
+    throw error;
+  }
+
+  let finalName = (zipName || "archive.zip").trim();
+  if (!finalName.toLowerCase().endsWith(".zip")) {
+    finalName += ".zip";
+  }
+
+  const destFolder = destination ? normalizeRelativePath(destination) : "";
+  const targetRelative = destFolder
+    ? relativeJoin(destFolder, finalName)
+    : finalName;
+  const targetDiskPath = resolveProjectStoragePath(projectId, targetRelative);
+
+  const zip = new AdmZip();
+  for (const item of items) {
+    const rel = normalizeRelativePath(
+      item.relativePath || item.path || item.relative_path || "",
+    );
+    if (!rel) continue;
+    const isDir =
+      item.isDirectory !== undefined ? item.isDirectory : item.type === "folder";
+    const itemDiskPath = resolveProjectStoragePath(projectId, rel);
+    const bName = relativeBasename(rel);
+
+    if (isDir) {
+      zip.addLocalFolder(itemDiskPath, bName);
+    } else {
+      zip.addLocalFile(itemDiskPath, "", bName);
+    }
+  }
+
+  const buffer = zip.toBuffer();
+  await storageAllocation.checkQuota(ownerId, buffer.length);
+  await filesystem.ensureDirectory(path.dirname(targetDiskPath));
+  await fs.writeFile(targetDiskPath, buffer);
+
+  const existing = await pool.query(
+    `SELECT id FROM files WHERE project_id = $1 AND relative_path = $2`,
+    [projectId, targetRelative],
+  );
+
+  if (existing.rows.length > 0) {
+    await pool.query(
+      `UPDATE files SET file_size = $1, storage_path = $2, deleted_at = NULL, updated_at = NOW() WHERE id = $3`,
+      [buffer.length, targetDiskPath, existing.rows[0].id],
+    );
+  } else {
+    await pool.query(
+      `INSERT INTO files
+       (project_id, original_name, relative_path, stored_name, mime_type, file_size, storage_path, is_directory)
+       VALUES ($1, $2, $3, $4, 'application/zip', $5, $6, FALSE)`,
+      [
+        projectId,
+        finalName,
+        targetRelative,
+        finalName,
+        buffer.length,
+        targetDiskPath,
+      ],
+    );
+  }
+
+  await storageAllocation.reserveStorage(ownerId, buffer.length);
+
+  return {
+    success: true,
+    fileName: finalName,
+    relativePath: targetRelative,
+    size: buffer.length,
+  };
+};
+
+const searchProjectFiles = async (projectId, ownerId, query) => {
+  const { verifyProjectOwnership } = require("./project.service");
+  await verifyProjectOwnership(projectId, ownerId);
+
+  if (!query || !query.trim()) {
+    return [];
+  }
+
+  const searchTerm = `%${query.trim()}%`;
+  const result = await pool.query(
+    `
+    SELECT
+      id,
+      original_name,
+      relative_path,
+      file_size,
+      mime_type,
+      is_directory,
+      updated_at,
+      created_at
+    FROM files
+    WHERE project_id = $1
+      AND deleted_at IS NULL
+      AND (original_name ILIKE $2 OR relative_path ILIKE $2)
+    ORDER BY is_directory DESC, original_name ASC
+    LIMIT 100
+    `,
+    [projectId, searchTerm],
+  );
+
+  return result.rows;
+};
+
+const exportProjectToCloud = async (
+  projectId,
+  ownerId,
+  items,
+  destination = "",
+) => {
+  const { verifyProjectOwnership } = require("./project.service");
+  await verifyProjectOwnership(projectId, ownerId);
+
+  if (!Array.isArray(items) || items.length === 0) {
+    const error = new Error("No items selected for export");
+    error.status = 400;
+    throw error;
+  }
+
+  await workspace.ensureCloudWorkspace(ownerId);
+  const destFolder = destination ? normalizeRelativePath(destination) : "";
+  let transferredCount = 0;
+
+  for (const item of items) {
+    const srcRelative = normalizeRelativePath(
+      item.relativePath || item.path || item.relative_path || "",
+    );
+    if (!srcRelative) continue;
+    const isDir =
+      item.isDirectory !== undefined ? item.isDirectory : item.type === "folder";
+    const srcStorage = resolveProjectStoragePath(projectId, srcRelative);
+    const bName = relativeBasename(srcRelative);
+    const targetRelative = destFolder ? relativeJoin(destFolder, bName) : bName;
+    const targetStorage = resolveCloudStoragePath(ownerId, targetRelative);
+
+    if (isDir) {
+      const folderSize = await filesystem.calculateDirectorySize(srcStorage);
+      await storageAllocation.checkQuota(ownerId, folderSize);
+      await filesystem.copyDirectory(srcStorage, targetStorage);
+
+      const rows = await pool.query(
+        `SELECT * FROM files WHERE project_id = $1 AND (relative_path = $2 OR relative_path LIKE $3) AND deleted_at IS NULL`,
+        [projectId, srcRelative, `${srcRelative}/%`],
+      );
+
+      for (const row of rows.rows) {
+        const subRel =
+          row.relative_path === srcRelative
+            ? targetRelative
+            : targetRelative + row.relative_path.substring(srcRelative.length);
+        const subStorage = resolveCloudStoragePath(ownerId, subRel);
+        await pool.query(
+          `INSERT INTO cloud_files
+           (owner_id, original_name, relative_path, stored_name, mime_type, file_size, storage_path, is_directory)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+           ON CONFLICT DO NOTHING`,
+          [
+            ownerId,
+            relativeBasename(subRel),
+            subRel,
+            relativeBasename(subRel),
+            row.mime_type,
+            row.file_size,
+            subStorage,
+            row.is_directory,
+          ],
+        );
+      }
+      await storageAllocation.reserveStorage(ownerId, folderSize);
+      transferredCount++;
+    } else {
+      const stats = await fs.stat(srcStorage).catch(() => ({ size: 0 }));
+      const fileSize = stats.size;
+      await storageAllocation.checkQuota(ownerId, fileSize);
+      await filesystem.copyFile(srcStorage, targetStorage);
+
+      const origRes = await pool.query(
+        `SELECT * FROM files WHERE project_id = $1 AND relative_path = $2`,
+        [projectId, srcRelative],
+      );
+      const orig = origRes.rows[0] || {};
+
+      await pool.query(
+        `INSERT INTO cloud_files
+         (owner_id, original_name, relative_path, stored_name, mime_type, file_size, storage_path, is_directory)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, FALSE)
+         ON CONFLICT (owner_id, relative_path) DO UPDATE
+         SET file_size = EXCLUDED.file_size, storage_path = EXCLUDED.storage_path, deleted_at = NULL, updated_at = NOW()`,
+        [
+          ownerId,
+          bName,
+          targetRelative,
+          bName,
+          orig.mime_type || "application/octet-stream",
+          fileSize,
+          targetStorage,
+        ],
+      );
+      await storageAllocation.reserveStorage(ownerId, fileSize);
+      transferredCount++;
+    }
+  }
+
+  return { success: true, count: transferredCount };
+};
+
+const importCloudToProject = async (
+  projectId,
+  ownerId,
+  items,
+  destination = "",
+) => {
+  const { verifyProjectOwnership } = require("./project.service");
+  await verifyProjectOwnership(projectId, ownerId);
+
+  if (!Array.isArray(items) || items.length === 0) {
+    const error = new Error("No items selected for import");
+    error.status = 400;
+    throw error;
+  }
+
+  const destFolder = destination ? normalizeRelativePath(destination) : "";
+  let transferredCount = 0;
+
+  for (const item of items) {
+    const srcRelative = normalizeRelativePath(
+      item.relativePath || item.path || item.relative_path || "",
+    );
+    if (!srcRelative) continue;
+    const isDir =
+      item.isDirectory !== undefined ? item.isDirectory : item.type === "folder";
+    const srcStorage = resolveCloudStoragePath(ownerId, srcRelative);
+    const bName = relativeBasename(srcRelative);
+    const targetRelative = destFolder ? relativeJoin(destFolder, bName) : bName;
+    const targetStorage = resolveProjectStoragePath(projectId, targetRelative);
+
+    if (isDir) {
+      const folderSize = await filesystem.calculateDirectorySize(srcStorage);
+      await storageAllocation.checkQuota(ownerId, folderSize);
+      await filesystem.copyDirectory(srcStorage, targetStorage);
+
+      const rows = await pool.query(
+        `SELECT * FROM cloud_files WHERE owner_id = $1 AND (relative_path = $2 OR relative_path LIKE $3) AND deleted_at IS NULL`,
+        [ownerId, srcRelative, `${srcRelative}/%`],
+      );
+
+      for (const row of rows.rows) {
+        const subRel =
+          row.relative_path === srcRelative
+            ? targetRelative
+            : targetRelative + row.relative_path.substring(srcRelative.length);
+        const subStorage = resolveProjectStoragePath(projectId, subRel);
+        await pool.query(
+          `INSERT INTO files
+           (project_id, original_name, relative_path, stored_name, mime_type, file_size, storage_path, is_directory)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+           ON CONFLICT DO NOTHING`,
+          [
+            projectId,
+            relativeBasename(subRel),
+            subRel,
+            relativeBasename(subRel),
+            row.mime_type,
+            row.file_size,
+            subStorage,
+            row.is_directory,
+          ],
+        );
+      }
+      await storageAllocation.reserveStorage(ownerId, folderSize);
+      transferredCount++;
+    } else {
+      const stats = await fs.stat(srcStorage).catch(() => ({ size: 0 }));
+      const fileSize = stats.size;
+      await storageAllocation.checkQuota(ownerId, fileSize);
+      await filesystem.copyFile(srcStorage, targetStorage);
+
+      const origRes = await pool.query(
+        `SELECT * FROM cloud_files WHERE owner_id = $1 AND relative_path = $2`,
+        [ownerId, srcRelative],
+      );
+      const orig = origRes.rows[0] || {};
+
+      await pool.query(
+        `INSERT INTO files
+         (project_id, original_name, relative_path, stored_name, mime_type, file_size, storage_path, is_directory)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, FALSE)
+         ON CONFLICT (project_id, relative_path) DO UPDATE
+         SET file_size = EXCLUDED.file_size, storage_path = EXCLUDED.storage_path, deleted_at = NULL, updated_at = NOW()`,
+        [
+          projectId,
+          bName,
+          targetRelative,
+          bName,
+          orig.mime_type || "application/octet-stream",
+          fileSize,
+          targetStorage,
+        ],
+      );
+      await storageAllocation.reserveStorage(ownerId, fileSize);
+      transferredCount++;
+    }
+  }
+
+  return { success: true, count: transferredCount };
+};
+
 module.exports = {
   saveFile,
   getProjectFiles,
@@ -1302,4 +1766,11 @@ module.exports = {
   cutPath,
   pastePath,
   generateDuplicatePath,
+  getProjectTrash,
+  restoreProjectTrash,
+  emptyProjectTrash,
+  compressProjectPaths,
+  searchProjectFiles,
+  exportProjectToCloud,
+  importCloudToProject,
 };

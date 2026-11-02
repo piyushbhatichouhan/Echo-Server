@@ -1,17 +1,19 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Card from "../../common/card/card";
-
 import { useToast } from "../../../context/ToastContext";
-
 import FileList from "../FileList/FileList";
 import FileBreadcrumbs from "../FileBreadcrumbs/FileBreadcrumbs";
-import { useRef } from "react";
-
-import { Upload } from "lucide-react";
-import { readDroppedEntries } from "../../../utils/readDroppedEntries";
-import "./FileBrowser.css";
 import FileViewer from "../fileviewer/FileViewer";
 import FileToolbar from "../FileToolBar/FileToolbar";
+import FolderTreeSidebar from "../FolderTreeSidebar";
+import UploadDrawer from "../UploadDrawer";
+import TrashModal from "../TrashModal";
+import FilePropertiesModal from "../FilePropertiesModal";
+import CrossTransferModal from "../CrossTransferModal";
+
+import { Upload, Archive, CloudUpload, Info, X } from "lucide-react";
+import { readDroppedEntries } from "../../../utils/readDroppedEntries";
+import "./FileBrowser.css";
 
 export default function FileBrowser({ adapter, workspaceId, onStorageChange }) {
   const [files, setFiles] = useState([]);
@@ -19,8 +21,6 @@ export default function FileBrowser({ adapter, workspaceId, onStorageChange }) {
   const [selectedFile, setSelectedFile] = useState(null);
   const [fileContent, setFileContent] = useState("");
   const [dirty, setDirty] = useState(false);
-  const [stats, setStats] = useState(null);
-  const toast = useToast();
   const [currentFolder, setCurrentFolder] = useState("");
   const [dragActive, setDragActive] = useState(false);
   const dragCounter = useRef(0);
@@ -28,11 +28,32 @@ export default function FileBrowser({ adapter, workspaceId, onStorageChange }) {
   const uploadFolderRef = useRef();
   const [saving, setSaving] = useState(false);
   const [clipboard, setClipboard] = useState(null);
-  const [uploadProgress, setUploadProgress] = useState(null);
+  const [uploadQueue, setUploadQueue] = useState([]);
   const uploadAbortController = useRef(null);
   const uploadCancelled = useRef(false);
   const [selectedItems, setSelectedItems] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Upgraded Feature States
+  const [viewMode, setViewMode] = useState(() => {
+    return localStorage.getItem("echohub_files_view_mode") || "list";
+  });
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [showTrashModal, setShowTrashModal] = useState(false);
+  const [showPropertiesModal, setShowPropertiesModal] = useState(false);
+  const [propertiesItem, setPropertiesItem] = useState(null);
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [transferMode, setTransferMode] = useState("export");
+  const [isGlobalSearch, setIsGlobalSearch] = useState(false);
+  const [globalSearchResults, setGlobalSearchResults] = useState([]);
+  const [searchingGlobal, setSearchingGlobal] = useState(false);
+
+  const toast = useToast();
+
+  const handleViewModeChange = (mode) => {
+    setViewMode(mode);
+    localStorage.setItem("echohub_files_view_mode", mode);
+  };
 
   const handleCopy = async (item) => {
     if (!adapter.pastePath && !adapter.copyPath) {
@@ -118,33 +139,24 @@ export default function FileBrowser({ adapter, workspaceId, onStorageChange }) {
     setSelectedItems([]);
   };
 
-  const handlePaste = async (destination = currentFolder) => {
-    if (!adapter.pastePath) {
-      toast.info("Paste isn't supported here yet.");
-      return;
-    }
-
+  const handlePaste = async (destination) => {
     if (!clipboard) return;
 
     try {
-      const itemsToPaste = clipboard.items || [
-        {
-          path: clipboard.relativePath,
-          type: clipboard.type,
-          name: clipboard.name,
-        },
-      ];
-
-      for (const it of itemsToPaste) {
-        await adapter.pastePath(
-          workspaceId,
-          {
-            operation: clipboard.operation,
-            type: it.type,
-            relativePath: it.path,
-          },
-          destination,
-        );
+      if (clipboard.items && clipboard.items.length > 0) {
+        for (const item of clipboard.items) {
+          await adapter.pastePath(
+            workspaceId,
+            {
+              operation: clipboard.operation,
+              type: item.type,
+              relativePath: item.path,
+            },
+            destination,
+          );
+        }
+      } else {
+        await adapter.pastePath(workspaceId, clipboard, destination);
       }
 
       if (clipboard.operation === "cut") {
@@ -160,12 +172,97 @@ export default function FileBrowser({ adapter, workspaceId, onStorageChange }) {
     }
   };
 
+  const handleDropItemOnFolder = async (sourceItem, targetFolderPath) => {
+    if (!sourceItem?.path || sourceItem.path === targetFolderPath) return;
+    if (
+      sourceItem.type === "folder" &&
+      (targetFolderPath === sourceItem.path ||
+        targetFolderPath.startsWith(sourceItem.path + "/"))
+    ) {
+      toast.info("Cannot move a folder into itself or its subfolder.");
+      return;
+    }
+
+    try {
+      if (adapter.cutPath) {
+        await adapter.cutPath(workspaceId, sourceItem.path, sourceItem.type).catch(() => {});
+      }
+      await adapter.pastePath(
+        workspaceId,
+        {
+          operation: "cut",
+          relativePath: sourceItem.path,
+          type: sourceItem.type,
+          name: sourceItem.name,
+        },
+        targetFolderPath,
+      );
+
+      toast.success("Moved", `Moved "${sourceItem.name}" to /${targetFolderPath || "root"}`);
+      await refresh();
+      onStorageChange?.();
+    } catch (err) {
+      toast.error("Move Failed", err.response?.data?.message || err.message);
+    }
+  };
+
+  const handleCompressSelected = async () => {
+    if (!adapter.compressPaths || selectedItems.length === 0) return;
+    const defaultName =
+      selectedItems.length === 1
+        ? `${selectedItems[0].name.replace(/\.[^/.]+$/, "")}.zip`
+        : "archive.zip";
+    const name = window.prompt("Enter archive name (.zip):", defaultName);
+    if (!name) return;
+
+    try {
+      toast.info("Compressing files...");
+      await adapter.compressPaths(
+        workspaceId,
+        selectedItems.map((i) => ({ relativePath: i.path, type: i.type })),
+        name,
+        currentFolder,
+      );
+      toast.success("Compressed", `Created "${name}" successfully.`);
+      setSelectedItems([]);
+      await refresh();
+      onStorageChange?.();
+    } catch (err) {
+      toast.error("Compression Failed", err.response?.data?.message || err.message);
+    }
+  };
+
+  const handleCompressItem = async (item) => {
+    if (!adapter.compressPaths || !item) return;
+    const name = window.prompt("Enter archive name (.zip):", `${item.name}.zip`);
+    if (!name) return;
+
+    try {
+      toast.info("Compressing...");
+      await adapter.compressPaths(
+        workspaceId,
+        [{ relativePath: item.path, type: item.type }],
+        name,
+        currentFolder,
+      );
+      toast.success("Compressed", `Created "${name}" successfully.`);
+      await refresh();
+      onStorageChange?.();
+    } catch (err) {
+      toast.error("Compression Failed", err.response?.data?.message || err.message);
+    }
+  };
+
+  const handleShowProperties = (item) => {
+    setPropertiesItem(item);
+    setShowPropertiesModal(true);
+  };
+
   useEffect(() => {
     if (!selectedFile) return;
 
     const load = async () => {
       const text = await adapter.getFileContent(selectedFile.id);
-
       setFileContent(text);
       setDirty(false);
     };
@@ -183,21 +280,12 @@ export default function FileBrowser({ adapter, workspaceId, onStorageChange }) {
 
     try {
       setSaving(true);
-
       await adapter.saveFileContent(selectedFile.id, fileContent);
-
       setDirty(false);
       onStorageChange?.();
-
-      toast.success(
-        "Saved",
-        `${selectedFile.original_name} saved successfully`,
-      );
+      toast.success("Saved", `${selectedFile.original_name} saved successfully`);
     } catch (error) {
-      toast.error(
-        "Save Failed",
-        error.response?.data?.message || error.message,
-      );
+      toast.error("Save Failed", error.response?.data?.message || error.message);
     } finally {
       setSaving(false);
     }
@@ -205,33 +293,48 @@ export default function FileBrowser({ adapter, workspaceId, onStorageChange }) {
 
   const refresh = async () => {
     setLoading(true);
-
     try {
       const filesData = await adapter.getFiles(workspaceId, currentFolder);
-
       setFiles(filesData);
     } finally {
       setLoading(false);
     }
   };
 
+  // Global search effect
+  useEffect(() => {
+    if (!isGlobalSearch || !searchQuery.trim() || !adapter.searchFiles) {
+      setGlobalSearchResults([]);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        setSearchingGlobal(true);
+        const results = await adapter.searchFiles(workspaceId, searchQuery.trim());
+        setGlobalSearchResults(Array.isArray(results) ? results : []);
+      } catch (err) {
+        console.error("Global search error:", err);
+      } finally {
+        setSearchingGlobal(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [isGlobalSearch, searchQuery, workspaceId]);
+
   const uploadFiles = async (items) => {
     if (!items || items.length === 0) return;
 
     uploadCancelled.current = false;
-
     const controller = new AbortController();
-
     uploadAbortController.current = controller;
-
     const { signal } = controller;
 
     const uploadItems = items.map((item) => {
       const actualFile = item.file || item;
-
       const sourceRelative =
         item.relativePath || actualFile.webkitRelativePath || actualFile.name;
-
       const relativePath = currentFolder
         ? `${currentFolder}/${sourceRelative}`
         : sourceRelative;
@@ -243,75 +346,45 @@ export default function FileBrowser({ adapter, workspaceId, onStorageChange }) {
       };
     });
 
-    const folderNames = [
-      ...new Set(
-        uploadItems
-          .filter(({ relativePath }) => relativePath.includes("/"))
-          .map(({ relativePath }) => relativePath.split("/")[0]),
-      ),
-    ];
-
-    const isFolderUpload = folderNames.length > 0;
-
-    const totalFiles = uploadItems.length;
-
-    const totalBytes = uploadItems.reduce(
-      (sum, item) => sum + item.file.size,
-      0,
-    );
-
-    let completedFiles = 0;
-    let completedBytes = 0;
-
-    setUploadProgress({
-      totalFiles,
-      completedFiles: 0,
-      totalBytes,
-      uploadedBytes: 0,
-      currentFile: uploadItems[0].file.name,
-      percentage: 0,
-    });
+    const initialQueue = uploadItems.map((u, idx) => ({
+      id: `${idx}-${Date.now()}`,
+      name: u.file.name,
+      size: u.file.size,
+      progress: 0,
+      status: "pending",
+    }));
+    setUploadQueue(initialQueue);
 
     try {
-      for (const uploadItem of uploadItems) {
-        if (signal.aborted || uploadCancelled.current) {
-          break;
-        }
+      for (let i = 0; i < uploadItems.length; i++) {
+        if (signal.aborted || uploadCancelled.current) break;
 
-        const { file, relativePath } = uploadItem;
+        const { file, relativePath } = uploadItems[i];
 
-        setUploadProgress((previous) => ({
-          ...previous,
-          currentFile: file.name,
-        }));
+        setUploadQueue((prev) =>
+          prev.map((q, idx) => (idx === i ? { ...q, status: "uploading", progress: 0 } : q)),
+        );
 
         try {
           await adapter.uploadFile(
             workspaceId,
             file,
             relativePath,
-            ({ loaded }) => {
-              if (signal.aborted || uploadCancelled.current) {
-                return;
-              }
-
-              const uploadedBytes = completedBytes + loaded;
-
-              const percentage = totalBytes
-                ? Math.round((uploadedBytes / totalBytes) * 100)
-                : 0;
-
-              setUploadProgress((previous) => ({
-                ...previous,
-                totalFiles,
-                completedFiles,
-                totalBytes,
-                uploadedBytes,
-                currentFile: file.name,
-                percentage,
-              }));
+            ({ percentage }) => {
+              if (signal.aborted || uploadCancelled.current) return;
+              setUploadQueue((prev) =>
+                prev.map((q, idx) =>
+                  idx === i ? { ...q, progress: percentage || 0 } : q,
+                ),
+              );
             },
             signal,
+          );
+
+          setUploadQueue((prev) =>
+            prev.map((q, idx) =>
+              idx === i ? { ...q, status: "completed", progress: 100 } : q,
+            ),
           );
         } catch (error) {
           if (
@@ -323,125 +396,81 @@ export default function FileBrowser({ adapter, workspaceId, onStorageChange }) {
             break;
           }
 
-          toast.error(
-            error.response?.data?.message || error.message || "Upload failed",
-          );
-
-          continue;
-        }
-
-        // Don't count a file that was cancelled.
-        if (signal.aborted || uploadCancelled.current) {
-          break;
-        }
-
-        completedBytes += file.size;
-        completedFiles++;
-
-        setUploadProgress({
-          totalFiles,
-          completedFiles,
-          totalBytes,
-          uploadedBytes: completedBytes,
-          currentFile:
-            completedFiles < totalFiles
-              ? uploadItems[completedFiles].file.name
-              : null,
-          percentage: totalBytes
-            ? Math.round((completedBytes / totalBytes) * 100)
-            : 100,
-        });
-      }
-
-      // -------------------------
-      // CANCELLED
-      // -------------------------
-
-      if (signal.aborted || uploadCancelled.current) {
-        setUploadProgress(null);
-
-        toast.info("Upload Cancelled", "The upload was cancelled.");
-
-        await refresh();
-
-        return;
-      }
-
-      // -------------------------
-      // SUCCESS TOAST
-      // -------------------------
-
-      if (isFolderUpload) {
-        if (folderNames.length === 1) {
-          toast.success(
-            "Folder Uploaded",
-            `${folderNames[0]} uploaded successfully`,
-          );
-        } else {
-          toast.success(
-            "Folders Uploaded",
-            `${folderNames.length} folders uploaded successfully`,
+          setUploadQueue((prev) =>
+            prev.map((q, idx) =>
+              idx === i
+                ? {
+                    ...q,
+                    status: "error",
+                    error: error.response?.data?.message || error.message || "Failed",
+                  }
+                : q,
+            ),
           );
         }
-      } else if (items.length === 1) {
-        toast.success(
-          "File Uploaded",
-          `${uploadItems[0].file.name} uploaded successfully`,
-        );
-      } else {
-        toast.success(
-          "Upload Complete",
-          `${totalFiles} files uploaded successfully`,
-        );
       }
 
       await refresh();
       onStorageChange?.();
-
-      setTimeout(() => {
-        setUploadProgress(null);
-      }, 1000);
     } finally {
       if (uploadAbortController.current === controller) {
         uploadAbortController.current = null;
       }
-
       uploadCancelled.current = false;
     }
+  };
+
+  const cancelUpload = () => {
+    if (!uploadAbortController.current) return;
+    uploadCancelled.current = true;
+    uploadAbortController.current.abort();
+    setUploadQueue((prev) =>
+      prev.map((q) =>
+        q.status === "uploading" || q.status === "pending"
+          ? { ...q, status: "cancelled" }
+          : q,
+      ),
+    );
+    toast.info("Upload Cancelled", "The upload was cancelled.");
   };
 
   const handleUpload = (e) => {
     try {
       uploadFiles([...e.target.files]);
-
       e.target.value = "";
     } catch (error) {
-      toast.error(
-        error.response?.data?.message ?? error.message ?? "Unknown error",
-      );
+      toast.error(error.response?.data?.message ?? error.message ?? "Unknown error");
     }
   };
 
-  const handleDroppedFiles = async (files) => {
+  const handleDroppedFiles = async (filesList) => {
     try {
-      await uploadFiles(files);
+      await uploadFiles(filesList);
     } catch (error) {
-      toast.error(
-        error.response?.data?.message ?? error.message ?? "Unknown error",
-      );
+      toast.error(error.response?.data?.message ?? error.message ?? "Unknown error");
     }
   };
+
   const handleNavigate = (path) => {
     setSelectedItems([]);
     setCurrentFolder(path);
+    if (isGlobalSearch) {
+      setIsGlobalSearch(false);
+      setSearchQuery("");
+    }
   };
+
   const createFolder = async () => {
     const name = prompt("Folder name");
-
     if (!name) return;
-
     await adapter.createFolder(workspaceId, currentFolder, name);
+    refresh();
+  };
 
+  const createFile = async () => {
+    const name = prompt("File name");
+    if (!name) return;
+    await adapter.createFile(workspaceId, currentFolder, name);
     refresh();
   };
 
@@ -449,10 +478,9 @@ export default function FileBrowser({ adapter, workspaceId, onStorageChange }) {
     if (!selectedItems.length) return;
 
     const names = selectedItems.map((item) => item.name).join(", ");
-
     if (
       !window.confirm(
-        `Delete ${selectedItems.length} selected item(s)?\n\n${names}`,
+        `Move ${selectedItems.length} selected item(s) to Trash?\n\n${names}`,
       )
     ) {
       return;
@@ -468,106 +496,33 @@ export default function FileBrowser({ adapter, workspaceId, onStorageChange }) {
       );
 
       toast.success(
-        "Deleted",
-        `${selectedItems.length} item(s) deleted successfully`,
+        "Moved to Trash",
+        `${selectedItems.length} item(s) moved to recycle bin.`,
       );
 
       setSelectedItems([]);
-
       await refresh();
       onStorageChange?.();
     } catch (error) {
-      toast.error(
-        "Delete Failed",
-        error.response?.data?.message || error.message,
-      );
+      toast.error("Delete Failed", error.response?.data?.message || error.message);
     }
-  };
-
-  const createFile = async () => {
-    const name = prompt("File name");
-
-    if (!name) return;
-
-    await adapter.createFile(workspaceId, currentFolder, name);
-
-    refresh();
-  };
-
-  const formatBytes = (bytes) => {
-    if (!bytes) return "0 B";
-
-    const units = ["B", "KB", "MB", "GB", "TB"];
-
-    const index = Math.floor(Math.log(bytes) / Math.log(1024));
-
-    const value = bytes / Math.pow(1024, index);
-
-    return `${value.toFixed(index === 0 ? 0 : 2)} ${units[index]}`;
-  };
-
-  const cancelUpload = () => {
-    if (!uploadAbortController.current) return;
-
-    uploadCancelled.current = true;
-
-    uploadAbortController.current.abort();
-
-    setUploadProgress(null);
-
-    toast.info("Upload Cancelled", "The upload was cancelled.");
   };
 
   const handleDownloadSelected = async () => {
-    if (!selectedItems || selectedItems.length === 0) {
-      return;
-    }
+    if (!selectedItems || selectedItems.length === 0) return;
 
     try {
       await adapter.downloadPaths(workspaceId, selectedItems);
-
       toast.success(
         "Download Started",
-        `${selectedItems.length} item${
-          selectedItems.length === 1 ? "" : "s"
-        } added to download.`,
+        `${selectedItems.length} item${selectedItems.length === 1 ? "" : "s"} added to download.`,
       );
     } catch (error) {
-      toast.error(
-        "Download Failed",
-        error.response?.data?.message || error.message,
-      );
+      toast.error("Download Failed", error.response?.data?.message || error.message);
     }
   };
 
-  useEffect(() => {
-    const resetDrag = () => {
-      dragCounter.current = 0;
-      setDragActive(false);
-    };
-
-    window.addEventListener("dragend", resetDrag);
-    window.addEventListener("drop", resetDrag);
-
-    return () => {
-      window.removeEventListener("dragend", resetDrag);
-      window.removeEventListener("drop", resetDrag);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!selectedFile) return;
-
-    const load = async () => {
-      const text = await adapter.getFileContent(selectedFile.id);
-
-      setFileContent(text);
-      setDirty(false);
-    };
-
-    load();
-  }, [selectedFile]);
-
+  // Keyboard Shortcuts Handler
   useEffect(() => {
     const handleKeyDown = (e) => {
       const tag = document.activeElement?.tagName?.toLowerCase();
@@ -581,7 +536,11 @@ export default function FileBrowser({ adapter, workspaceId, onStorageChange }) {
 
       const isCtrlOrCmd = e.ctrlKey || e.metaKey;
 
-      if (isCtrlOrCmd && e.key.toLowerCase() === "c") {
+      if (isCtrlOrCmd && e.key.toLowerCase() === "a") {
+        e.preventDefault();
+        // Select all items currently in view
+        // Handled in file list or select all
+      } else if (isCtrlOrCmd && e.key.toLowerCase() === "c") {
         if (selectedItems.length > 0) {
           e.preventDefault();
           handleCopySelected();
@@ -601,6 +560,28 @@ export default function FileBrowser({ adapter, workspaceId, onStorageChange }) {
           e.preventDefault();
           handleDeleteSelected();
         }
+      } else if (e.key === "F2") {
+        if (selectedItems.length === 1) {
+          e.preventDefault();
+          const item = selectedItems[0];
+          const newName = window.prompt("Rename to:", item.name);
+          if (newName && newName !== item.name) {
+            adapter
+              .renamePath(workspaceId, item, newName)
+              .then(() => {
+                toast.success("Renamed", `Renamed to ${newName}`);
+                refresh();
+                onStorageChange?.();
+              })
+              .catch((err) =>
+                toast.error("Rename Failed", err.response?.data?.message || err.message),
+              );
+          }
+        }
+      } else if (e.key === "Escape") {
+        if (selectedItems.length > 0) {
+          setSelectedItems([]);
+        }
       }
     };
 
@@ -609,112 +590,147 @@ export default function FileBrowser({ adapter, workspaceId, onStorageChange }) {
   }, [selectedItems, clipboard, currentFolder]);
 
   useEffect(() => {
-    refresh();
+    const resetDrag = () => {
+      dragCounter.current = 0;
+      setDragActive(false);
+    };
+
+    window.addEventListener("dragend", resetDrag);
+    window.addEventListener("drop", resetDrag);
+    return () => {
+      window.removeEventListener("dragend", resetDrag);
+      window.removeEventListener("drop", resetDrag);
+    };
   }, []);
+
+  useEffect(() => {
+    refresh();
+  }, [currentFolder]);
+
+  // Determine files to display (either global search results or standard files)
+  const displayFiles = isGlobalSearch && searchQuery.trim() ? globalSearchResults : files;
 
   return (
     <div className="file-browser">
-      <div>
-        <FileBreadcrumbs
-          currentFolder={currentFolder}
-          onNavigate={handleNavigate}
-        />
-        <input
-          ref={uploadFileRef}
-          type="file"
-          multiple
-          hidden
-          onChange={handleUpload}
-        />
-        <input
-          ref={uploadFolderRef}
-          type="file"
-          webkitdirectory=""
-          multiple
-          hidden
-          onChange={handleUpload}
-        />
-        <FileToolbar
-          onUploadFile={() => uploadFileRef.current.click()}
-          onUploadFolder={() => uploadFolderRef.current.click()}
-          onNewFolder={createFolder}
-          onNewFile={createFile}
-          clipboard={clipboard}
-          onPaste={() => handlePaste(currentFolder)}
-          onClearClipboard={() => setClipboard(null)}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-        />
+      <FileBreadcrumbs currentFolder={currentFolder} onNavigate={handleNavigate} />
 
-        {uploadProgress && (
-          <div className="upload-progress-card">
-            <div className="upload-progress-header">
-              <div>
-                <div className="upload-progress-title">Uploading</div>
+      <input ref={uploadFileRef} type="file" multiple hidden onChange={handleUpload} />
+      <input
+        ref={uploadFolderRef}
+        type="file"
+        webkitdirectory=""
+        multiple
+        hidden
+        onChange={handleUpload}
+      />
 
-                <div className="upload-progress-subtitle">
-                  {uploadProgress.completedFiles} of {uploadProgress.totalFiles}{" "}
-                  files completed
-                </div>
-              </div>
+      <FileToolbar
+        onUploadFile={() => uploadFileRef.current.click()}
+        onUploadFolder={() => uploadFolderRef.current.click()}
+        onNewFolder={createFolder}
+        onNewFile={createFile}
+        clipboard={clipboard}
+        onPaste={() => handlePaste(currentFolder)}
+        onClearClipboard={() => setClipboard(null)}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        viewMode={viewMode}
+        onViewModeChange={handleViewModeChange}
+        sidebarOpen={sidebarOpen}
+        onToggleSidebar={() => setSidebarOpen((s) => !s)}
+        onOpenTrash={adapter.getTrash ? () => setShowTrashModal(true) : null}
+        onImportFromCloud={
+          !adapter.isCloud && adapter.importToProject
+            ? () => {
+                setTransferMode("import");
+                setShowTransferModal(true);
+              }
+            : null
+        }
+        isGlobalSearch={isGlobalSearch}
+        onToggleGlobalSearch={() => setIsGlobalSearch((g) => !g)}
+      />
 
-              <div className="upload-progress-actions">
-                <div className="upload-progress-percentage">
-                  {uploadProgress.percentage}%
-                </div>
+      {isGlobalSearch && searchQuery.trim() && (
+        <div className="global-search-banner">
+          <span>
+            Showing global search matches for <strong>"{searchQuery}"</strong>{" "}
+            ({searchingGlobal ? "searching..." : `${displayFiles.length} item(s) found`})
+          </span>
+          <button
+            type="button"
+            className="clear-search-btn"
+            onClick={() => {
+              setIsGlobalSearch(false);
+              setSearchQuery("");
+            }}
+          >
+            Clear Search
+          </button>
+        </div>
+      )}
 
-                <button
-                  type="button"
-                  className="upload-cancel-button"
-                  onClick={cancelUpload}
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
+      {/* Floating Upload Progress Drawer */}
+      <UploadDrawer
+        uploads={uploadQueue}
+        onCancelAll={cancelUpload}
+        onDismiss={() => setUploadQueue([])}
+      />
 
-            <div className="upload-progress-bar">
-              <div
-                className="upload-progress-fill"
-                style={{
-                  width: `${uploadProgress.percentage}%`,
-                }}
-              />
-            </div>
+      {/* Modal Dialogs */}
+      <TrashModal
+        isOpen={showTrashModal}
+        onClose={() => setShowTrashModal(false)}
+        adapter={adapter}
+        workspaceId={workspaceId}
+        onRestored={() => {
+          refresh();
+          onStorageChange?.();
+        }}
+      />
 
-            <div className="upload-progress-info">
-              <span>
-                {formatBytes(uploadProgress.uploadedBytes)} /{" "}
-                {formatBytes(uploadProgress.totalBytes)}
-              </span>
+      <FilePropertiesModal
+        isOpen={showPropertiesModal}
+        onClose={() => setShowPropertiesModal(false)}
+        item={propertiesItem}
+      />
 
-              {uploadProgress.currentFile && (
-                <span className="upload-current-file">
-                  {uploadProgress.currentFile}
-                </span>
-              )}
-            </div>
-          </div>
-        )}
+      <CrossTransferModal
+        isOpen={showTransferModal}
+        onClose={() => setShowTransferModal(false)}
+        mode={transferMode}
+        selectedItems={selectedItems}
+        projectId={workspaceId}
+        adapter={adapter}
+        currentFolder={currentFolder}
+        onSuccess={() => {
+          refresh();
+          onStorageChange?.();
+        }}
+      />
 
-        {!selectedFile ? (
+      {!selectedFile ? (
+        <div className="file-browser-split-container">
+          <FolderTreeSidebar
+            files={files}
+            currentFolder={currentFolder}
+            onNavigate={handleNavigate}
+            onDropOnFolder={handleDropItemOnFolder}
+            isOpen={sidebarOpen}
+            onClose={() => setSidebarOpen(false)}
+          />
+
           <div
-            className={`cloud-drop-zone ${dragActive ? "drag-active" : ""}`}
+            className={`file-browser-main-area cloud-drop-zone ${dragActive ? "drag-active" : ""}`}
             onDragEnter={(e) => {
               e.preventDefault();
-
               dragCounter.current++;
-
               setDragActive(true);
             }}
-            onDragOver={(e) => {
-              e.preventDefault();
-            }}
+            onDragOver={(e) => e.preventDefault()}
             onDragLeave={(e) => {
               e.preventDefault();
-
               dragCounter.current--;
-
               if (dragCounter.current <= 0) {
                 dragCounter.current = 0;
                 setDragActive(false);
@@ -722,20 +738,13 @@ export default function FileBrowser({ adapter, workspaceId, onStorageChange }) {
             }}
             onDrop={async (e) => {
               e.preventDefault();
-
               dragCounter.current = 0;
               setDragActive(false);
 
               try {
-                const files = await readDroppedEntries(e.dataTransfer);
-
-                console.log("DROPPED FILES:", files);
-                console.log("DROPPED COUNT:", files.length);
-
-                await handleDroppedFiles(files);
+                const dropped = await readDroppedEntries(e.dataTransfer);
+                await handleDroppedFiles(dropped);
               } catch (error) {
-                console.error("DROP ERROR:", error);
-
                 toast.error(
                   error.response?.data?.message ??
                     error.message ??
@@ -747,55 +756,60 @@ export default function FileBrowser({ adapter, workspaceId, onStorageChange }) {
             {dragActive && (
               <div className="cloud-drop-overlay">
                 <Upload size={56} />
-
                 <h2>Drop files to upload</h2>
-
                 <p>Upload into this folder</p>
               </div>
             )}
+
             {selectedItems.length > 0 && (
               <div className="selection-toolbar">
                 <div className="selection-info">
                   <strong>{selectedItems.length}</strong>
                   <span>
-                    {selectedItems.length === 1
-                      ? "item selected"
-                      : "items selected"}
+                    {selectedItems.length === 1 ? "item selected" : "items selected"}
                   </span>
                 </div>
 
                 <div className="selection-actions">
-                  <button
-                    type="button"
-                    onClick={handleCopySelected}
-                    title="Copy selected items"
-                  >
+                  <button type="button" onClick={handleCopySelected} title="Copy selected">
                     Copy
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={handleCutSelected}
-                    title="Cut selected items"
-                  >
+                  <button type="button" onClick={handleCutSelected} title="Cut selected">
                     Cut
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      handleDownloadSelected();
-                    }}
-                  >
+                  <button type="button" onClick={handleDownloadSelected}>
                     Download
                   </button>
+
+                  {adapter.compressPaths && (
+                    <button
+                      type="button"
+                      onClick={handleCompressSelected}
+                      title="Compress selected into a .zip file"
+                    >
+                      Compress (.zip)
+                    </button>
+                  )}
+
+                  {!adapter.isCloud && adapter.exportToCloud && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTransferMode("export");
+                        setShowTransferModal(true);
+                      }}
+                      title="Export selected to Cloud Storage"
+                    >
+                      Export to Cloud
+                    </button>
+                  )}
 
                   <button
                     type="button"
                     className="selection-delete"
-                    onClick={() => {
-                      handleDeleteSelected();
-                    }}
+                    onClick={handleDeleteSelected}
                   >
                     Delete
                   </button>
@@ -812,8 +826,8 @@ export default function FileBrowser({ adapter, workspaceId, onStorageChange }) {
             )}
 
             <FileList
-              files={files}
-              currentFolder={currentFolder}
+              files={displayFiles}
+              currentFolder={isGlobalSearch ? "" : currentFolder}
               onNavigate={handleNavigate}
               onOpenFile={setSelectedFile}
               onCopy={handleCopy}
@@ -826,26 +840,38 @@ export default function FileBrowser({ adapter, workspaceId, onStorageChange }) {
               refresh={refresh}
               workspaceId={workspaceId}
               onDownloadSelected={handleDownloadSelected}
-              searchQuery={searchQuery}
+              searchQuery={isGlobalSearch ? "" : searchQuery}
               onStorageChange={onStorageChange}
+              viewMode={viewMode}
+              onShowProperties={handleShowProperties}
+              onCompressItem={handleCompressItem}
+              onExportItem={
+                !adapter.isCloud && adapter.exportToCloud
+                  ? (item) => {
+                      setSelectedItems([item]);
+                      setTransferMode("export");
+                      setShowTransferModal(true);
+                    }
+                  : null
+              }
+              onDropItemOnFolder={handleDropItemOnFolder}
             />
           </div>
-        ) : (
-          <FileViewer
-            adapter={adapter}
-            onClose={() => setSelectedFile(null)}
-            file={selectedFile}
-            content={fileContent}
-            dirty={dirty}
-            saving={saving}
-            onChange={handleEditorChange}
-            onSave={saveCurrentFile}
-            onBack={() => setSelectedFile(null)}
-            dirty={dirty}
-            onDownload={() => adapter.downloadFile(selectedFile.id)}
-          />
-        )}
-      </div>
+        </div>
+      ) : (
+        <FileViewer
+          adapter={adapter}
+          onClose={() => setSelectedFile(null)}
+          file={selectedFile}
+          content={fileContent}
+          dirty={dirty}
+          saving={saving}
+          onChange={handleEditorChange}
+          onSave={saveCurrentFile}
+          onBack={() => setSelectedFile(null)}
+          onDownload={() => adapter.downloadFile(selectedFile.id)}
+        />
+      )}
     </div>
   );
 }

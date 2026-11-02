@@ -235,3 +235,17 @@ export const emptyCloudTrash = async () => {
   const res = await api.delete("/cloud/trash/empty");
   return res.data;
 };
+
+export const compressCloudPaths = async (items, zipName, destination) => {
+  const res = await api.post("/cloud/compress", {
+    items,
+    zipName,
+    destination,
+  });
+  return res.data;
+};
+
+export const searchCloudFiles = async (query) => {
+  const res = await api.get(`/cloud/search?q=${encodeURIComponent(query)}`);
+  return res.data.data;
+};

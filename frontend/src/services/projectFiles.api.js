@@ -111,11 +111,12 @@ export const createProjectFolder = async (projectId, path) => {
   return res.data.data;
 };
 
-export const deleteProjectPath = async (projectId, path, type) => {
-  const res = await api.delete(`/projects/${projectId}/path`, {
+export const deleteProjectPath = async (projectId, path, type, permanent = false) => {
+  const res = await api.delete(`/projects/${projectId}/path${permanent ? "?permanent=true" : ""}`, {
     data: {
       path,
       type,
+      permanent,
     },
   });
 
@@ -161,10 +162,11 @@ export const pastePath = async (projectId, clipboard, destination) => {
   return res.data;
 };
 
-export const deleteProjectPaths = async (projectId, items) => {
-  const response = await api.delete(`/projects/${projectId}/paths/bulk`, {
+export const deleteProjectPaths = async (projectId, items, permanent = false) => {
+  const response = await api.delete(`/projects/${projectId}/paths/bulk${permanent ? "?permanent=true" : ""}`, {
     data: {
       items,
+      permanent,
     },
   });
 
@@ -204,6 +206,51 @@ export const getProjectStats = async (projectId) => {
 export const extractProjectArchive = async (projectId, relativePath, destination) => {
   const res = await api.post(`/projects/${projectId}/files/extract`, {
     relativePath,
+    destination,
+  });
+  return res.data;
+};
+
+export const getProjectTrash = async (projectId) => {
+  const res = await api.get(`/projects/${projectId}/trash`);
+  return res.data.data;
+};
+
+export const restoreProjectTrash = async (projectId, fileId) => {
+  const res = await api.post(`/projects/${projectId}/trash/restore`, { fileId });
+  return res.data;
+};
+
+export const emptyProjectTrash = async (projectId) => {
+  const res = await api.delete(`/projects/${projectId}/trash/empty`);
+  return res.data;
+};
+
+export const compressProjectPaths = async (projectId, items, zipName, destination) => {
+  const res = await api.post(`/projects/${projectId}/files/compress`, {
+    items,
+    zipName,
+    destination,
+  });
+  return res.data;
+};
+
+export const searchProjectFiles = async (projectId, query) => {
+  const res = await api.get(`/projects/${projectId}/files/search?q=${encodeURIComponent(query)}`);
+  return res.data.data;
+};
+
+export const exportProjectToCloud = async (projectId, items, destination) => {
+  const res = await api.post(`/projects/${projectId}/files/export-to-cloud`, {
+    items,
+    destination,
+  });
+  return res.data;
+};
+
+export const importCloudToProject = async (projectId, items, destination) => {
+  const res = await api.post(`/projects/${projectId}/files/import-from-cloud`, {
+    items,
     destination,
   });
   return res.data;

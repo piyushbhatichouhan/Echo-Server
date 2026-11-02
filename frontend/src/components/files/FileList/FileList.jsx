@@ -11,8 +11,42 @@ import {
   Copy,
   ClipboardPaste,
   Scissors,
+  Archive,
+  Info,
+  CloudUpload,
+  Folder,
+  File,
+  Film,
+  Music,
+  Image as ImageIcon,
+  FileCode,
+  FileText,
 } from "lucide-react";
 import { useToast } from "../../../context/ToastContext";
+
+function getItemGridIcon(item) {
+  if (item.type === "folder") {
+    return <Folder size={44} className="grid-icon-folder" />;
+  }
+  const name = (item.name || "").toLowerCase();
+  if (name.endsWith(".zip") || name.endsWith(".tar") || name.endsWith(".gz") || name.endsWith(".rar")) {
+    return <Archive size={40} className="grid-icon-archive" />;
+  }
+  if (name.endsWith(".png") || name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".webp") || name.endsWith(".svg") || name.endsWith(".gif")) {
+    return <ImageIcon size={40} className="grid-icon-image" />;
+  }
+  if (name.endsWith(".mp4") || name.endsWith(".webm") || name.endsWith(".mov") || name.endsWith(".mkv")) {
+    return <Film size={40} className="grid-icon-video" />;
+  }
+  if (name.endsWith(".mp3") || name.endsWith(".wav") || name.endsWith(".ogg") || name.endsWith(".m4a") || name.endsWith(".flac")) {
+    return <Music size={40} className="grid-icon-audio" />;
+  }
+  if (name.endsWith(".js") || name.endsWith(".jsx") || name.endsWith(".ts") || name.endsWith(".tsx") || name.endsWith(".json") || name.endsWith(".py") || name.endsWith(".html") || name.endsWith(".css")) {
+    return <FileCode size={40} className="grid-icon-code" />;
+  }
+  return <FileText size={40} className="grid-icon-file" />;
+}
+
 export default function CloudFileList({
   files,
   currentFolder,
@@ -30,6 +64,11 @@ export default function CloudFileList({
   onDownSelected,
   searchQuery = "",
   onStorageChange,
+  viewMode = "list",
+  onShowProperties,
+  onCompressItem,
+  onExportItem,
+  onDropItemOnFolder,
 }) {
   const { downloadFile, deletePath, renamePath } = adapter;
   const toast = useToast();
@@ -128,7 +167,12 @@ export default function CloudFileList({
   };
 
   const formatDate = (date) => {
-    return new Date(date).toLocaleDateString();
+    if (!date) return "--";
+    return new Date(date).toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
   };
 
   const finishRename = async () => {
@@ -142,26 +186,41 @@ export default function CloudFileList({
     }
 
     if (renaming.type === "file" && renaming.name.includes(".")) {
-      const ext = "." + renaming.name.split(".").pop();
-
-      if (!newName.endsWith(ext)) {
-        newName += ext;
+      const parts = renaming.name.split(".");
+      const originalExt = parts.pop();
+      if (!newName.includes(".")) {
+        newName = `${newName}.${originalExt}`;
       }
     }
 
-    await renamePath(workspaceId, renaming, newName);
+    if (newName === renaming.name) {
+      setRenaming(null);
+      return;
+    }
 
-    await refresh();
+    try {
+      await renamePath(workspaceId, renaming, newName);
+
+      toast.success("Renamed", `Renamed to ${newName}`);
+
+      await refresh();
+      onStorageChange?.();
+    } catch (error) {
+      toast.error(
+        "Rename Failed",
+        error.response?.data?.message || error.message,
+      );
+    }
 
     setRenaming(null);
   };
 
   const handleItemSelection = (item) => {
-    const alreadySelected = selectedItems.some(
+    const isSelected = selectedItems.some(
       (selected) => selected.path === item.path,
     );
 
-    if (alreadySelected) {
+    if (isSelected) {
       onSelectionChange(
         selectedItems.filter((selected) => selected.path !== item.path),
       );
@@ -169,169 +228,341 @@ export default function CloudFileList({
       onSelectionChange([...selectedItems, item]);
     }
   };
+
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      onSelectionChange(children);
+    } else {
+      onSelectionChange([]);
+    }
+  };
+
+  const allSelected =
+    children.length > 0 && selectedItems.length === children.length;
+
+  const handleDragStart = (e, item) => {
+    e.dataTransfer.setData(
+      "application/json",
+      JSON.stringify({ path: item.path, type: item.type, name: item.name }),
+    );
+  };
+
+  const handleDragOverFolder = (e, item) => {
+    if (item.type === "folder") {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  };
+
+  const handleDropOnFolder = (e, item) => {
+    if (item.type === "folder") {
+      e.preventDefault();
+      e.stopPropagation();
+      try {
+        const data = JSON.parse(e.dataTransfer.getData("application/json"));
+        if (data && data.path !== item.path) {
+          onDropItemOnFolder?.(data, item.path);
+        }
+      } catch {}
+    }
+  };
+
   return (
     <div
       className="cloud-list"
       onContextMenu={(e) => {
+        if (e.target.closest(".cloud-row") || e.target.closest(".cloud-grid-item")) return;
         e.preventDefault();
-
-        // Only show background menu if the click
-        // wasn't on an actual file/folder row.
-        if (e.target.closest(".cloud-row")) {
-          return;
-        }
-
         setBackgroundMenu({
           visible: true,
           x: e.clientX,
           y: e.clientY,
         });
       }}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) {
-          onSelectionChange([]);
-        }
-      }}
     >
-      <div className="cloud-header">
-        <div
-          style={{ cursor: "pointer", userSelect: "none", display: "flex", alignItems: "center", gap: 4 }}
-          onClick={() => {
-            if (sortField === "name") setSortAsc(!sortAsc);
-            else {
-              setSortField("name");
-              setSortAsc(true);
-            }
-          }}
-        >
-          Name {sortField === "name" ? (sortAsc ? "▲" : "▼") : ""}
-        </div>
-        <div
-          style={{ cursor: "pointer", userSelect: "none", display: "flex", alignItems: "center", gap: 4 }}
-          onClick={() => {
-            if (sortField === "size") setSortAsc(!sortAsc);
-            else {
-              setSortField("size");
-              setSortAsc(true);
-            }
-          }}
-        >
-          Size {sortField === "size" ? (sortAsc ? "▲" : "▼") : ""}
-        </div>
-        <div
-          style={{ cursor: "pointer", userSelect: "none", display: "flex", alignItems: "center", gap: 4 }}
-          onClick={() => {
-            if (sortField === "modified") setSortAsc(!sortAsc);
-            else {
-              setSortField("modified");
-              setSortAsc(true);
-            }
-          }}
-        >
-          Modified {sortField === "modified" ? (sortAsc ? "▲" : "▼") : ""}
-        </div>
-        <div></div>
-      </div>
-
-      {children.map((item) => {
-        const isCut =
-          clipboard?.operation === "cut" &&
-          clipboard.relativePath === item.path;
-
-        const isSelected = selectedItems.some(
-          (selected) => selected.path === item.path,
-        );
-
-        return (
-          <div
-            key={item.path}
-            className={`cloud-row ${isCut ? "cloud-row--cut" : ""} ${
-              isSelected ? "cloud-row--selected" : ""
-            }`}
-            onDoubleClick={() => {
-              if (item.type === "folder") {
-                onNavigate(item.path);
-              } else {
-                onOpenFile(item.file);
-              }
-            }}
-            onContextMenu={(e) => {
-              e.preventDefault();
-
-              setMenu({
-                visible: true,
-                x: e.clientX,
-                y: e.clientY,
-                item,
-              });
-            }}
-          >
+      {viewMode === "list" ? (
+        <>
+          <div className="cloud-header">
             <div className="cloud-name">
               <input
                 type="checkbox"
                 className="cloud-selection-checkbox"
-                checked={selectedItems.some(
-                  (selected) => selected.path === item.path,
-                )}
-                onChange={() => handleItemSelection(item)}
-                onClick={(e) => e.stopPropagation()}
+                checked={allSelected}
+                onChange={handleSelectAll}
+                title="Select all"
               />
-
-              {item.type === "folder" ? "📁" : "📄"}
-
-              {renaming?.path === item.path ? (
-                <input
-                  className="cloud-rename"
-                  autoFocus
-                  value={renameValue}
-                  onChange={(e) => setRenameValue(e.target.value)}
-                  onBlur={finishRename}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") finishRename();
-
-                    if (e.key === "Escape") setRenaming(null);
-                  }}
-                />
-              ) : (
-                item.name
-              )}
+              <span
+                onClick={() => {
+                  if (sortField === "name") setSortAsc(!sortAsc);
+                  else {
+                    setSortField("name");
+                    setSortAsc(true);
+                  }
+                }}
+                style={{ cursor: "pointer" }}
+              >
+                Name {sortField === "name" && (sortAsc ? "▲" : "▼")}
+              </span>
             </div>
 
-            <div>
-              {item.type === "folder"
-                ? "--"
-                : item.file
-                  ? formatSize(item.file.file_size)
-                  : "--"}
+            <div
+              onClick={() => {
+                if (sortField === "size") setSortAsc(!sortAsc);
+                else {
+                  setSortField("size");
+                  setSortAsc(true);
+                }
+              }}
+              style={{ cursor: "pointer" }}
+            >
+              Size {sortField === "size" && (sortAsc ? "▲" : "▼")}
             </div>
 
-            <div>
-              {item.file?.updated_at ? formatDate(item.file.updated_at) : "--"}
+            <div
+              onClick={() => {
+                if (sortField === "modified") setSortAsc(!sortAsc);
+                else {
+                  setSortField("modified");
+                  setSortAsc(false);
+                }
+              }}
+              style={{ cursor: "pointer" }}
+            >
+              Modified {sortField === "modified" && (sortAsc ? "▲" : "▼")}
             </div>
 
-            <div className="cloud-actions">
-              <button
-                className="cloud-more"
-                onClick={(e) => {
-                  e.stopPropagation();
+            <div className="cloud-actions" />
+          </div>
 
-                  const rect = e.currentTarget.getBoundingClientRect();
+          {children.length === 0 && (
+            <div className="cloud-empty-state">
+              <FolderOpen size={48} className="cloud-empty-icon" />
+              <h3>This folder is empty</h3>
+              <p>Drag & drop files here, or use the Upload button above.</p>
+            </div>
+          )}
 
+          {children.map((item) => {
+            const isCut =
+              clipboard?.operation === "cut" &&
+              (clipboard.relativePath === item.path ||
+                (clipboard.items &&
+                  clipboard.items.some((i) => i.path === item.path)));
+
+            const isSelected = selectedItems.some(
+              (selected) => selected.path === item.path,
+            );
+
+            return (
+              <div
+                key={item.path}
+                draggable
+                onDragStart={(e) => handleDragStart(e, item)}
+                onDragOver={(e) => handleDragOverFolder(e, item)}
+                onDrop={(e) => handleDropOnFolder(e, item)}
+                className={`cloud-row ${isCut ? "cloud-row--cut" : ""} ${
+                  isSelected ? "cloud-row--selected" : ""
+                }`}
+                onDoubleClick={() => {
+                  if (item.type === "folder") {
+                    onNavigate(item.path);
+                  } else {
+                    onOpenFile(item.file);
+                  }
+                }}
+                onContextMenu={(e) => {
+                  e.preventDefault();
                   setMenu({
                     visible: true,
-                    x: rect.left,
-                    y: rect.bottom + 4,
+                    x: e.clientX,
+                    y: e.clientY,
                     item,
                   });
                 }}
               >
-                <MoreVertical size={18} />
-              </button>
-            </div>
-          </div>
-        );
-      })}
+                <div className="cloud-name">
+                  <input
+                    type="checkbox"
+                    className="cloud-selection-checkbox"
+                    checked={isSelected}
+                    onChange={() => handleItemSelection(item)}
+                    onClick={(e) => e.stopPropagation()}
+                  />
 
+                  {item.type === "folder"
+                    ? "📁"
+                    : item.name.toLowerCase().endsWith(".zip")
+                      ? "🗜️"
+                      : "📄"}
+
+                  {renaming?.path === item.path ? (
+                    <input
+                      className="cloud-rename"
+                      autoFocus
+                      value={renameValue}
+                      onChange={(e) => setRenameValue(e.target.value)}
+                      onBlur={finishRename}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") finishRename();
+                        if (e.key === "Escape") setRenaming(null);
+                      }}
+                    />
+                  ) : (
+                    <span className="cloud-name-text" title={item.name}>
+                      {item.name}
+                    </span>
+                  )}
+                </div>
+
+                <div>
+                  {item.type === "folder"
+                    ? "--"
+                    : item.file
+                      ? formatSize(item.file.file_size)
+                      : "--"}
+                </div>
+
+                <div>
+                  {item.file?.updated_at
+                    ? formatDate(item.file.updated_at)
+                    : item.file?.created_at
+                      ? formatDate(item.file.created_at)
+                      : "--"}
+                </div>
+
+                <div className="cloud-actions">
+                  <button
+                    className="cloud-more"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      setMenu({
+                        visible: true,
+                        x: rect.left,
+                        y: rect.bottom + 4,
+                        item,
+                      });
+                    }}
+                  >
+                    <MoreVertical size={18} />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </>
+      ) : (
+        /* Grid View Mode */
+        <div className="cloud-grid">
+          {children.length === 0 && (
+            <div className="cloud-empty-state grid-empty">
+              <FolderOpen size={48} className="cloud-empty-icon" />
+              <h3>This folder is empty</h3>
+              <p>Drag & drop files here, or use the Upload button above.</p>
+            </div>
+          )}
+
+          {children.map((item) => {
+            const isCut =
+              clipboard?.operation === "cut" &&
+              (clipboard.relativePath === item.path ||
+                (clipboard.items &&
+                  clipboard.items.some((i) => i.path === item.path)));
+
+            const isSelected = selectedItems.some(
+              (selected) => selected.path === item.path,
+            );
+
+            return (
+              <div
+                key={item.path}
+                draggable
+                onDragStart={(e) => handleDragStart(e, item)}
+                onDragOver={(e) => handleDragOverFolder(e, item)}
+                onDrop={(e) => handleDropOnFolder(e, item)}
+                className={`cloud-grid-item ${isCut ? "cloud-row--cut" : ""} ${
+                  isSelected ? "selected" : ""
+                } ${item.type === "folder" ? "is-folder" : "is-file"}`}
+                onDoubleClick={() => {
+                  if (item.type === "folder") {
+                    onNavigate(item.path);
+                  } else {
+                    onOpenFile(item.file);
+                  }
+                }}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  setMenu({
+                    visible: true,
+                    x: e.clientX,
+                    y: e.clientY,
+                    item,
+                  });
+                }}
+              >
+                <div className="grid-item-top">
+                  <input
+                    type="checkbox"
+                    className="cloud-selection-checkbox"
+                    checked={isSelected}
+                    onChange={() => handleItemSelection(item)}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+
+                  <button
+                    className="grid-more-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      setMenu({
+                        visible: true,
+                        x: rect.left,
+                        y: rect.bottom + 4,
+                        item,
+                      });
+                    }}
+                  >
+                    <MoreVertical size={16} />
+                  </button>
+                </div>
+
+                <div className="grid-item-icon-area">
+                  {getItemGridIcon(item)}
+                </div>
+
+                <div className="grid-item-info">
+                  {renaming?.path === item.path ? (
+                    <input
+                      className="cloud-rename"
+                      autoFocus
+                      value={renameValue}
+                      onChange={(e) => setRenameValue(e.target.value)}
+                      onBlur={finishRename}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") finishRename();
+                        if (e.key === "Escape") setRenaming(null);
+                      }}
+                    />
+                  ) : (
+                    <span className="grid-item-name" title={item.name}>
+                      {item.name}
+                    </span>
+                  )}
+                  <span className="grid-item-sub">
+                    {item.type === "folder"
+                      ? "Folder"
+                      : item.file
+                        ? formatSize(item.file.file_size)
+                        : "File"}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Item Context Menu */}
       <ContextMenu
         visible={menu.visible}
         x={menu.x}
@@ -379,23 +610,30 @@ export default function CloudFileList({
             disabled: !clipboard,
             onClick: () => {
               let destination;
-
               if (menu.item.type === "folder") {
-                // Paste inside the folder
                 destination = menu.item.path;
               } else {
-                // Paste beside the file
                 const lastSlash = menu.item.path.lastIndexOf("/");
-
                 destination =
                   lastSlash === -1
                     ? ""
                     : menu.item.path.substring(0, lastSlash);
               }
-
               onPaste(destination);
             },
           },
+
+          ...(onCompressItem
+            ? [
+                {
+                  label: "Compress to Zip",
+                  icon: Archive,
+                  onClick: () => {
+                    onCompressItem(menu.item);
+                  },
+                },
+              ]
+            : []),
 
           ...(menu.item?.name?.toLowerCase().endsWith(".zip") && adapter.extractArchive
             ? [
@@ -426,6 +664,19 @@ export default function CloudFileList({
                 },
               ]
             : []),
+
+          ...(onExportItem
+            ? [
+                {
+                  label: "Export to Cloud",
+                  icon: CloudUpload,
+                  onClick: () => {
+                    onExportItem(menu.item);
+                  },
+                },
+              ]
+            : []),
+
           {
             label: "Download",
             icon: Download,
@@ -442,20 +693,30 @@ export default function CloudFileList({
               setRenameValue(menu.item.name);
             },
           },
+          ...(onShowProperties
+            ? [
+                {
+                  label: "Properties",
+                  icon: Info,
+                  onClick: () => {
+                    onShowProperties(menu.item);
+                  },
+                },
+              ]
+            : []),
           {
             label: "Delete",
             icon: Trash2,
             onClick: async () => {
-              if (!window.confirm(`Delete "${menu.item.name}"?`)) {
+              if (!window.confirm(`Move "${menu.item.name}" to Trash?`)) {
                 return;
               }
 
               try {
                 await deletePath(workspaceId, menu.item);
-
                 toast.success(
-                  "Deleted",
-                  `${menu.item.name} deleted successfully`,
+                  "Moved to Trash",
+                  `${menu.item.name} moved to recycle bin.`,
                 );
               } catch (error) {
                 toast.error(
@@ -470,6 +731,8 @@ export default function CloudFileList({
           },
         ]}
       />
+
+      {/* Background Context Menu */}
       <ContextMenu
         visible={backgroundMenu.visible}
         x={backgroundMenu.x}
@@ -483,7 +746,7 @@ export default function CloudFileList({
         }
         items={[
           {
-            label: "Paste",
+            label: "Paste Here",
             icon: ClipboardPaste,
             disabled: !clipboard,
             onClick: () => onPaste(currentFolder),

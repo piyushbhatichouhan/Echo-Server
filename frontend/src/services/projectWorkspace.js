@@ -25,11 +25,11 @@ export default createFileWorkspace({
       item.type,
     );
   },
-  deletePath: (projectId, item) =>
-    projectApi.deleteProjectPath(projectId, item.path, item.type),
+  deletePath: (projectId, item, permanent) =>
+    projectApi.deleteProjectPath(projectId, item.path, item.type, permanent),
 
-  deletePaths: (projectId, items) =>
-    projectApi.deleteProjectPaths(projectId, items),
+  deletePaths: (projectId, items, permanent) =>
+    projectApi.deleteProjectPaths(projectId, items, permanent),
 
   downloadFile: projectApi.downloadProjectFile,
   downloadPaths: (projectId, items) =>
@@ -45,4 +45,16 @@ export default createFileWorkspace({
 
   extractArchive: (projectId, relativePath, destination) =>
     projectApi.extractProjectArchive(projectId, relativePath, destination),
+
+  getTrash: (projectId) => projectApi.getProjectTrash(projectId),
+  restoreTrash: (projectId, fileId) => projectApi.restoreProjectTrash(projectId, fileId),
+  emptyTrash: (projectId) => projectApi.emptyProjectTrash(projectId),
+  compressPaths: (projectId, items, zipName, destination) =>
+    projectApi.compressProjectPaths(projectId, items, zipName, destination),
+  searchFiles: (projectId, query) => projectApi.searchProjectFiles(projectId, query),
+  exportToCloud: (projectId, items, destination) =>
+    projectApi.exportProjectToCloud(projectId, items, destination),
+  importToProject: (projectId, items, destination) =>
+    projectApi.importCloudToProject(projectId, items, destination),
+  isCloud: false,
 });

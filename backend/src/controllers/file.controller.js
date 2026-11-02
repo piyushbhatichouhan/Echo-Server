@@ -183,7 +183,15 @@ const renameProjectFile = async (req, res, next) => {
 
 const deleteProjectPath = async (req, res, next) => {
   try {
-    await deletePath(req.params.id, req.user.id, req.body.path, req.body.type);
+    const permanent =
+      req.query.permanent === "true" || req.body.permanent === true;
+    await deletePath(
+      req.params.id,
+      req.user.id,
+      req.body.path,
+      req.body.type,
+      permanent,
+    );
 
     res.json({
       success: true,
@@ -266,10 +274,13 @@ const pastePath = async (req, res, next) => {
 
 const deletePaths = async (req, res, next) => {
   try {
+    const permanent =
+      req.query.permanent === "true" || req.body.permanent === true;
     const result = await fileService.deletePaths(
       req.params.id,
       req.user.id,
       req.body.items,
+      permanent,
     );
 
     res.json({
@@ -332,6 +343,118 @@ const extractArchive = async (req, res, next) => {
   }
 };
 
+const getTrash = async (req, res, next) => {
+  try {
+    const trash = await fileService.getProjectTrash(req.params.id, req.user.id);
+    res.json({
+      success: true,
+      data: trash,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const restoreFromTrash = async (req, res, next) => {
+  try {
+    const fileId = req.body.fileId || req.body.id;
+    const result = await fileService.restoreProjectTrash(
+      req.params.id,
+      req.user.id,
+      fileId,
+    );
+    res.json({
+      success: true,
+      data: result,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const emptyTrash = async (req, res, next) => {
+  try {
+    const result = await fileService.emptyProjectTrash(
+      req.params.id,
+      req.user.id,
+    );
+    res.json({
+      success: true,
+      data: result,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const compressProjectPaths = async (req, res, next) => {
+  try {
+    const result = await fileService.compressProjectPaths(
+      req.params.id,
+      req.user.id,
+      req.body.items,
+      req.body.zipName,
+      req.body.destination,
+    );
+    res.json({
+      success: true,
+      data: result,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const searchProjectFiles = async (req, res, next) => {
+  try {
+    const result = await fileService.searchProjectFiles(
+      req.params.id,
+      req.user.id,
+      req.query.q || req.query.query,
+    );
+    res.json({
+      success: true,
+      data: result,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const exportProjectToCloud = async (req, res, next) => {
+  try {
+    const result = await fileService.exportProjectToCloud(
+      req.params.id,
+      req.user.id,
+      req.body.items,
+      req.body.destination,
+    );
+    res.json({
+      success: true,
+      data: result,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const importCloudToProject = async (req, res, next) => {
+  try {
+    const result = await fileService.importCloudToProject(
+      req.params.id,
+      req.user.id,
+      req.body.items,
+      req.body.destination,
+    );
+    res.json({
+      success: true,
+      data: result,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   uploadFile,
   listFiles,
@@ -352,4 +475,11 @@ module.exports = {
   downloadPaths,
   getStats,
   extractArchive,
+  getTrash,
+  restoreFromTrash,
+  emptyTrash,
+  compressProjectPaths,
+  searchProjectFiles,
+  exportProjectToCloud,
+  importCloudToProject,
 };

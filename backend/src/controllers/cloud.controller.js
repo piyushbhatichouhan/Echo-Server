@@ -365,6 +365,38 @@ const extractArchive = async (req, res, next) => {
   }
 };
 
+const compressCloudPaths = async (req, res, next) => {
+  try {
+    const result = await cloudService.compressCloudPaths(
+      req.user.id,
+      req.body.items,
+      req.body.zipName,
+      req.body.destination,
+    );
+    res.json({
+      success: true,
+      data: result,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const searchCloudFiles = async (req, res, next) => {
+  try {
+    const result = await cloudService.searchCloudFiles(
+      req.user.id,
+      req.query.q || req.query.query,
+    );
+    res.json({
+      success: true,
+      data: result,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   upload,
   list,
@@ -387,4 +419,6 @@ module.exports = {
   restoreFromTrash,
   emptyTrash,
   extractArchive,
+  compressCloudPaths,
+  searchCloudFiles,
 };
