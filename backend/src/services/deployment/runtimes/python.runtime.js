@@ -27,7 +27,7 @@ async function deploy(context) {
 
     await start(context);
 
-    //await healthCheck(context);
+    await healthCheck(context);
 
     await finishDeployment(context);
 
@@ -329,25 +329,46 @@ async function start(context) {
 }
 
 async function healthCheck(context) {
-  const { deployment, settings } = context;
+  const { project, deployment } = context;
 
   await context.infrastructure.logger.stage(
     deployment.id,
-    "Checking Application Health",
-  );
-  const healthy = await healthService.checkApplication(
-    context.project.id,
-    runtime.INTERNAL_PORT,
+    "Verifying Application Health & Port",
   );
 
-  if (!healthy) {
-    throw new Error("Application failed health check.");
+  const result = await healthService.verifyAndDetectPort(
+    project.id,
+    context.containerPort,
+    {
+      deploymentId: deployment.id,
+      logger: context.infrastructure.logger,
+      maxWaitMs: 25000,
+      checkIntervalMs: 1000,
+    },
+  );
+
+  if (result.autoDetected) {
+    context.containerPort = result.port;
   }
 
-  await context.infrastructure.logger.info(
-    deployment.id,
-    "Application responded successfully.",
-  );
+  if (result.success) {
+    await context.infrastructure.logger.info(
+      deployment.id,
+      `Application confirmed online and listening on port ${result.port}.`,
+    );
+  } else {
+    const status = await context.infrastructure.container.getStatus(project.id);
+    if (!status.running) {
+      throw new Error(
+        `Application container exited prematurely (Exit code: ${status.exitCode}). Check logs for details.`,
+      );
+    }
+
+    await context.infrastructure.logger.warn(
+      deployment.id,
+      `Application did not respond to HTTP probe on port ${context.containerPort} within 25 seconds. Container is still running in background.`,
+    );
+  }
 }
 
 async function stop(context) {
