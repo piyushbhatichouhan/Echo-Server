@@ -44,12 +44,12 @@ async function deploy(context) {
 // Private Functions
 
 async function prepare(context) {
-  const { project } = context;
+  const { project, settings } = context;
 
   context.cwd = workspace.getProjectFilesDirectory(project.id);
 
   context.imageName = `echo-${project.id}`;
-  context.containerPort = module.exports.INTERNAL_PORT;
+  context.containerPort = Number(settings?.port) || module.exports.INTERNAL_PORT;
   context.containerName = context.infrastructure.container.getContainerName(
     project.id,
   );
