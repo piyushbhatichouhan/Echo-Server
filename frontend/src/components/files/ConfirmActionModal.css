@@ -1,0 +1,44 @@
+.confirm-modal-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1.25rem;
+  padding: 0.5rem 0;
+}
+
+.confirm-modal-icon-wrapper {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.confirm-modal-icon {
+  color: #ef4444;
+}
+
+.confirm-modal-text {
+  max-width: 400px;
+}
+
+.confirm-modal-msg {
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--text-primary, #e2e8f0);
+  margin: 0;
+  word-break: break-word;
+}
+
+.confirm-modal-actions {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  width: 100%;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+}

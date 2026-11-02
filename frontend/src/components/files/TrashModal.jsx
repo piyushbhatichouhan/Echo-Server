@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import Modal from "../common/modal/modal";
 import Button from "../common/button/button";
+import ConfirmActionModal from "./ConfirmActionModal";
 import { Trash2, RotateCcw, AlertTriangle, File, Folder } from "lucide-react";
 import { useToast } from "../../context/ToastContext";
 import "./TrashModal.css";
@@ -32,6 +33,7 @@ export default function TrashModal({ isOpen, onClose, adapter, workspaceId, onRe
   const [trashItems, setTrashItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [showConfirmEmpty, setShowConfirmEmpty] = useState(false);
   const toast = useToast();
 
   const loadTrash = async () => {
@@ -67,21 +69,18 @@ export default function TrashModal({ isOpen, onClose, adapter, workspaceId, onRe
     }
   };
 
-  const handleEmptyTrash = async () => {
+  const handleEmptyTrash = () => {
     if (trashItems.length === 0) return;
-    if (
-      !window.confirm(
-        "Permanently empty the trash? All deleted items will be purged and cannot be recovered."
-      )
-    ) {
-      return;
-    }
+    setShowConfirmEmpty(true);
+  };
 
+  const executeEmptyTrash = async () => {
     try {
       setActionLoading(true);
       await adapter.emptyTrash(workspaceId);
       toast.success("Trash Emptied", "All trashed items permanently purged.");
       setTrashItems([]);
+      setShowConfirmEmpty(false);
       onRestored?.();
     } catch (err) {
       toast.error("Empty trash failed", err.response?.data?.message || err.message);
@@ -93,6 +92,16 @@ export default function TrashModal({ isOpen, onClose, adapter, workspaceId, onRe
   if (!isOpen) return null;
 
   return (
+    <>
+      <ConfirmActionModal
+        isOpen={showConfirmEmpty}
+        onClose={() => setShowConfirmEmpty(false)}
+        onConfirm={executeEmptyTrash}
+        title="Empty Trash?"
+        message="Permanently purge all trashed files and folders? This action cannot be undone."
+        confirmText="Empty Trash"
+        loading={actionLoading}
+      />
     <Modal isOpen={isOpen} onClose={onClose} title="Trash / Recycle Bin">
       <div className="trash-modal-container">
         <div className="trash-modal-top">
@@ -172,5 +181,6 @@ export default function TrashModal({ isOpen, onClose, adapter, workspaceId, onRe
         </div>
       </div>
     </Modal>
+    </>
   );
 }

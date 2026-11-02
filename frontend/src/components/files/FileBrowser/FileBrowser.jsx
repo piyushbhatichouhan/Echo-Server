@@ -10,6 +10,8 @@ import UploadDrawer from "../UploadDrawer";
 import TrashModal from "../TrashModal";
 import FilePropertiesModal from "../FilePropertiesModal";
 import CrossTransferModal from "../CrossTransferModal";
+import NamePromptModal from "../NamePromptModal";
+import ConfirmActionModal from "../ConfirmActionModal";
 
 import { Upload, Archive, CloudUpload, Info, X } from "lucide-react";
 import { readDroppedEntries } from "../../../utils/readDroppedEntries";
@@ -47,6 +49,28 @@ export default function FileBrowser({ adapter, workspaceId, onStorageChange }) {
   const [isGlobalSearch, setIsGlobalSearch] = useState(false);
   const [globalSearchResults, setGlobalSearchResults] = useState([]);
   const [searchingGlobal, setSearchingGlobal] = useState(false);
+
+  // Modern UI Input Dialog State (Replaces native browser prompts)
+  const [promptModal, setPromptModal] = useState({
+    isOpen: false,
+    type: "file",
+    title: "",
+    initialValue: "",
+    currentPath: "",
+    itemCount: 1,
+    onSubmit: () => {},
+  });
+
+  // Modern UI Confirmation Dialog State (Replaces native browser confirms)
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: "Confirm Action",
+    message: "",
+    confirmText: "Delete",
+    confirmVariant: "danger",
+    loading: false,
+    onConfirm: () => {},
+  });
 
   const toast = useToast();
 
@@ -206,51 +230,69 @@ export default function FileBrowser({ adapter, workspaceId, onStorageChange }) {
     }
   };
 
-  const handleCompressSelected = async () => {
+  // Modern UI Zip Compression
+  const handleCompressSelected = () => {
     if (!adapter.compressPaths || selectedItems.length === 0) return;
     const defaultName =
       selectedItems.length === 1
         ? `${selectedItems[0].name.replace(/\.[^/.]+$/, "")}.zip`
         : "archive.zip";
-    const name = window.prompt("Enter archive name (.zip):", defaultName);
-    if (!name) return;
 
-    try {
-      toast.info("Compressing files...");
-      await adapter.compressPaths(
-        workspaceId,
-        selectedItems.map((i) => ({ relativePath: i.path, type: i.type })),
-        name,
-        currentFolder,
-      );
-      toast.success("Compressed", `Created "${name}" successfully.`);
-      setSelectedItems([]);
-      await refresh();
-      onStorageChange?.();
-    } catch (err) {
-      toast.error("Compression Failed", err.response?.data?.message || err.message);
-    }
+    setPromptModal({
+      isOpen: true,
+      type: "archive",
+      title: "Compress to Zip Archive",
+      initialValue: defaultName,
+      itemCount: selectedItems.length,
+      currentPath: currentFolder,
+      onSubmit: async (name) => {
+        try {
+          toast.info("Compressing files...");
+          await adapter.compressPaths(
+            workspaceId,
+            selectedItems.map((i) => ({ relativePath: i.path, type: i.type })),
+            name,
+            currentFolder,
+          );
+          toast.success("Compressed", `Created "${name}" successfully.`);
+          setSelectedItems([]);
+          await refresh();
+          onStorageChange?.();
+        } catch (err) {
+          toast.error("Compression Failed", err.response?.data?.message || err.message);
+        }
+      },
+    });
   };
 
-  const handleCompressItem = async (item) => {
+  const handleCompressItem = (item) => {
     if (!adapter.compressPaths || !item) return;
-    const name = window.prompt("Enter archive name (.zip):", `${item.name}.zip`);
-    if (!name) return;
+    const defaultName = `${item.name.replace(/\.[^/.]+$/, "")}.zip`;
 
-    try {
-      toast.info("Compressing...");
-      await adapter.compressPaths(
-        workspaceId,
-        [{ relativePath: item.path, type: item.type }],
-        name,
-        currentFolder,
-      );
-      toast.success("Compressed", `Created "${name}" successfully.`);
-      await refresh();
-      onStorageChange?.();
-    } catch (err) {
-      toast.error("Compression Failed", err.response?.data?.message || err.message);
-    }
+    setPromptModal({
+      isOpen: true,
+      type: "archive",
+      title: "Compress to Zip Archive",
+      initialValue: defaultName,
+      itemCount: 1,
+      currentPath: currentFolder,
+      onSubmit: async (name) => {
+        try {
+          toast.info("Compressing...");
+          await adapter.compressPaths(
+            workspaceId,
+            [{ relativePath: item.path, type: item.type }],
+            name,
+            currentFolder,
+          );
+          toast.success("Compressed", `Created "${name}" successfully.`);
+          await refresh();
+          onStorageChange?.();
+        } catch (err) {
+          toast.error("Compression Failed", err.response?.data?.message || err.message);
+        }
+      },
+    });
   };
 
   const handleShowProperties = (item) => {
@@ -460,52 +502,114 @@ export default function FileBrowser({ adapter, workspaceId, onStorageChange }) {
     }
   };
 
-  const createFolder = async () => {
-    const name = prompt("Folder name");
-    if (!name) return;
-    await adapter.createFolder(workspaceId, currentFolder, name);
-    refresh();
+  // Modern UI New Folder Dialog (Replaces prompt)
+  const createFolder = () => {
+    setPromptModal({
+      isOpen: true,
+      type: "folder",
+      title: "New Folder",
+      initialValue: "",
+      currentPath: currentFolder,
+      onSubmit: async (name) => {
+        try {
+          await adapter.createFolder(workspaceId, currentFolder, name);
+          toast.success("Folder Created", `Created folder "${name}"`);
+          await refresh();
+          onStorageChange?.();
+        } catch (err) {
+          toast.error("Failed to create folder", err.response?.data?.message || err.message);
+        }
+      },
+    });
   };
 
-  const createFile = async () => {
-    const name = prompt("File name");
-    if (!name) return;
-    await adapter.createFile(workspaceId, currentFolder, name);
-    refresh();
+  // Modern UI New File Dialog (Replaces prompt)
+  const createFile = () => {
+    setPromptModal({
+      isOpen: true,
+      type: "file",
+      title: "New File",
+      initialValue: "",
+      currentPath: currentFolder,
+      onSubmit: async (name) => {
+        try {
+          await adapter.createFile(workspaceId, currentFolder, name);
+          toast.success("File Created", `Created file "${name}"`);
+          await refresh();
+          onStorageChange?.();
+        } catch (err) {
+          toast.error("Failed to create file", err.response?.data?.message || err.message);
+        }
+      },
+    });
   };
 
-  const handleDeleteSelected = async () => {
+  // Modern UI Delete Confirmation Dialog (Replaces confirm)
+  const handleDeleteSelected = () => {
     if (!selectedItems.length) return;
 
-    const names = selectedItems.map((item) => item.name).join(", ");
-    if (
-      !window.confirm(
-        `Move ${selectedItems.length} selected item(s) to Trash?\n\n${names}`,
-      )
-    ) {
-      return;
-    }
+    const count = selectedItems.length;
+    const names = selectedItems.slice(0, 3).map((item) => item.name).join(", ");
+    const more = count > 3 ? ` and ${count - 3} more` : "";
 
-    try {
-      await adapter.deletePaths(
-        workspaceId,
-        selectedItems.map((item) => ({
-          type: item.type,
-          relativePath: item.path,
-        })),
-      );
+    setConfirmModal({
+      isOpen: true,
+      title: "Move to Trash?",
+      message: `Move ${count} selected item(s) (${names}${more}) to the Recycle Bin?`,
+      confirmText: "Move to Trash",
+      confirmVariant: "danger",
+      loading: false,
+      onConfirm: async () => {
+        try {
+          await adapter.deletePaths(
+            workspaceId,
+            selectedItems.map((item) => ({
+              type: item.type,
+              relativePath: item.path,
+            })),
+          );
 
-      toast.success(
-        "Moved to Trash",
-        `${selectedItems.length} item(s) moved to recycle bin.`,
-      );
+          toast.success(
+            "Moved to Trash",
+            `${count} item(s) moved to recycle bin.`,
+          );
 
-      setSelectedItems([]);
-      await refresh();
-      onStorageChange?.();
-    } catch (error) {
-      toast.error("Delete Failed", error.response?.data?.message || error.message);
-    }
+          setSelectedItems([]);
+          await refresh();
+          onStorageChange?.();
+        } catch (error) {
+          toast.error("Delete Failed", error.response?.data?.message || error.message);
+        } finally {
+          setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        }
+      },
+    });
+  };
+
+  // Modern UI Single Item Delete (Replaces confirm)
+  const handleDeleteSingleItem = (item) => {
+    if (!item) return;
+
+    setConfirmModal({
+      isOpen: true,
+      title: "Move to Trash?",
+      message: `Move "${item.name}" to the Recycle Bin?`,
+      confirmText: "Move to Trash",
+      confirmVariant: "danger",
+      loading: false,
+      onConfirm: async () => {
+        try {
+          await adapter.deletePath(workspaceId, item);
+          toast.success("Moved to Trash", `"${item.name}" moved to recycle bin.`);
+          await refresh();
+          onStorageChange?.();
+        } catch (error) {
+          toast.error("Delete Failed", error.response?.data?.message || error.message);
+        } finally {
+          setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        }
+      },
+    });
   };
 
   const handleDownloadSelected = async () => {
@@ -536,11 +640,7 @@ export default function FileBrowser({ adapter, workspaceId, onStorageChange }) {
 
       const isCtrlOrCmd = e.ctrlKey || e.metaKey;
 
-      if (isCtrlOrCmd && e.key.toLowerCase() === "a") {
-        e.preventDefault();
-        // Select all items currently in view
-        // Handled in file list or select all
-      } else if (isCtrlOrCmd && e.key.toLowerCase() === "c") {
+      if (isCtrlOrCmd && e.key.toLowerCase() === "c") {
         if (selectedItems.length > 0) {
           e.preventDefault();
           handleCopySelected();
@@ -564,19 +664,24 @@ export default function FileBrowser({ adapter, workspaceId, onStorageChange }) {
         if (selectedItems.length === 1) {
           e.preventDefault();
           const item = selectedItems[0];
-          const newName = window.prompt("Rename to:", item.name);
-          if (newName && newName !== item.name) {
-            adapter
-              .renamePath(workspaceId, item, newName)
-              .then(() => {
+          setPromptModal({
+            isOpen: true,
+            type: "rename",
+            title: "Rename Item",
+            initialValue: item.name,
+            currentPath: currentFolder,
+            onSubmit: async (newName) => {
+              if (newName === item.name) return;
+              try {
+                await adapter.renamePath(workspaceId, item, newName);
                 toast.success("Renamed", `Renamed to ${newName}`);
-                refresh();
+                await refresh();
                 onStorageChange?.();
-              })
-              .catch((err) =>
-                toast.error("Rename Failed", err.response?.data?.message || err.message),
-              );
-          }
+              } catch (err) {
+                toast.error("Rename Failed", err.response?.data?.message || err.message);
+              }
+            },
+          });
         }
       } else if (e.key === "Escape") {
         if (selectedItems.length > 0) {
@@ -675,6 +780,30 @@ export default function FileBrowser({ adapter, workspaceId, onStorageChange }) {
         uploads={uploadQueue}
         onCancelAll={cancelUpload}
         onDismiss={() => setUploadQueue([])}
+      />
+
+      {/* Modern Name Input Dialog (Folder, File, Zip Archive, Rename) */}
+      <NamePromptModal
+        isOpen={promptModal.isOpen}
+        onClose={() => setPromptModal((prev) => ({ ...prev, isOpen: false }))}
+        onSubmit={promptModal.onSubmit}
+        type={promptModal.type}
+        title={promptModal.title}
+        initialValue={promptModal.initialValue}
+        currentPath={promptModal.currentPath}
+        itemCount={promptModal.itemCount}
+      />
+
+      {/* Modern Confirmation Dialog (Delete, Trash) */}
+      <ConfirmActionModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText={confirmModal.confirmText}
+        confirmVariant={confirmModal.confirmVariant}
+        loading={confirmModal.loading}
       />
 
       {/* Modal Dialogs */}
@@ -845,6 +974,7 @@ export default function FileBrowser({ adapter, workspaceId, onStorageChange }) {
               viewMode={viewMode}
               onShowProperties={handleShowProperties}
               onCompressItem={handleCompressItem}
+              onDeleteItem={handleDeleteSingleItem}
               onExportItem={
                 !adapter.isCloud && adapter.exportToCloud
                   ? (item) => {

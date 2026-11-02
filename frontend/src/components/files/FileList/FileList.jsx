@@ -69,6 +69,7 @@ export default function CloudFileList({
   onCompressItem,
   onExportItem,
   onDropItemOnFolder,
+  onDeleteItem,
 }) {
   const { downloadFile, deletePath, renamePath } = adapter;
   const toast = useToast();
@@ -707,26 +708,10 @@ export default function CloudFileList({
           {
             label: "Delete",
             icon: Trash2,
-            onClick: async () => {
-              if (!window.confirm(`Move "${menu.item.name}" to Trash?`)) {
-                return;
+            onClick: () => {
+              if (onDeleteItem) {
+                onDeleteItem(menu.item);
               }
-
-              try {
-                await deletePath(workspaceId, menu.item);
-                toast.success(
-                  "Moved to Trash",
-                  `${menu.item.name} moved to recycle bin.`,
-                );
-              } catch (error) {
-                toast.error(
-                  "Delete Failed",
-                  error.response?.data?.message || error.message,
-                );
-              }
-
-              await refresh();
-              onStorageChange?.();
             },
           },
         ]}
