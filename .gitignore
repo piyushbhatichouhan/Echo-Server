@@ -10,3 +10,11 @@ router/.env
 backend/src/routing/npm/data
 backend/src/routing/npm/letsencrypt
 backups.md
+backend/README.md
+frontend/README.md
+docs/README.md
+router/README.md
+docker/README.md
+README.md
+watchdog/README.md
+dump-echo_db-202610290815.sql
