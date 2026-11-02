@@ -40,4 +40,30 @@ router.get(
 
 router.get("/:projectId/logs/live", authenticate, projectController.streamLogs);
 
+router.get(
+  "/:projectId/detect-framework",
+  authenticate,
+  projectController.detectFramework,
+);
+router.post(
+  "/:projectId/apply-detected-preset",
+  authenticate,
+  projectController.applyDetectedPreset,
+);
+router.post(
+  "/:projectId/deployments/:deploymentId/rollback",
+  authenticate,
+  projectController.rollbackDeployment,
+);
+router.get(
+  "/:projectId/telemetry",
+  authenticate,
+  projectController.getTelemetry,
+);
+router.post(
+  "/:projectId/terminal",
+  authenticate,
+  projectController.executeTerminal,
+);
+
 module.exports = router;

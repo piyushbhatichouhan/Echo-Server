@@ -324,6 +324,67 @@ const deploy = async (projectId, ownerId) => {
   }
 };
 
+const rollbackDeployment = async (projectId, ownerId, targetDeploymentId) => {
+  await projectService.verifyProjectOwnership(projectId, ownerId);
+
+  const targetDeployment =
+    await deploymentRepository.getDeploymentById(targetDeploymentId);
+  if (!targetDeployment || targetDeployment.project_id !== projectId) {
+    throw new Error("Target deployment not found for this project.");
+  }
+  if (!targetDeployment.image_name) {
+    throw new Error("Target deployment does not have a valid container image to rollback to.");
+  }
+
+  const settings = await projectSettingsService.getProjectSettings(
+    projectId,
+    ownerId,
+  );
+  const userEnvironment = await environmentService.getEnvironmentVariables(
+    projectId,
+    ownerId,
+  );
+
+  // Stop previous running container
+  await container.stopByProject(projectId);
+  await container.removeByProject(projectId);
+
+  // Start container from target deployment's image
+  const containerPort =
+    targetDeployment.container_port ||
+    Number(settings?.port) ||
+    3000;
+
+  const newContainer = await container.create(
+    projectId,
+    targetDeployment.image_name,
+    userEnvironment,
+    targetDeployment.port,
+    containerPort,
+  );
+
+  await container.start(newContainer, targetDeployment.id);
+
+  // Mark all previous deployments stopped except the rolled back one
+  await deploymentRepository.stopPreviousDeployments(
+    projectId,
+    targetDeployment.id,
+  );
+  await deploymentRepository.updateStatus(targetDeployment.id, "running");
+  await deploymentRepository.updateContainer(
+    targetDeployment.id,
+    newContainer.id,
+    newContainer.echoName,
+    containerPort,
+  );
+  await deploymentRepository.markStoppedByUser(projectId, false);
+
+  // Republish if published
+  await publicationService.republishProject(projectId, ownerId);
+
+  return targetDeployment;
+};
+
 module.exports = {
   deployProject,
   getProjectDeployments,
@@ -332,5 +393,6 @@ module.exports = {
   startProject,
   restartProject,
   redeployProject,
+  rollbackDeployment,
   deploy,
 };

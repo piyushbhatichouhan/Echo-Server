@@ -1,16 +1,23 @@
 const projectService = require("../services/project.service");
-
 const publicationRepository = require("./publication.repository");
 const hostnameGenerator = require("./hostname.generator");
-const routing = require("../routing").service;
 const routingService = require("../routing/routing.service");
+const { pool } = require("../config/database");
+
+const getProjectListeningPort = async (projectId) => {
+  const deploymentRes = await pool.query(
+    `SELECT container_port FROM deployments WHERE project_id = $1 AND status = 'running' ORDER BY created_at DESC LIMIT 1`,
+    [projectId],
+  );
+  return Number(deploymentRes.rows[0]?.container_port) || 3000;
+};
 
 const publishProject = async (projectId, ownerId) => {
   await projectService.verifyProjectOwnership(projectId, ownerId);
 
-  const existing = await publicationRepository.getProjectDomain(projectId);
+  let publication = await publicationRepository.getProjectDomain(projectId);
 
-  if (existing) {
+  if (publication) {
     throw new Error("Project is already published.");
   }
 
@@ -21,10 +28,23 @@ const publishProject = async (projectId, ownerId) => {
     project.name,
   );
 
-  const publication = await publicationRepository.createProjectDomain(
+  publication = await publicationRepository.createProjectDomain(
     projectId,
     hostname,
   );
+
+  const port = await getProjectListeningPort(projectId);
+
+  // Wire reverse proxy route in NPM
+  try {
+    await routingService.publish({
+      projectId,
+      hostname: publication.hostname,
+      port,
+    });
+  } catch (err) {
+    console.warn(`[Publication] Routing proxy warning for ${hostname}:`, err.message);
+  }
 
   await publicationRepository.updateProjectDomain(publication.id, {
     publication_status: "active",
@@ -49,6 +69,13 @@ const unpublishProject = async (projectId, ownerId) => {
     throw new Error("Project is not published.");
   }
 
+  // Remove reverse proxy route from NPM
+  try {
+    await routingService.unpublish({ projectId });
+  } catch (err) {
+    console.warn(`[Publication] Routing unpublish warning:`, err.message);
+  }
+
   await publicationRepository.deleteProjectDomain(projectId);
 
   return true;
@@ -59,11 +86,22 @@ const republishProject = async (projectId, ownerId) => {
 
   const publication = await publicationRepository.getProjectDomain(projectId);
 
-  if (!publication) {
+  if (!publication || publication.publication_status !== "active") {
     return null;
   }
 
-  const project = await projectService.getProjectById(projectId, ownerId);
+  const port = await getProjectListeningPort(projectId);
+
+  // Refresh reverse proxy route in NPM
+  try {
+    await routingService.publish({
+      projectId,
+      hostname: publication.hostname,
+      port,
+    });
+  } catch (err) {
+    console.warn(`[Publication] Routing refresh warning for ${publication.hostname}:`, err.message);
+  }
 
   await publicationRepository.updateProjectDomain(publication.id, {
     publication_status: "active",

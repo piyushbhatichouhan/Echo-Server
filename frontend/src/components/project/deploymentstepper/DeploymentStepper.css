@@ -1,0 +1,187 @@
+.eh-deployment-stepper {
+  background: rgba(18, 18, 20, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 18px 22px;
+  margin-bottom: 20px;
+  backdrop-filter: blur(10px);
+}
+
+.eh-stepper-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.eh-stepper-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.eh-stepper-title h4 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #f4f4f5;
+  letter-spacing: -0.01em;
+}
+
+.eh-stepper-state-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.eh-stepper-state-badge.running {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.eh-stepper-state-badge.building {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  animation: pulseBadge 2s infinite ease-in-out;
+}
+
+.eh-stepper-state-badge.failed {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.eh-stepper-state-badge.stopped,
+.eh-stepper-state-badge.not_deployed {
+  background: rgba(113, 113, 122, 0.15);
+  color: #a1a1aa;
+  border: 1px solid rgba(113, 113, 122, 0.25);
+}
+
+.eh-stepper-building-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: #f59e0b;
+}
+
+.eh-spinner {
+  animation: spin 1s linear infinite;
+}
+
+.eh-stepper-track {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  overflow-x: auto;
+  padding: 6px 0;
+}
+
+.eh-step-node {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 140px;
+  transition: all 0.25s ease;
+}
+
+.eh-step-icon-wrapper {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.25s ease;
+}
+
+.eh-step-pending .eh-step-icon-wrapper {
+  background: rgba(255, 255, 255, 0.04);
+  color: #71717a;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.eh-step-completed .eh-step-icon-wrapper {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.25);
+}
+
+.eh-step-active .eh-step-icon-wrapper {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.5);
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.35);
+  animation: pulseActive 1.8s infinite;
+}
+
+.eh-step-failed .eh-step-icon-wrapper {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.eh-step-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.eh-step-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #e4e4e7;
+  white-space: nowrap;
+}
+
+.eh-step-pending .eh-step-label {
+  color: #71717a;
+}
+
+.eh-step-desc {
+  font-size: 0.7rem;
+  color: #a1a1aa;
+  white-space: nowrap;
+}
+
+.eh-step-pending .eh-step-desc {
+  color: #52525b;
+}
+
+.eh-step-connector {
+  flex: 1;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  margin: 0 12px;
+  min-width: 24px;
+  transition: background 0.3s ease;
+}
+
+.eh-step-connector.completed {
+  background: linear-gradient(90deg, #10b981, #059669);
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.4);
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulseActive {
+  0% { transform: scale(1); box-shadow: 0 0 10px rgba(245, 158, 11, 0.2); }
+  50% { transform: scale(1.05); box-shadow: 0 0 20px rgba(245, 158, 11, 0.5); }
+  100% { transform: scale(1); box-shadow: 0 0 10px rgba(245, 158, 11, 0.2); }
+}
+
+@keyframes pulseBadge {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}

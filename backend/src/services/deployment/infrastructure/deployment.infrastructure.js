@@ -12,8 +12,8 @@ const create = async (projectId, image, container) => {
   );
 }; 
 
-const stopPreviousDeployments = async (projectId) =>
-  deploymentRepository.stopDeployments(projectId);
+const stopPreviousDeployments = async (projectId, exceptDeploymentId = null) =>
+  deploymentRepository.stopDeployments(projectId, exceptDeploymentId);
 
 const updateStatus = async (deploymentId, status) =>
   deploymentRepository.updateDeploymentStatus(deploymentId, status);
@@ -60,4 +60,5 @@ module.exports = {
   fail,
   running,
   updateContainer,
+  getDeploymentById: deploymentRepository.getDeploymentById,
 };

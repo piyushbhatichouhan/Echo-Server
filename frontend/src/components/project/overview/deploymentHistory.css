@@ -89,3 +89,28 @@
 .eh-history-icon.stopped {
     color: #9f9f9f;
 }
+
+.eh-rollback-btn {
+    background: rgba(255, 140, 0, 0.15);
+    border: 1px solid rgba(255, 140, 0, 0.35);
+    color: #ff8c00;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.eh-rollback-btn:hover:not(:disabled) {
+    background: #ff8c00;
+    color: #000;
+}
+
+.eh-rollback-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
