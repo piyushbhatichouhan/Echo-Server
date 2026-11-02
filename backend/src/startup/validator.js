@@ -15,6 +15,8 @@ async function checkStorage() {
     storage.cloud,
     storage.backups,
     storage.published,
+    storage.temp,
+    storage.logs,
   ];
 
   for (const folder of folders) {

@@ -19,6 +19,10 @@ module.exports = {
 
   published: path.join(STORAGE_ROOT, "published"),
 
+  temp: path.join(STORAGE_ROOT, "temp"),
+
+  logs: path.join(STORAGE_ROOT, "logs"),
+
   nginx: {
     executable: process.env.NGINX_EXECUTABLE || platform.nginxExecutable,
 
