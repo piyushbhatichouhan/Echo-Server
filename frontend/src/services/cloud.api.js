@@ -65,6 +65,17 @@ export const renameCloudFile = async (fileId, newName) => {
   }
 };
 
+export const renameCloudPath = async (item, newName) => {
+  if (item?.file?.id) {
+    return renameCloudFile(item.file.id, newName);
+  }
+  const response = await api.put("/cloud/rename", {
+    oldPath: item.path,
+    newName,
+  });
+  return response.data;
+};
+
 export const createCloudFolder = async (path) => {
   const res = await api.post("/cloud/folders", {
     path,
@@ -135,7 +146,7 @@ export const getCloudStats = async () => {
 };
 
 export const getFileBlob = async (fileId) => {
-  const response = await api.get(`cloud/files/${fileId}/download`, {
+  const response = await api.get(`/cloud/files/${fileId}/download`, {
     responseType: "blob",
   });
 
@@ -164,5 +175,63 @@ export const pasteCloudPath = async (clipboard, destination) => {
     destination,
   });
 
+  return res.data;
+};
+
+export const deleteCloudPaths = async (items) => {
+  const response = await api.delete("/cloud/paths/bulk", {
+    data: {
+      items,
+    },
+  });
+
+  return response.data;
+};
+
+export const downloadCloudPaths = async (items) => {
+  const response = await api.post(
+    "/cloud/paths/bulk/download",
+    {
+      items,
+    },
+    {
+      responseType: "blob",
+    },
+  );
+
+  const url = URL.createObjectURL(response.data);
+
+  const a = document.createElement("a");
+
+  a.href = url;
+  a.download = "download.zip";
+
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+
+  URL.revokeObjectURL(url);
+};
+
+export const extractCloudArchive = async (relativePath, destination) => {
+  const res = await api.post("/cloud/extract", {
+    relativePath,
+    destination,
+  });
+  return res.data;
+};
+
+export const getCloudTrash = async () => {
+  const res = await api.get("/cloud/trash");
+  return res.data.data;
+};
+
+export const restoreCloudTrash = async (fileId) => {
+  const res = await api.post("/cloud/trash/restore", { fileId });
+  return res.data;
+};
+
+export const emptyCloudTrash = async () => {
+  const res = await api.delete("/cloud/trash/empty");
   return res.data;
 };

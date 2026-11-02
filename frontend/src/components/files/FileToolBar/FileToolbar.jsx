@@ -1,14 +1,19 @@
 import "./Filetoolbar.css";
 
-import { Upload, FolderPlus, FilePlus, Folder, File } from "lucide-react";
+import { Upload, FolderPlus, FilePlus, Search, ClipboardPaste } from "lucide-react";
 import { FileUp, FolderUp } from "lucide-react";
 import Dropdown from "../../common/Dropdown/Dropdown";
+
 export default function FileToolbar({
   onUploadFile,
   onUploadFolder,
   onNewFolder,
   onNewFile,
   clipboard,
+  onPaste,
+  onClearClipboard,
+  searchQuery = "",
+  onSearchChange,
 }) {
   return (
     <div className="cloud-toolbar">
@@ -43,19 +48,51 @@ export default function FileToolbar({
           <span>You can drag and drop file and folder too</span>
         </button>
         {clipboard && (
-          <div className="clipboard-info">
-            <span className="clipboard-info__icon">
-              {clipboard.operation === "cut" ? "✂" : "📄"}
-            </span>
+          <>
+            {onPaste && (
+              <button
+                type="button"
+                className="cloud-btn paste-btn"
+                onClick={onPaste}
+                title="Paste into current folder"
+              >
+                <ClipboardPaste size={18} />
+                <span>Paste Here</span>
+              </button>
+            )}
+            <div className="clipboard-info">
+              <span className="clipboard-info__icon">
+                {clipboard.operation === "cut" ? "✂" : "📋"}
+              </span>
 
-            <span className="clipboard-info__text">
-              {clipboard.operation === "cut"
-                ? "Clipboard - Cut:"
-                : "Clipboard - Copy:"}{" "}
-              {clipboard.relativePath}
-            </span>
-          </div>
+              <span className="clipboard-info__text" title={clipboard.label || clipboard.name || clipboard.relativePath}>
+                {clipboard.operation === "cut" ? "Cut: " : "Copy: "}
+                {clipboard.label || clipboard.name || clipboard.relativePath}
+              </span>
+
+              {onClearClipboard && (
+                <button
+                  type="button"
+                  className="clipboard-info__clear"
+                  onClick={onClearClipboard}
+                  title="Cancel / Clear Clipboard"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          </>
         )}
+      </div>
+
+      <div className="cloud-search-box">
+        <Search size={16} />
+        <input
+          type="text"
+          placeholder="Search files..."
+          value={searchQuery}
+          onChange={(e) => onSearchChange && onSearchChange(e.target.value)}
+        />
       </div>
     </div>
   );

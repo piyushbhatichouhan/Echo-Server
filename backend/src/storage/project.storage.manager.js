@@ -27,7 +27,15 @@ const getProjectLogsRoot = (projectId) => {
 };
 
 const resolveProjectStoragePath = (projectId, relativePath) => {
-  return path.join(getProjectFilesRoot(projectId), relativePath);
+  const root = path.resolve(getProjectFilesRoot(projectId));
+  const cleanRelative = (relativePath || "").replace(/\\/g, "/");
+  const resolved = path.resolve(root, cleanRelative);
+  if (resolved !== root && !resolved.startsWith(root + path.sep)) {
+    const error = new Error("Path traversal detected");
+    error.status = 400;
+    throw error;
+  }
+  return resolved;
 };
 
 const ensureProjectWorkspace = async (projectId) => {

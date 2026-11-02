@@ -16,6 +16,8 @@ const getCloudFiles = async (ownerId) => {
     FROM cloud_files
     WHERE
         owner_id = $1
+    AND
+        deleted_at IS NULL
     ORDER BY created_at DESC
     `,
     [ownerId],
@@ -136,6 +138,100 @@ const deleteFolder = async (ownerId, folderPath) => {
   return result.rows;
 };
 
+const softDeleteCloudFile = async (id, ownerId) => {
+  const result = await pool.query(
+    `
+    UPDATE cloud_files
+    SET deleted_at = NOW()
+    WHERE id = $1 AND owner_id = $2
+    RETURNING *
+    `,
+    [id, ownerId],
+  );
+  return result.rows[0];
+};
+
+const softDeleteFolder = async (ownerId, folderPath) => {
+  const result = await pool.query(
+    `
+    UPDATE cloud_files
+    SET deleted_at = NOW()
+    WHERE owner_id = $1
+      AND (relative_path = $2 OR relative_path LIKE $3)
+    RETURNING id, relative_path, file_size, storage_path, is_directory
+    `,
+    [ownerId, folderPath, `${folderPath}/%`],
+  );
+  return result.rows;
+};
+
+const getTrashFiles = async (ownerId) => {
+  const result = await pool.query(
+    `
+    SELECT
+        id,
+        original_name,
+        relative_path,
+        file_size,
+        mime_type,
+        is_directory,
+        deleted_at
+    FROM cloud_files
+    WHERE owner_id = $1
+      AND deleted_at IS NOT NULL
+    ORDER BY deleted_at DESC
+    `,
+    [ownerId],
+  );
+  return result.rows;
+};
+
+const restoreTrashFile = async (id, ownerId) => {
+  const fileRes = await pool.query(
+    `SELECT * FROM cloud_files WHERE id = $1 AND owner_id = $2`,
+    [id, ownerId],
+  );
+  if (fileRes.rows.length === 0) return null;
+  const file = fileRes.rows[0];
+
+  if (file.is_directory) {
+    const result = await pool.query(
+      `
+      UPDATE cloud_files
+      SET deleted_at = NULL
+      WHERE owner_id = $1
+        AND (relative_path = $2 OR relative_path LIKE $3)
+      RETURNING *
+      `,
+      [ownerId, file.relative_path, `${file.relative_path}/%`],
+    );
+    return result.rows;
+  }
+
+  const result = await pool.query(
+    `
+    UPDATE cloud_files
+    SET deleted_at = NULL
+    WHERE id = $1 AND owner_id = $2
+    RETURNING *
+    `,
+    [id, ownerId],
+  );
+  return result.rows[0];
+};
+
+const purgeTrashFiles = async (ownerId) => {
+  const result = await pool.query(
+    `
+    DELETE FROM cloud_files
+    WHERE owner_id = $1 AND deleted_at IS NOT NULL
+    RETURNING id, relative_path, file_size, storage_path, is_directory
+    `,
+    [ownerId],
+  );
+  return result.rows;
+};
+
 module.exports = {
   getCloudFiles,
   getCloudFileByPath,
@@ -143,4 +239,9 @@ module.exports = {
   updateCloudFile,
   deleteCloudFile,
   deleteFolder,
+  softDeleteCloudFile,
+  softDeleteFolder,
+  getTrashFiles,
+  restoreTrashFile,
+  purgeTrashFiles,
 };

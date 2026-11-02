@@ -160,3 +160,51 @@ export const pastePath = async (projectId, clipboard, destination) => {
 
   return res.data;
 };
+
+export const deleteProjectPaths = async (projectId, items) => {
+  const response = await api.delete(`/projects/${projectId}/paths/bulk`, {
+    data: {
+      items,
+    },
+  });
+
+  return response.data;
+};
+
+export const downloadProjectPaths = async (projectId, items) => {
+  const response = await api.post(
+    `/projects/${projectId}/paths/bulk/download`,
+    {
+      items,
+    },
+    {
+      responseType: "blob",
+    },
+  );
+
+  const url = URL.createObjectURL(response.data);
+
+  const a = document.createElement("a");
+
+  a.href = url;
+  a.download = "project-files.zip";
+
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+
+  URL.revokeObjectURL(url);
+};
+
+export const getProjectStats = async (projectId) => {
+  const res = await api.get(`/projects/${projectId}/stats`);
+  return res.data.data;
+};
+
+export const extractProjectArchive = async (projectId, relativePath, destination) => {
+  const res = await api.post(`/projects/${projectId}/files/extract`, {
+    relativePath,
+    destination,
+  });
+  return res.data;
+};

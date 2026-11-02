@@ -49,7 +49,7 @@ const PRESETS = {
 
     output_directory: ".",
 
-    port: 5000,
+    port: 8000,
   },
 
   custom: {

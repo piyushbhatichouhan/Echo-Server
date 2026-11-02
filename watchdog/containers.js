@@ -23,10 +23,4 @@ module.exports = [
     critical: true,
     dependsOn: ["echo-router"],
   },
-  {
-    name: "nginx-proxy-manager",
-    type: "proxy",
-    critical: true,
-    dependsOn: [],
-  },
 ];

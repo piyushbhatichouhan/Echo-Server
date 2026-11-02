@@ -8,5 +8,10 @@ export default defineConfig({
     host: true,
 
     allowedHosts: ["dev.devpiyush.in"],
+    hmr: {
+      host: "dev.devpiyush.in",
+      clientPort: 443,
+      protocol: "wss",
+    },
   },
 });

@@ -25,9 +25,14 @@ export default function CloudFileList({
   onCopy,
   onCut,
   onPaste,
+  selectedItems,
+  onSelectionChange,
+  onDownSelected,
+  searchQuery = "",
 }) {
   const { downloadFile, deletePath, renamePath } = adapter;
   const toast = useToast();
+
   const [menu, setMenu] = useState({
     visible: false,
     x: 0,
@@ -43,6 +48,8 @@ export default function CloudFileList({
 
   const [renaming, setRenaming] = useState(null);
   const [renameValue, setRenameValue] = useState("");
+  const [sortField, setSortField] = useState("name");
+  const [sortAsc, setSortAsc] = useState(true);
 
   const tree = buildFileTree(files);
 
@@ -64,7 +71,44 @@ export default function CloudFileList({
     return current.children;
   }
 
-  const children = getFolderChildren(tree, currentFolder);
+  const rawChildren = getFolderChildren(tree, currentFolder);
+
+  let children = rawChildren;
+
+  if (searchQuery && searchQuery.trim()) {
+    const q = searchQuery.toLowerCase().trim();
+    children = children.filter((item) =>
+      item.name.toLowerCase().includes(q),
+    );
+  }
+
+  children = [...children].sort((a, b) => {
+    if (a.type !== b.type) {
+      return a.type === "folder" ? -1 : 1;
+    }
+
+    let comp = 0;
+    if (sortField === "name") {
+      comp = a.name.localeCompare(b.name, undefined, {
+        numeric: true,
+        sensitivity: "base",
+      });
+    } else if (sortField === "size") {
+      const aSize = a.file?.file_size ? Number(a.file.file_size) : 0;
+      const bSize = b.file?.file_size ? Number(b.file.file_size) : 0;
+      comp = aSize - bSize;
+    } else if (sortField === "modified") {
+      const aDate = new Date(
+        a.file?.created_at || a.file?.updated_at || 0,
+      ).getTime();
+      const bDate = new Date(
+        b.file?.created_at || b.file?.updated_at || 0,
+      ).getTime();
+      comp = aDate - bDate;
+    }
+
+    return sortAsc ? comp : -comp;
+  });
 
   const formatSize = (bytes) => {
     if (!bytes) return "0 B";
@@ -111,6 +155,19 @@ export default function CloudFileList({
     setRenaming(null);
   };
 
+  const handleItemSelection = (item) => {
+    const alreadySelected = selectedItems.some(
+      (selected) => selected.path === item.path,
+    );
+
+    if (alreadySelected) {
+      onSelectionChange(
+        selectedItems.filter((selected) => selected.path !== item.path),
+      );
+    } else {
+      onSelectionChange([...selectedItems, item]);
+    }
+  };
   return (
     <div
       className="cloud-list"
@@ -129,11 +186,49 @@ export default function CloudFileList({
           y: e.clientY,
         });
       }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onSelectionChange([]);
+        }
+      }}
     >
       <div className="cloud-header">
-        <div>Name</div>
-        <div>Size</div>
-        <div>Modified</div>
+        <div
+          style={{ cursor: "pointer", userSelect: "none", display: "flex", alignItems: "center", gap: 4 }}
+          onClick={() => {
+            if (sortField === "name") setSortAsc(!sortAsc);
+            else {
+              setSortField("name");
+              setSortAsc(true);
+            }
+          }}
+        >
+          Name {sortField === "name" ? (sortAsc ? "▲" : "▼") : ""}
+        </div>
+        <div
+          style={{ cursor: "pointer", userSelect: "none", display: "flex", alignItems: "center", gap: 4 }}
+          onClick={() => {
+            if (sortField === "size") setSortAsc(!sortAsc);
+            else {
+              setSortField("size");
+              setSortAsc(true);
+            }
+          }}
+        >
+          Size {sortField === "size" ? (sortAsc ? "▲" : "▼") : ""}
+        </div>
+        <div
+          style={{ cursor: "pointer", userSelect: "none", display: "flex", alignItems: "center", gap: 4 }}
+          onClick={() => {
+            if (sortField === "modified") setSortAsc(!sortAsc);
+            else {
+              setSortField("modified");
+              setSortAsc(true);
+            }
+          }}
+        >
+          Modified {sortField === "modified" ? (sortAsc ? "▲" : "▼") : ""}
+        </div>
         <div></div>
       </div>
 
@@ -142,10 +237,16 @@ export default function CloudFileList({
           clipboard?.operation === "cut" &&
           clipboard.relativePath === item.path;
 
+        const isSelected = selectedItems.some(
+          (selected) => selected.path === item.path,
+        );
+
         return (
           <div
             key={item.path}
-            className={`cloud-row ${isCut ? "cloud-row--cut" : ""}`}
+            className={`cloud-row ${isCut ? "cloud-row--cut" : ""} ${
+              isSelected ? "cloud-row--selected" : ""
+            }`}
             onDoubleClick={() => {
               if (item.type === "folder") {
                 onNavigate(item.path);
@@ -165,6 +266,16 @@ export default function CloudFileList({
             }}
           >
             <div className="cloud-name">
+              <input
+                type="checkbox"
+                className="cloud-selection-checkbox"
+                checked={selectedItems.some(
+                  (selected) => selected.path === item.path,
+                )}
+                onChange={() => handleItemSelection(item)}
+                onClick={(e) => e.stopPropagation()}
+              />
+
               {item.type === "folder" ? "📁" : "📄"}
 
               {renaming?.path === item.path ? (
@@ -247,6 +358,7 @@ export default function CloudFileList({
 
           {
             label: "Copy",
+            icon: Copy,
             onClick: () => {
               onCopy(menu.item);
             },
@@ -254,6 +366,7 @@ export default function CloudFileList({
 
           {
             label: "Cut",
+            icon: Scissors,
             onClick: () => {
               onCut(menu.item);
             },
@@ -261,6 +374,7 @@ export default function CloudFileList({
 
           {
             label: "Paste",
+            icon: ClipboardPaste,
             disabled: !clipboard,
             onClick: () => {
               let destination;
@@ -282,6 +396,34 @@ export default function CloudFileList({
             },
           },
 
+          ...(menu.item?.name?.toLowerCase().endsWith(".zip") && adapter.extractArchive
+            ? [
+                {
+                  label: "Extract Here",
+                  icon: FolderOpen,
+                  onClick: async () => {
+                    try {
+                      toast.info("Extracting archive...");
+                      await adapter.extractArchive(
+                        workspaceId,
+                        menu.item.path,
+                        currentFolder,
+                      );
+                      toast.success(
+                        "Extracted",
+                        "Archive extracted successfully.",
+                      );
+                      await refresh();
+                    } catch (err) {
+                      toast.error(
+                        "Extraction Failed",
+                        err.response?.data?.message || err.message,
+                      );
+                    }
+                  },
+                },
+              ]
+            : []),
           {
             label: "Download",
             icon: Download,
@@ -339,6 +481,7 @@ export default function CloudFileList({
         items={[
           {
             label: "Paste",
+            icon: ClipboardPaste,
             disabled: !clipboard,
             onClick: () => onPaste(currentFolder),
           },

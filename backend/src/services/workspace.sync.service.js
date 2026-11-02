@@ -26,6 +26,23 @@ const syncGitToWorkspace = async (projectId) => {
   await copyDirectory(gitDirectory, workspaceDirectory);
 };
 
+const IGNORED_NAMES = new Set([
+  ".git",
+  "node_modules",
+  ".venv",
+  "venv",
+  "env",
+  "__pycache__",
+  "dist",
+  "build",
+  ".next",
+  ".nuxt",
+  ".output",
+  ".cache",
+  ".turbo",
+  "coverage",
+]);
+
 const syncWorkspaceToGit = async (projectId) => {
   const workspaceDirectory = getProjectFilesRoot(projectId);
 
@@ -47,7 +64,7 @@ const syncWorkspaceToGit = async (projectId) => {
     });
 
     for (const entry of entries) {
-      if (entry.name === ".git" || entry.name === "node_modules") {
+      if (IGNORED_NAMES.has(entry.name)) {
         continue;
       }
 
@@ -67,7 +84,7 @@ const syncWorkspaceToGit = async (projectId) => {
     }
 
     for (const gitEntry of gitEntries) {
-      if (gitEntry.name === ".git" || gitEntry.name === "node_modules") {
+      if (IGNORED_NAMES.has(gitEntry.name)) {
         continue;
       }
       const exists = entries.find((e) => e.name === gitEntry.name);
@@ -103,7 +120,7 @@ const indexWorkspace = async (projectId) => {
     });
 
     for (const entry of entries) {
-      if (entry.name === "node_modules" || entry.name === ".git") {
+      if (IGNORED_NAMES.has(entry.name)) {
         continue;
       }
 

@@ -163,4 +163,77 @@
 
 .clipboard-info__text {
     opacity: .9;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.clipboard-info__clear {
+    background: transparent;
+    border: none;
+    color: #999;
+    cursor: pointer;
+    font-size: 12px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color .2s, background .2s;
+}
+
+.clipboard-info__clear:hover {
+    color: #ff5555;
+    background: rgba(255, 85, 85, 0.2);
+}
+
+.cloud-btn.paste-btn {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: #ffffff;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.25);
+    font-weight: 500;
+}
+
+.cloud-btn.paste-btn:hover {
+    background: linear-gradient(135deg, #16a34a, #15803d);
+    box-shadow: 0 6px 16px rgba(34, 197, 94, 0.35);
+    transform: translateY(-1px);
+}
+
+.cloud-search-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, .05);
+    border: 1px solid rgba(255, 255, 255, .12);
+    border-radius: 10px;
+    padding: 8px 14px;
+    color: #f5e9d8;
+    margin-left: auto;
+    transition: border-color .2s, background .2s;
+}
+
+.cloud-search-box:focus-within {
+    border-color: rgba(255, 178, 76, .5);
+    background: rgba(255, 255, 255, .08);
+}
+
+.cloud-search-box input {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #f5e9d8;
+    font-size: 13px;
+    width: 170px;
+}
+
+.cloud-search-box input::placeholder {
+    color: rgba(245, 233, 216, .45);
+}
+
+.cloud-search-box svg {
+    color: #ffb24c;
 }

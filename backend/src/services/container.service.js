@@ -13,7 +13,10 @@ const createContainer = async (
 ) => {
   const dockerEnvironment = [
     ...environment.map(({ key, value }) => `${key}=${value}`),
-    "CONTAINER_PORT=3000",
+    `PORT=${containerPort}`,
+    `CONTAINER_PORT=${containerPort}`,
+    "HOST=0.0.0.0",
+    "PYTHONUNBUFFERED=1",
   ];
 
   const projectPort = String(hostPort);
