@@ -21,4 +21,5 @@ module.exports = {
   startByProject: containerService.startContainerByProject,
  
   getStatus: containerService.getContainerStatus,
+  removeByHostPort: containerService.removeContainerByHostPort,
 };

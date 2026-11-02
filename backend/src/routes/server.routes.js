@@ -16,4 +16,6 @@ router.post("/users/:id/approve", controller.approveUser);
 
 router.post("/users/:id/reject", controller.rejectUser);
 
+router.post("/cleanup-ports", controller.cleanupPorts);
+
 module.exports = router;

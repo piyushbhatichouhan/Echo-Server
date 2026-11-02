@@ -50,6 +50,14 @@ async function checkDatabase() {
   console.log("✓ PostgreSQL OK");
 }
 
+const portService = require("../services/port.service");
+
+async function checkPorts() {
+  console.log("Checking and cleaning pseudo ports...");
+  await portService.cleanupPseudoPorts();
+  console.log("✓ Ports OK");
+}
+
 async function validateStartup() {
   console.log("");
   console.log("======================================");
@@ -61,6 +69,8 @@ async function validateStartup() {
   await checkDocker();
 
   await checkDatabase();
+
+  await checkPorts();
 
   console.log("");
   console.log("✓ Startup validation completed");

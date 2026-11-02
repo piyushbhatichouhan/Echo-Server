@@ -4,6 +4,32 @@ const getContainerName = (projectId) => {
   return `echohub-${projectId}`;
 };
 
+const removeContainerByHostPort = async (hostPort) => {
+  if (!hostPort) return;
+  try {
+    const containers = await docker.listContainers({ all: true });
+    for (const c of containers) {
+      const match = (c.Ports || []).some(
+        (p) => Number(p.PublicPort) === Number(hostPort),
+      );
+      if (match) {
+        console.warn(
+          `[ContainerService] Host port ${hostPort} occupied by container ${c.Id.slice(0, 12)} (${c.Names?.join(", ")}). Removing conflicting container...`,
+        );
+        const cont = docker.getContainer(c.Id);
+        try {
+          await cont.stop({ t: 1 });
+        } catch {}
+        try {
+          await cont.remove({ force: true });
+        } catch {}
+      }
+    }
+  } catch (err) {
+    console.warn("[ContainerService] removeContainerByHostPort warning:", err.message);
+  }
+};
+
 const createContainer = async (
   projectId,
   imageName,
@@ -37,6 +63,10 @@ const createContainer = async (
   );
 
   const projectPort = String(hostPort);
+
+  // Guarantee no container name or port collision exists in Docker
+  await removeContainerByProject(projectId);
+  await removeContainerByHostPort(projectPort);
 
   const containerOptions = {
     Image: imageName,
@@ -85,7 +115,34 @@ const createContainer = async (
 };
 
 const startContainer = async (container, deploymentId) => {
-  await container.start();
+  try {
+    await container.start();
+  } catch (err) {
+    if (err.message && err.message.includes("port is already allocated")) {
+      console.warn(
+        `[ContainerService] Port conflict during container start: ${err.message}. Retrying after host cleanup...`,
+      );
+      try {
+        const inspect = await container.inspect();
+        const portBindings = inspect.HostConfig?.PortBindings || {};
+        for (const bindings of Object.values(portBindings)) {
+          for (const b of bindings) {
+            if (b.HostPort) {
+              await removeContainerByHostPort(b.HostPort);
+            }
+          }
+        }
+        await new Promise((res) => setTimeout(res, 500));
+        await container.start();
+      } catch (retryErr) {
+        throw new Error(
+          `Host port bind failed: ${err.message}. The port is currently occupied by another process.`,
+        );
+      }
+    } else {
+      throw err;
+    }
+  }
 
   streamContainerLogs(container, deploymentId).catch(console.error);
 
@@ -356,4 +413,5 @@ module.exports = {
   getContainerIPAddress,
   getContainerTelemetry,
   executeTerminalCommand,
+  removeContainerByHostPort,
 };
