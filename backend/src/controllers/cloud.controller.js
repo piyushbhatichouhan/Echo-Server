@@ -324,8 +324,14 @@ const getTrash = async (req, res, next) => {
 
 const restoreFromTrash = async (req, res, next) => {
   try {
+    const fileId = req.body.fileId || req.body.id;
+    if (!fileId) {
+      const error = new Error("File ID is required to restore from trash");
+      error.status = 400;
+      throw error;
+    }
     const result = await cloudService.restoreFromTrash(
-      req.body.fileId,
+      fileId,
       req.user.id,
     );
     res.json({

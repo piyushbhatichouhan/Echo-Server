@@ -85,9 +85,12 @@ export default createFileWorkspace({
   extractArchive: async (_, relativePath, destination) =>
     extractCloudArchive(relativePath, destination),
 
-  getTrash: getCloudTrash,
-  restoreTrash: restoreCloudTrash,
-  emptyTrash: emptyCloudTrash,
+  getTrash: async () => getCloudTrash(),
+  restoreTrash: async (workspaceIdOrFileId, maybeFileId) => {
+    const fileId = maybeFileId !== undefined ? maybeFileId : workspaceIdOrFileId;
+    return restoreCloudTrash(fileId);
+  },
+  emptyTrash: async () => emptyCloudTrash(),
 
   compressPaths: async (_, items, zipName, destination) =>
     compressCloudPaths(items, zipName, destination),
