@@ -42,3 +42,7 @@
   padding-top: 0.75rem;
   border-top: 1px solid var(--border, rgba(255, 255, 255, 0.08));
 }
+
+.confirm-modal-overlay-top {
+  z-index: 1250 !important;
+}

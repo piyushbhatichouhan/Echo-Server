@@ -94,16 +94,7 @@ export default function TrashModal({ isOpen, onClose, adapter, workspaceId, onRe
 
   return (
     <>
-      <ConfirmActionModal
-        isOpen={showConfirmEmpty}
-        onClose={() => setShowConfirmEmpty(false)}
-        onConfirm={executeEmptyTrash}
-        title="Empty Trash?"
-        message="Permanently purge all trashed files and folders? This action cannot be undone."
-        confirmText="Empty Trash"
-        loading={actionLoading}
-      />
-    <Modal isOpen={isOpen} onClose={onClose} title="Trash / Recycle Bin">
+      <Modal isOpen={isOpen} onClose={onClose} title="Trash / Recycle Bin">
       <div className="trash-modal-container">
         <div className="trash-modal-top">
           <p className="trash-hint">
@@ -182,6 +173,17 @@ export default function TrashModal({ isOpen, onClose, adapter, workspaceId, onRe
         </div>
       </div>
     </Modal>
+
+    <ConfirmActionModal
+      isOpen={showConfirmEmpty}
+      onClose={() => setShowConfirmEmpty(false)}
+      onConfirm={executeEmptyTrash}
+      title="Empty Trash?"
+      message="Permanently purge all trashed files and folders? This action cannot be undone."
+      confirmText="Empty Trash"
+      loading={actionLoading}
+      zIndex={1250}
+    />
     </>
   );
 }
