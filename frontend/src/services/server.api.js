@@ -19,3 +19,8 @@ export const cleanupPorts = async () => {
   const response = await api.post("/server/cleanup-ports");
   return response.data;
 };
+
+export const getServerHealth = async () => {
+  const response = await api.get("/server/health");
+  return response.data.data;
+};

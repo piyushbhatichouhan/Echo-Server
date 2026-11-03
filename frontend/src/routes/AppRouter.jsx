@@ -15,6 +15,7 @@ import Environment from "../components/project/environment/Environment";
 import LogsCard from "../components/project/logscard/logscard";
 import ManageUsers from "../pages/server/manageUsers/manageUsers";
 import Storage from "../pages/server/storage/Storage";
+import Health from "../pages/server/health/Health";
 import CloudStorage from "../pages/CloudStorage/CloudStorage";
 import VerifyEmailFailed from "../pages/auth/verify-email/VerifyEmailFailed";
 import VerifyEmailSuccess from "../pages/auth/verify-email/VerifyEmailSuccess";
@@ -55,6 +56,7 @@ export default function AppRouter() {
           <Route path="/server/pending-users" element={<PendingUsers />} />
           <Route path="/server/users" element={<ManageUsers />} />
           <Route path="/server/storage" element={<Storage />} />
+          <Route path="/server/health" element={<Health />} />
           <Route path="/cloud-storage" element={<CloudStorage />} />
         </Route>
       </Routes>

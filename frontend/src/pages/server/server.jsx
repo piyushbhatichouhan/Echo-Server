@@ -65,8 +65,10 @@ export default function Server() {
     },
     {
       title: "Health",
-      description: "Monitor server health.",
-      available: false,
+      description: "Monitor server infrastructure, CPU, memory, Docker, and database telemetry.",
+      available: true,
+      route: "/server/health",
+      iconText: "⚡",
     },
   ];
 
