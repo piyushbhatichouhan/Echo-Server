@@ -1510,7 +1510,7 @@ const compressProjectPaths = async (
 
   if (existing.rows.length > 0) {
     await pool.query(
-      `UPDATE files SET file_size = $1, storage_path = $2, deleted_at = NULL, updated_at = NOW() WHERE id = $3`,
+      `UPDATE files SET file_size = $1, storage_path = $2, deleted_at = NULL WHERE id = $3`,
       [buffer.length, targetDiskPath, existing.rows[0].id],
     );
   } else {
@@ -1557,7 +1557,6 @@ const searchProjectFiles = async (projectId, ownerId, query) => {
       file_size,
       mime_type,
       is_directory,
-      updated_at,
       created_at
     FROM files
     WHERE project_id = $1
@@ -1720,22 +1719,36 @@ const importCloudToProject = async (
             ? targetRelative
             : targetRelative + row.relative_path.substring(srcRelative.length);
         const subStorage = resolveProjectStoragePath(projectId, subRel);
-        await pool.query(
-          `INSERT INTO files
-           (project_id, original_name, relative_path, stored_name, mime_type, file_size, storage_path, is_directory)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-           ON CONFLICT DO NOTHING`,
-          [
-            projectId,
-            relativeBasename(subRel),
-            subRel,
-            relativeBasename(subRel),
-            row.mime_type,
-            row.file_size,
-            subStorage,
-            row.is_directory,
-          ],
+
+        const existingSub = await pool.query(
+          `SELECT id FROM files WHERE project_id = $1 AND relative_path = $2`,
+          [projectId, subRel],
         );
+
+        if (existingSub.rows.length > 0) {
+          await pool.query(
+            `UPDATE files
+             SET file_size = $1, storage_path = $2, mime_type = $3, is_directory = $4, deleted_at = NULL
+             WHERE id = $5`,
+            [row.file_size, subStorage, row.mime_type, row.is_directory, existingSub.rows[0].id],
+          );
+        } else {
+          await pool.query(
+            `INSERT INTO files
+             (project_id, original_name, relative_path, stored_name, mime_type, file_size, storage_path, is_directory)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+            [
+              projectId,
+              relativeBasename(subRel),
+              subRel,
+              relativeBasename(subRel),
+              row.mime_type,
+              row.file_size,
+              subStorage,
+              row.is_directory,
+            ],
+          );
+        }
       }
       await storageAllocation.reserveStorage(ownerId, folderSize);
       transferredCount++;
@@ -1751,22 +1764,39 @@ const importCloudToProject = async (
       );
       const orig = origRes.rows[0] || {};
 
-      await pool.query(
-        `INSERT INTO files
-         (project_id, original_name, relative_path, stored_name, mime_type, file_size, storage_path, is_directory)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, FALSE)
-         ON CONFLICT (project_id, relative_path) DO UPDATE
-         SET file_size = EXCLUDED.file_size, storage_path = EXCLUDED.storage_path, deleted_at = NULL, updated_at = NOW()`,
-        [
-          projectId,
-          bName,
-          targetRelative,
-          bName,
-          orig.mime_type || "application/octet-stream",
-          fileSize,
-          targetStorage,
-        ],
+      const existingFile = await pool.query(
+        `SELECT id FROM files WHERE project_id = $1 AND relative_path = $2`,
+        [projectId, targetRelative],
       );
+
+      if (existingFile.rows.length > 0) {
+        await pool.query(
+          `UPDATE files
+           SET file_size = $1, storage_path = $2, mime_type = $3, is_directory = FALSE, deleted_at = NULL
+           WHERE id = $4`,
+          [
+            fileSize,
+            targetStorage,
+            orig.mime_type || "application/octet-stream",
+            existingFile.rows[0].id,
+          ],
+        );
+      } else {
+        await pool.query(
+          `INSERT INTO files
+           (project_id, original_name, relative_path, stored_name, mime_type, file_size, storage_path, is_directory)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, FALSE)`,
+          [
+            projectId,
+            bName,
+            targetRelative,
+            bName,
+            orig.mime_type || "application/octet-stream",
+            fileSize,
+            targetStorage,
+          ],
+        );
+      }
       await storageAllocation.reserveStorage(ownerId, fileSize);
       transferredCount++;
     }

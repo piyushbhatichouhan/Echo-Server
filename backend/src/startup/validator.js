@@ -79,10 +79,12 @@ async function checkDatabase() {
 
         IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'files') THEN
           ALTER TABLE files ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP;
+          ALTER TABLE files ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW();
         END IF;
 
         IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'cloud_files') THEN
           ALTER TABLE cloud_files ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP;
+          ALTER TABLE cloud_files ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW();
         END IF;
       END $$;
     `);

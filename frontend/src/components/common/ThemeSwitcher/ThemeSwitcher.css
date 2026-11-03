@@ -1,0 +1,100 @@
+/* =========================================================
+   EchoHub Theme Switcher Pill Control
+   ========================================================= */
+
+.theme-switcher {
+  display: inline-flex;
+  align-items: center;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px 4px;
+  gap: 3px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  user-select: none;
+  position: relative;
+  transition: all var(--transition);
+}
+
+.theme-switcher:hover {
+  border-color: var(--border-glow);
+  box-shadow: var(--shadow), var(--glow);
+}
+
+.theme-switcher__btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+  outline: none;
+}
+
+.theme-switcher__btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+.theme-switcher__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+}
+
+.theme-switcher__icon {
+  flex-shrink: 0;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), color 0.2s ease;
+}
+
+.theme-switcher__label {
+  white-space: nowrap;
+}
+
+/* Active State */
+.theme-switcher__btn.active {
+  background: var(--bg-primary);
+  border-color: var(--border-glow);
+  color: var(--text-primary);
+  box-shadow: 
+    0 2px 10px rgba(0, 0, 0, 0.25),
+    0 0 12px var(--border-glow);
+}
+
+.theme-switcher__btn.active .theme-switcher__dot {
+  transform: scale(1.3);
+  box-shadow: 0 0 8px var(--theme-accent);
+}
+
+.theme-switcher__btn.active .theme-switcher__icon {
+  color: var(--theme-accent);
+  transform: scale(1.08);
+}
+
+/* Compact mode (Dashboard header action) */
+.theme-switcher--compact .theme-switcher__btn {
+  padding: 6px 8px;
+  gap: 5px;
+}
+
+.theme-switcher--compact .theme-switcher__label {
+  display: none;
+}
+
+/* Focus styles for keyboard accessibility */
+.theme-switcher__btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}

@@ -1,5 +1,5 @@
 /* =========================================================
-   EchoHub Elevated File List & Grid Workspace
+   EchoHub File List & Grid Workspace (Theme Adaptive)
    ========================================================= */
 
 .cloud-list {
@@ -20,9 +20,9 @@
   display: grid;
   grid-template-columns: 1fr 130px 160px 48px;
   padding: 10px 16px;
-  border-bottom: 1px solid rgba(255, 155, 48, 0.14);
-  background: rgba(255, 255, 255, 0.02);
-  color: rgba(240, 230, 220, 0.65);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-secondary);
   font-size: 0.76rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -40,7 +40,7 @@
 }
 
 .cloud-header div:hover {
-  color: #ffaa40;
+  color: var(--accent);
 }
 
 .cloud-header .cloud-actions-header {
@@ -49,7 +49,7 @@
 }
 
 .cloud-header .cloud-actions-header:hover {
-  color: rgba(240, 230, 220, 0.65);
+  color: var(--text-secondary);
 }
 
 /* =========================================================
@@ -62,12 +62,12 @@
   padding: 10px 16px;
   cursor: pointer;
   align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.035);
+  border-bottom: 1px solid var(--border-subtle);
   background: transparent;
-  color: #f1ede8;
+  color: var(--text-primary);
   font-size: 0.86rem;
   position: relative;
-  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all var(--transition);
 }
 
 .cloud-row::before {
@@ -77,15 +77,15 @@
   top: 0;
   bottom: 0;
   width: 3px;
-  background: #ff9b30;
+  background: var(--accent);
   opacity: 0;
   transform: scaleY(0.4);
   transition: all 0.18s ease;
 }
 
 .cloud-row:hover {
-  background: rgba(255, 155, 48, 0.06);
-  color: #ffffff;
+  background: var(--nav-hover-bg);
+  color: var(--text-primary);
 }
 
 .cloud-row:hover::before {
@@ -95,14 +95,14 @@
 
 /* Selected Row */
 .cloud-row--selected {
-  background: rgba(255, 155, 48, 0.12) !important;
-  color: #ffffff;
+  background: var(--nav-active-bg) !important;
+  color: var(--text-primary);
 }
 
 .cloud-row--selected::before {
   opacity: 1 !important;
   transform: scaleY(1) !important;
-  box-shadow: 0 0 8px rgba(255, 155, 48, 0.6);
+  box-shadow: var(--accent-glow);
 }
 
 /* Cut Row (In Clipboard) */
@@ -129,7 +129,7 @@
 
 .cloud-size,
 .cloud-date {
-  color: rgba(240, 230, 220, 0.55);
+  color: var(--text-muted);
   font-size: 0.8rem;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -137,7 +137,7 @@
 
 .cloud-row:hover .cloud-size,
 .cloud-row:hover .cloud-date {
-  color: rgba(240, 230, 220, 0.85);
+  color: var(--text-secondary);
 }
 
 /* Actions cell */
@@ -150,7 +150,7 @@
 .cloud-more {
   background: transparent;
   border: none;
-  color: rgba(240, 230, 220, 0.45);
+  color: var(--text-muted);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -167,22 +167,22 @@
 }
 
 .cloud-more:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffaa40;
+  background: var(--nav-hover-bg);
+  color: var(--accent);
 }
 
 /* Inline Rename Input */
 .cloud-rename {
   width: 100%;
-  background: rgba(18, 13, 9, 0.95);
-  border: 1px solid #ff9b30;
+  background: var(--bg-input);
+  border: 1px solid var(--accent);
   border-radius: 6px;
   padding: 4px 8px;
   outline: none;
-  color: #ffffff;
+  color: var(--text-primary);
   font-size: 0.86rem;
   font-weight: 500;
-  box-shadow: 0 0 10px rgba(255, 155, 48, 0.35);
+  box-shadow: var(--glow);
 }
 
 /* =========================================================
@@ -196,9 +196,9 @@
   height: 16px;
   margin: 0;
   flex-shrink: 0;
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  border: 1px solid var(--border);
   border-radius: 4px;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--bg-input);
   cursor: pointer;
   display: grid;
   place-items: center;
@@ -206,22 +206,22 @@
 }
 
 .cloud-selection-checkbox:hover {
-  border-color: #ff9b30;
-  background: rgba(255, 155, 48, 0.12);
+  border-color: var(--accent);
+  background: var(--nav-hover-bg);
 }
 
 .cloud-selection-checkbox:checked {
-  background: linear-gradient(135deg, #ff9b30 0%, #ea7a14 100%);
-  border-color: #ff9b30;
-  box-shadow: 0 0 8px rgba(255, 155, 48, 0.4);
+  background: var(--btn-primary-bg);
+  border-color: var(--accent);
+  box-shadow: var(--glow);
 }
 
 .cloud-selection-checkbox:checked::after {
   content: "";
   width: 7px;
   height: 4px;
-  border-left: 2px solid #17100b;
-  border-bottom: 2px solid #17100b;
+  border-left: 2px solid var(--btn-primary-text);
+  border-bottom: 2px solid var(--btn-primary-text);
   transform: rotate(-45deg);
   margin-top: -2px;
 }
@@ -245,43 +245,31 @@
 }
 
 .cloud-grid-item {
-  background: linear-gradient(
-    145deg,
-    rgba(32, 23, 16, 0.65) 0%,
-    rgba(22, 16, 11, 0.8) 100%
-  );
-  border: 1px solid rgba(255, 155, 48, 0.12);
-  border-radius: 12px;
+  background: var(--bg-card-gradient);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
   padding: 10px 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
   position: relative;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all var(--transition);
   user-select: none;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow);
 }
 
 .cloud-grid-item:hover {
-  background: linear-gradient(
-    145deg,
-    rgba(42, 30, 20, 0.8) 0%,
-    rgba(30, 21, 14, 0.95) 100%
-  );
-  border-color: rgba(255, 155, 48, 0.35);
+  background: var(--bg-card-hover);
+  border-color: var(--border-glow);
   transform: translateY(-2px);
-  box-shadow: 
-    0 8px 20px rgba(0, 0, 0, 0.35),
-    0 0 14px rgba(255, 155, 48, 0.1);
+  box-shadow: var(--shadow-hover), var(--glow);
 }
 
 .cloud-grid-item.selected {
-  background: rgba(255, 155, 48, 0.16) !important;
-  border-color: #ff9b30 !important;
-  box-shadow: 
-    0 0 16px rgba(255, 155, 48, 0.25),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  background: var(--nav-active-bg) !important;
+  border-color: var(--accent) !important;
+  box-shadow: var(--glow);
 }
 
 .grid-item-top {
@@ -295,7 +283,7 @@
 .grid-more-btn {
   background: transparent;
   border: none;
-  color: rgba(240, 230, 220, 0.5);
+  color: var(--text-muted);
   opacity: 0;
   cursor: pointer;
   display: flex;
@@ -312,8 +300,8 @@
 }
 
 .grid-more-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffaa40;
+  background: var(--nav-hover-bg);
+  color: var(--accent);
 }
 
 .grid-item-icon-area {
@@ -331,8 +319,8 @@
 
 /* Distinct File Type Colors */
 .grid-icon-folder {
-  color: #ffaa40;
-  filter: drop-shadow(0 2px 8px rgba(255, 155, 48, 0.3));
+  color: var(--accent);
+  filter: drop-shadow(0 2px 8px var(--border-glow));
 }
 
 .grid-icon-archive {
@@ -361,8 +349,8 @@
 }
 
 .grid-icon-file {
-  color: #cbd5e1;
-  filter: drop-shadow(0 2px 8px rgba(203, 213, 225, 0.2));
+  color: var(--text-secondary);
+  filter: drop-shadow(0 2px 8px rgba(148, 163, 184, 0.2));
 }
 
 .grid-item-info {
@@ -377,7 +365,7 @@
 .grid-item-name {
   font-size: 0.82rem;
   font-weight: 500;
-  color: #ffffff;
+  color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -387,7 +375,7 @@
 
 .grid-item-sub {
   font-size: 0.72rem;
-  color: rgba(240, 230, 220, 0.5);
+  color: var(--text-muted);
   font-variant-numeric: tabular-nums;
 }
 
@@ -402,26 +390,27 @@
   justify-content: center;
   padding: 4.5rem 1.5rem;
   text-align: center;
-  color: rgba(240, 230, 220, 0.5);
+  color: var(--text-muted);
   margin: auto;
 }
 
 .cloud-empty-icon {
-  color: rgba(255, 155, 48, 0.25);
+  color: var(--accent);
+  opacity: 0.6;
   margin-bottom: 1.25rem;
-  filter: drop-shadow(0 0 20px rgba(255, 155, 48, 0.1));
+  filter: drop-shadow(0 0 20px var(--border-glow));
 }
 
 .cloud-empty-state h3 {
   margin: 0 0 0.4rem 0;
   font-size: 1.15rem;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--text-primary);
   letter-spacing: -0.01em;
 }
 
 .cloud-empty-state p {
   margin: 0;
   font-size: 0.86rem;
-  color: rgba(240, 230, 220, 0.55);
+  color: var(--text-secondary);
 }

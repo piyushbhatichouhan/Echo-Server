@@ -1,5 +1,5 @@
 /* =========================================================
-   EchoHub Elevated File Editor & Viewer
+   EchoHub File Editor & Viewer (Theme Adaptive)
    ========================================================= */
 
 .eh-editor {
@@ -15,9 +15,9 @@
   justify-content: space-between;
   gap: 16px;
   padding: 10px 14px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 155, 48, 0.16);
-  border-radius: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-small, 12px);
   backdrop-filter: blur(10px);
 }
 
@@ -26,7 +26,7 @@
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 0.88rem;
   font-weight: 600;
-  color: #ffaa40;
+  color: var(--accent);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -36,7 +36,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: #fbbf24;
+  color: var(--warning, #fbbf24);
   background: rgba(245, 158, 11, 0.15);
   border: 1px solid rgba(245, 158, 11, 0.3);
   padding: 3px 10px;
@@ -68,12 +68,10 @@
   flex: 1;
   min-height: 520px;
   overflow: hidden;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 155, 48, 0.14);
-  background: #140e0a;
-  box-shadow: 
-    0 10px 30px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-small, 12px);
+  border: 1px solid var(--border);
+  background: var(--bg-primary);
+  box-shadow: var(--shadow);
 }
 
 .eh-code-editor {
@@ -82,10 +80,10 @@
   border: none;
   outline: none;
   resize: none;
-  background: #140e0a;
-  color: #f1ede8;
+  background: var(--bg-primary);
+  color: var(--text-primary);
   padding: 18px;
-  border-radius: 12px;
+  border-radius: var(--radius-small, 12px);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 13.5px;
   line-height: 1.6;

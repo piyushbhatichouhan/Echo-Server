@@ -5,6 +5,7 @@ import cloudWorkspace from "../../services/cloudWorkspace";
 import ConfirmationModal from "../../components/common/modal/ConfirmationModal";
 import useAuth from "../../hooks/useAuth";
 import { useToast } from "../../context/ToastContext";
+import { useTheme } from "../../context/ThemeContext";
 import {
   User,
   Mail,
@@ -19,6 +20,7 @@ import {
   Copy,
   Check,
   CheckCircle2,
+  Circle,
   Sparkles,
   Shield,
   Clock,
@@ -26,11 +28,17 @@ import {
   X,
   ExternalLink,
   Send,
+  Palette,
+  Moon,
+  Flame,
+  Sun,
+  Zap,
 } from "lucide-react";
 
 export default function Settings() {
   const { logout } = useAuth();
   const toast = useToast();
+  const { theme: currentTheme, setTheme, themes } = useTheme();
 
   const [resetModalOpen, setResetModalOpen] = useState(false);
   const [sendingReset, setSendingReset] = useState(false);
@@ -301,6 +309,124 @@ export default function Settings() {
               <div className="settings-tile-value">{formattedJoinDate}</div>
               <span className="settings-tile-sub">Console registration date</span>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Appearance & Interface Theme Card */}
+      <div className="settings-section">
+        <div className="settings-section-title">
+          <Palette size={18} />
+          <h2>Appearance & Interface Theme</h2>
+        </div>
+
+        <div className="settings-card">
+          <div className="settings-theme-header">
+            <div>
+              <span className="settings-theme-heading">Theme Palette</span>
+              <p className="settings-theme-sub">
+                Select your preferred visual atmosphere. The theme applies instantly across all consoles, dashboards, code viewers, and storage managers.
+              </p>
+            </div>
+            <div className="settings-theme-active-tag">
+              <span>Active:</span>
+              <strong>{themes.find((t) => t.id === currentTheme)?.name || "Dark Grey"}</strong>
+            </div>
+          </div>
+
+          <div className="settings-theme-grid" role="radiogroup" aria-label="Theme Selection">
+            {themes.map((t) => {
+              const isActive = currentTheme === t.id;
+              const IconComponent =
+                t.id === "dark-grey"
+                  ? Moon
+                  : t.id === "amber-brown"
+                  ? Flame
+                  : t.id === "light-white"
+                  ? Sun
+                  : Zap;
+
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  className={`settings-theme-card ${isActive ? "settings-theme-card--active" : ""}`}
+                  onClick={() => {
+                    setTheme(t.id);
+                    toast?.success("Theme Updated", `Switched interface to ${t.name}.`);
+                  }}
+                  style={{
+                    "--card-accent": t.accentColor,
+                  }}
+                  role="radio"
+                  aria-checked={isActive}
+                >
+                  <div className="settings-theme-preview" style={{ background: t.primaryColor }}>
+                    <div className="settings-theme-preview-window">
+                      <div className="settings-theme-preview-bar">
+                        <span className="settings-theme-preview-dot dot-red" />
+                        <span className="settings-theme-preview-dot dot-yellow" />
+                        <span className="settings-theme-preview-dot dot-green" />
+                      </div>
+                      <div className="settings-theme-preview-body" style={{ background: t.cardColor }}>
+                        <div className="settings-theme-preview-header">
+                          <div
+                            className="settings-theme-preview-line short"
+                            style={{ background: t.textColor, opacity: 0.7 }}
+                          />
+                          <div
+                            className="settings-theme-preview-pill"
+                            style={{ background: t.accentColor }}
+                          />
+                        </div>
+                        <div
+                          className="settings-theme-preview-card"
+                          style={{
+                            borderColor: t.accentColor + "40",
+                            background: t.primaryColor,
+                          }}
+                        >
+                          <div
+                            className="settings-theme-preview-line"
+                            style={{ background: t.textColor, opacity: 0.4 }}
+                          />
+                          <div
+                            className="settings-theme-preview-line medium"
+                            style={{ background: t.textColor, opacity: 0.2 }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="settings-theme-info">
+                    <div className="settings-theme-info-top">
+                      <div className="settings-theme-title-wrap">
+                        <IconComponent
+                          size={16}
+                          className="settings-theme-icon"
+                          style={{ color: t.accentColor }}
+                        />
+                        <span className="settings-theme-name">{t.name}</span>
+                      </div>
+                      <div className="settings-theme-badges">
+                        {t.badge && (
+                          <span className="settings-theme-badge">{t.badge}</span>
+                        )}
+                        <span className="settings-theme-radio">
+                          {isActive ? (
+                            <CheckCircle2 size={16} style={{ color: t.accentColor }} />
+                          ) : (
+                            <Circle size={16} />
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                    <p className="settings-theme-desc">{t.description}</p>
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>

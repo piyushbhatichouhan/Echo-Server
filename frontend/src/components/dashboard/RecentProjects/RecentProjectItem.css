@@ -4,29 +4,30 @@
   justify-content: space-between;
   gap: 14px;
   padding: 18px 20px;
-  border: 1px solid rgba(255, 145, 60, 0.12);
+  border: 1px solid var(--border-subtle, var(--border));
   border-radius: var(--radius, 14px);
-  background: linear-gradient(180deg, rgba(42, 29, 20, 0.85), rgba(27, 20, 15, 0.85));
+  background: var(--bg-card-gradient, var(--bg-card));
   cursor: pointer;
   transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
   overflow: hidden;
   backdrop-filter: blur(8px);
+  box-shadow: var(--shadow);
 }
 
 .eh-recent-project:hover {
-  border-color: rgba(255, 145, 60, 0.35);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 0 16px rgba(255, 138, 0, 0.1);
+  border-color: var(--border-glow);
+  box-shadow: var(--shadow-hover), var(--glow);
   transform: translateY(-2px);
 }
 
 .eh-recent-project--running {
-  border-color: rgba(46, 204, 113, 0.2);
+  border-color: rgba(16, 185, 129, 0.25);
 }
 
 .eh-recent-project--running:hover {
-  border-color: rgba(46, 204, 113, 0.4);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 0 16px rgba(46, 204, 113, 0.12);
+  border-color: rgba(16, 185, 129, 0.45);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 0 16px rgba(16, 185, 129, 0.18);
 }
 
 .eh-recent-project-top {
@@ -48,9 +49,9 @@
   width: 40px;
   height: 40px;
   border-radius: 10px;
-  background: rgba(255, 145, 60, 0.1);
-  border: 1px solid rgba(255, 145, 60, 0.22);
-  color: var(--accent, #ff8a00);
+  background: var(--nav-active-bg);
+  border: 1px solid var(--border-glow);
+  color: var(--accent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -70,9 +71,9 @@
   width: 9px;
   height: 9px;
   border-radius: 50%;
-  background: #2ecc71;
-  box-shadow: 0 0 8px #2ecc71;
-  border: 2px solid #211710;
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+  border: 2px solid var(--bg-primary);
 }
 
 .eh-recent-project-name-group {
@@ -87,7 +88,7 @@
   margin: 0;
   font-size: 0.98rem;
   font-weight: 700;
-  color: var(--text-primary, #fff8f2);
+  color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -99,7 +100,7 @@
   align-items: center;
   gap: 4px;
   font-size: 0.74rem;
-  color: var(--text-muted, #8b7b68);
+  color: var(--text-muted);
 }
 
 .eh-recent-project-status-group {
@@ -115,9 +116,9 @@
   font-weight: 600;
   padding: 3px 7px;
   border-radius: 6px;
-  background: rgba(46, 204, 113, 0.12);
-  color: #4ade80;
-  border: 1px solid rgba(46, 204, 113, 0.25);
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.25);
 }
 
 .eh-recent-project-body {
@@ -130,7 +131,7 @@
   align-items: center;
   gap: 6px;
   font-size: 0.8rem;
-  color: var(--text-secondary, #c9b8aa);
+  color: var(--text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -138,13 +139,13 @@
 
 .commit-icon {
   flex-shrink: 0;
-  color: var(--text-muted, #8b7b68);
+  color: var(--text-muted);
 }
 
 .eh-recent-placeholder-desc {
   margin: 0;
   font-size: 0.78rem;
-  color: var(--text-muted, #8b7b68);
+  color: var(--text-muted);
   font-style: italic;
 }
 
@@ -154,7 +155,7 @@
   justify-content: space-between;
   gap: 12px;
   padding-top: 10px;
-  border-top: 1px solid rgba(255, 145, 60, 0.08);
+  border-top: 1px solid var(--border-subtle);
 }
 
 .eh-recent-project-meta {
@@ -170,23 +171,23 @@
   gap: 4px;
   padding: 2px 7px;
   border-radius: 5px;
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--text-muted, #8b7b68);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--bg-hover);
+  color: var(--text-muted);
+  border: 1px solid var(--border-subtle);
 }
 
 .eh-recent-git-tag.connected {
-  color: var(--accent, #ff8a00);
-  background: rgba(255, 138, 0, 0.08);
-  border-color: rgba(255, 138, 0, 0.18);
+  color: var(--accent);
+  background: var(--nav-hover-bg);
+  border-color: var(--border-glow);
 }
 
 .eh-recent-hash-tag {
   font-family: ui-monospace, SFMono-Regular, monospace;
   padding: 2px 6px;
   border-radius: 5px;
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--text-muted, #8b7b68);
+  background: var(--bg-hover);
+  color: var(--text-muted);
 }
 
 .eh-recent-action-link {
@@ -195,12 +196,12 @@
   gap: 3px;
   font-size: 0.78rem;
   font-weight: 600;
-  color: var(--text-muted, #8b7b68);
+  color: var(--text-muted);
   transition: all 0.2s ease;
 }
 
 .eh-recent-project:hover .eh-recent-action-link {
-  color: var(--accent, #ff8a00);
+  color: var(--accent);
 }
 
 .eh-recent-project-arrow {

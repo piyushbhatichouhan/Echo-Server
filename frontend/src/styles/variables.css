@@ -1,64 +1,275 @@
+/* =========================================================
+   EchoHub Central Theme System: Design Tokens
+   Themes: Dark-grey (Default), Amber-brown, Light-white, Neon-blue
+   ========================================================= */
+
+/* =========================================================
+   1. DEFAULT THEME: DARK-GREY (Applied to :root & data-theme="dark-grey")
+   ========================================================= */
+:root,
+[data-theme="dark-grey"] {
+  /* Theme Identity */
+  --theme-id: "dark-grey";
+  --theme-name: "Dark Grey";
+
+  /* Canvas & Layout Backgrounds */
+  --bg-primary: #0f1117;
+  --bg-secondary: #161922;
+  --bg-card: #1c202c;
+  --bg-card-gradient: linear-gradient(145deg, #1f2432 0%, #151821 100%);
+  --bg-card-hover: #232837;
+  --bg-input: #13161f;
+  --bg-hover: rgba(99, 102, 241, 0.09);
+  --bg-glass: rgba(22, 25, 34, 0.85);
+
+  /* Borders & Dividers */
+  --border: #2a3042;
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-glow: rgba(99, 102, 241, 0.3);
+  --border-focus: #6366f1;
+
+  /* Accent Color (Indigo / Cool Violet) */
+  --accent: #6366f1;
+  --accent-hover: #818cf8;
+  --accent-dark: #4f46e5;
+  --accent-gradient: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  --accent-glow: 0 0 16px rgba(99, 102, 241, 0.35);
+  --color-primary: #6366f1;
+
+  /* Text Colors */
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-inverse: #ffffff;
+
+  /* Navigation & Chips */
+  --nav-hover-bg: rgba(99, 102, 241, 0.08);
+  --nav-active-bg: rgba(99, 102, 241, 0.16);
+
+  /* Primary Button Styling */
+  --btn-primary-bg: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  --btn-primary-text: #ffffff;
+  --btn-primary-hover: linear-gradient(135deg, #818cf8 0%, #6366f1 100%);
+
+  /* Shadows & Glows */
+  --shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --shadow-hover: 0 14px 32px rgba(0, 0, 0, 0.45);
+  --glow: 0 0 14px rgba(99, 102, 241, 0.25);
+  --card-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+
+  /* Scrollbars */
+  --scrollbar-thumb: rgba(99, 102, 241, 0.28);
+}
+
+/* =========================================================
+   2. AMBER-BROWN (Classic EchoHub Obsidian & Flame Amber)
+   ========================================================= */
+[data-theme="amber-brown"] {
+  /* Theme Identity */
+  --theme-id: "amber-brown";
+  --theme-name: "Amber Brown";
+
+  /* Canvas & Layout Backgrounds */
+  --bg-primary: #18120d;
+  --bg-secondary: #211710;
+  --bg-card: #2a1d14;
+  --bg-card-gradient: linear-gradient(145deg, #2e2016 0%, #1c140e 100%);
+  --bg-card-hover: #35251a;
+  --bg-input: #231812;
+  --bg-hover: rgba(255, 138, 0, 0.09);
+  --bg-glass: rgba(33, 23, 16, 0.88);
+
+  /* Borders & Dividers */
+  --border: #473225;
+  --border-subtle: rgba(255, 155, 48, 0.16);
+  --border-glow: rgba(255, 138, 0, 0.35);
+  --border-focus: #ff8a00;
+
+  /* Accent Color (Flame Amber) */
+  --accent: #ff8a00;
+  --accent-hover: #ffaa33;
+  --accent-dark: #c46a00;
+  --accent-gradient: linear-gradient(135deg, #ff8a00 0%, #ea7a14 100%);
+  --accent-glow: 0 0 16px rgba(255, 138, 0, 0.35);
+  --color-primary: #ff8a00;
+
+  /* Text Colors */
+  --text-primary: #fff8f2;
+  --text-secondary: #c9b8aa;
+  --text-muted: #7e6b5c;
+  --text-inverse: #17100b;
+
+  /* Navigation & Chips */
+  --nav-hover-bg: rgba(255, 138, 0, 0.08);
+  --nav-active-bg: rgba(255, 138, 0, 0.18);
+
+  /* Primary Button Styling */
+  --btn-primary-bg: linear-gradient(135deg, #ff9b30 0%, #ea7a14 100%);
+  --btn-primary-text: #17100b;
+  --btn-primary-hover: linear-gradient(135deg, #ffaa45 0%, #f0851f 100%);
+
+  /* Shadows & Glows */
+  --shadow: 0 8px 24px rgba(0, 0, 0, 0.38);
+  --shadow-hover: 0 14px 32px rgba(0, 0, 0, 0.48);
+  --glow: 0 0 14px rgba(255, 138, 0, 0.35);
+  --card-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+
+  /* Scrollbars */
+  --scrollbar-thumb: rgba(255, 138, 0, 0.3);
+}
+
+/* =========================================================
+   3. LIGHT-WHITE (Daylight Studio Porcelain & Sapphire)
+   ========================================================= */
+[data-theme="light-white"] {
+  /* Theme Identity */
+  --theme-id: "light-white";
+  --theme-name: "Light White";
+
+  /* Canvas & Layout Backgrounds */
+  --bg-primary: #f8fafc;
+  --bg-secondary: #f1f5f9;
+  --bg-card: #ffffff;
+  --bg-card-gradient: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+  --bg-card-hover: #f1f5f9;
+  --bg-input: #f1f5f9;
+  --bg-hover: rgba(37, 99, 235, 0.08);
+  --bg-glass: rgba(255, 255, 255, 0.92);
+
+  /* Borders & Dividers */
+  --border: #e2e8f0;
+  --border-subtle: rgba(0, 0, 0, 0.06);
+  --border-glow: rgba(37, 99, 235, 0.25);
+  --border-focus: #2563eb;
+
+  /* Accent Color (Cobalt / Sapphire Blue) */
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-dark: #1e40af;
+  --accent-gradient: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  --accent-glow: 0 0 14px rgba(37, 99, 235, 0.25);
+  --color-primary: #2563eb;
+
+  /* Text Colors */
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --text-inverse: #ffffff;
+
+  /* Navigation & Chips */
+  --nav-hover-bg: rgba(37, 99, 235, 0.06);
+  --nav-active-bg: rgba(37, 99, 235, 0.12);
+
+  /* Primary Button Styling */
+  --btn-primary-bg: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  --btn-primary-text: #ffffff;
+  --btn-primary-hover: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+
+  /* Shadows & Glows */
+  --shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  --shadow-hover: 0 8px 30px rgba(0, 0, 0, 0.1);
+  --glow: 0 0 12px rgba(37, 99, 235, 0.2);
+  --card-shadow: 0 6px 24px rgba(0, 0, 0, 0.06);
+
+  /* Scrollbars */
+  --scrollbar-thumb: rgba(37, 99, 235, 0.25);
+}
+
+/* =========================================================
+   4. NEON-BLUE (Cyberpunk Matrix Void & Neon Cyan)
+   ========================================================= */
+[data-theme="neon-blue"] {
+  /* Theme Identity */
+  --theme-id: "neon-blue";
+  --theme-name: "Neon Blue";
+
+  /* Canvas & Layout Backgrounds */
+  --bg-primary: #080c14;
+  --bg-secondary: #0d1527;
+  --bg-card: #111c34;
+  --bg-card-gradient: linear-gradient(145deg, #13203c 0%, #0c1424 100%);
+  --bg-card-hover: #182849;
+  --bg-input: #0a1120;
+  --bg-hover: rgba(0, 240, 255, 0.09);
+  --bg-glass: rgba(13, 21, 39, 0.9);
+
+  /* Borders & Dividers */
+  --border: #1e3256;
+  --border-subtle: rgba(0, 240, 255, 0.12);
+  --border-glow: rgba(0, 240, 255, 0.4);
+  --border-focus: #00f0ff;
+
+  /* Accent Color (High-Voltage Neon Cyan) */
+  --accent: #00f0ff;
+  --accent-hover: #38bdf8;
+  --accent-dark: #0284c7;
+  --accent-gradient: linear-gradient(135deg, #00f0ff 0%, #0284c7 100%);
+  --accent-glow: 0 0 20px rgba(0, 240, 255, 0.5);
+  --color-primary: #00f0ff;
+
+  /* Text Colors */
+  --text-primary: #f0fdf4;
+  --text-secondary: #93c5fd;
+  --text-muted: #4776a3;
+  --text-inverse: #04101e;
+
+  /* Navigation & Chips */
+  --nav-hover-bg: rgba(0, 240, 255, 0.08);
+  --nav-active-bg: rgba(0, 240, 255, 0.18);
+
+  /* Primary Button Styling */
+  --btn-primary-bg: linear-gradient(135deg, #00f0ff 0%, #0099ff 100%);
+  --btn-primary-text: #04101e;
+  --btn-primary-hover: linear-gradient(135deg, #38bdf8 0%, #00f0ff 100%);
+
+  /* Shadows & Glows */
+  --shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+  --shadow-hover: 0 14px 40px rgba(0, 0, 0, 0.6);
+  --glow: 0 0 16px rgba(0, 240, 255, 0.4);
+  --card-shadow: 0 12px 36px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 240, 255, 0.08);
+
+  /* Scrollbars */
+  --scrollbar-thumb: rgba(0, 240, 255, 0.35);
+}
+
+/* =========================================================
+   COMMON VARIABLES (Shared across all themes)
+   ========================================================= */
 :root {
-    /* Backgrounds */
-    --bg-primary: #18120D;
-    --bg-secondary: #211710;
-    --bg-card: #2A1D14;
+  /* Status Colors */
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --stopped: #64748b;
 
-    /* Borders */
-    --border: #473225;
+  /* Border Radii */
+  --radius-small: 8px;
+  --radius: 12px;
+  --radius-large: 18px;
+  --radius-xl: 24px;
 
-    /* Accent */
-    --accent: #FF8A00;
-    --accent-dark: #C46A00;
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition: 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-slow: 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 
-    /* Text */
-    --text-primary: #FFF8F2;
-    --text-secondary: #C9B8AA;
-    --text-muted: #7E6B5C;
+  /* Spacing */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
 
-    /* Status */
-    --success: #2ECC71;
-    --warning: #F4B400;
-    --danger: #E74C3C;
-    --stopped: #8A8A8A;
-
-    /* Radius */
-        --radius-small: 8px;
-        --radius: 12px;
-        --radius-large: 18px;
-        --radius-xl: 24px;
-    
-        /* Shadows */
-        --shadow: 0 8px 24px rgba(0, 0, 0, .35);
-        --shadow-hover: 0 14px 32px rgba(0, 0, 0, .45);
-        --glow: 0 0 12px rgba(255, 138, 0, .35);
-    
-        /* Animation */
-        --transition-fast: .15s ease;
-        --transition: .18s ease;
-        --transition-slow: .3s ease;
-    
-        /* Layer colors */
-        --bg-input: #231812;
-        --bg-hover: #33231a;
-
-    /* Shadows */
-    --shadow: 0 8px 24px rgba(0, 0, 0, .35);
-    --glow: 0 0 12px rgba(255, 138, 0, .35);
-
-    /* Animation */
-    --transition: .18s ease;
-
-/* Spacing */
-
-    --space-xs: 4px;
-
-    --space-sm: 8px;
-
-    --space-md: 16px;
-
-    --space-lg: 24px;
-
-    --space-xl: 32px;
-    
+  /* Legacy & Semantic Variable Aliases */
+  --eh-background: var(--bg-primary);
+  --eh-surface: var(--bg-card);
+  --eh-surface-hover: var(--bg-card-hover);
+  --eh-border: var(--border);
+  --eh-border-subtle: var(--border-subtle);
+  --eh-text: var(--text-primary);
+  --eh-text-secondary: var(--text-secondary);
+  --eh-text-muted: var(--text-muted);
+  --eh-primary: var(--accent);
+  --eh-primary-hover: var(--accent-hover);
+  --eh-primary-gradient: var(--accent-gradient);
 }
