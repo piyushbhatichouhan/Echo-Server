@@ -1,184 +1,271 @@
 .eh-project-link {
-    display: block;
-
-    color: inherit;
-
-    text-decoration: none;
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  height: 100%;
 }
 
 .eh-project-card {
-    display: flex;
-    flex-direction: column;
-
-    gap: 20px;
-
-    height: 100%;
- 
-    transition: transform var(--transition);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 24px;
+  border: 1px solid rgba(255, 145, 60, 0.14);
+  border-radius: var(--radius-large, 18px);
+  background: linear-gradient(180deg, rgba(42, 29, 20, 0.95), rgba(27, 20, 15, 0.95));
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(12px);
+  height: 100%;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
 }
 
-.eh-project-link:hover .eh-card {
-    border-color: var(--accent);
-
-    box-shadow:
-        var(--shadow),
-        var(--glow);
-
-    transform: translateY(-4px);
+.eh-project-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(255, 138, 0, 0.4), transparent);
+  opacity: 0;
+  transition: opacity 0.25s ease;
 }
 
-.eh-project-top {
-    display: flex;
-
-    justify-content: space-between;
-
-    align-items: flex-start;
-
-    gap: 16px;
+.eh-project-card:hover::before {
+  opacity: 1;
 }
 
-.eh-project-title {
-    display: flex;
-
-    gap: 14px;
-
-    align-items: flex-start;
-
-    flex: 1;
+.eh-project-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(255, 145, 60, 0.35);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45), 0 0 20px rgba(255, 138, 0, 0.12);
 }
 
-.eh-project-icon {
-    display: flex;
-
-    justify-content: center;
-
-    align-items: center;
-
-    width: 42px;
-
-    height: 42px;
-
-    border-radius: 10px;
-
-    background: rgba(255, 138, 0, 0.12);
-
-    color: var(--accent);
-
-    flex-shrink: 0;
+.eh-project-card--running {
+  border-color: rgba(46, 204, 113, 0.22);
 }
 
-.eh-project-heading h3 {
-    font-size: 1.05rem;
-
-    font-weight: 600;
-
-    color: var(--text-primary);
-
-    margin-bottom: 6px;
+.eh-project-card--running:hover {
+  border-color: rgba(46, 204, 113, 0.45);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45), 0 0 20px rgba(46, 204, 113, 0.15);
 }
 
-.eh-project-heading p {
-    color: var(--text-secondary);
-
-    font-size: .9rem;
-
-    line-height: 1.5;
-
-    display: -webkit-box;
-
-    -webkit-line-clamp: 2;
-
-    -webkit-box-orient: vertical;
-
-    overflow: hidden;
+/* Card Header */
+.eh-project-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
 }
 
-.eh-project-info {
-    display: flex;
-
-    flex-wrap: wrap;
-
-    gap: 10px;
+.eh-project-card-identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
 }
 
-.eh-project-info-item {
-    display: inline-flex;
-
-    align-items: center;
-
-    gap: 6px;
-
-    padding: 6px 12px;
-
-    border-radius: 999px;
-
-    background: var(--bg-secondary);
-
-    border: 1px solid var(--border);
-
-    color: var(--text-secondary);
-
-    font-size: .82rem;
-
-    transition: all var(--transition);
+.eh-project-card-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(255, 145, 60, 0.1);
+  border: 1px solid rgba(255, 145, 60, 0.22);
+  color: var(--accent, #ff8a00);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+  transition: transform 0.2s ease;
 }
 
-.eh-project-info-item svg {
-    color: var(--accent);
-
-    flex-shrink: 0;
+.eh-project-card:hover .eh-project-card-icon {
+  transform: scale(1.05);
 }
 
-.eh-project-link:hover .eh-project-info-item {
-    border-color: rgba(255, 138, 0, .35);
+.running-dot-ping {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #2ecc71;
+  box-shadow: 0 0 8px #2ecc71;
+  border: 2px solid #211710;
 }
 
-.eh-project-footer {
-    display: flex;
-
-    justify-content: space-between;
-
-    align-items: center;
-
-    margin-top: auto;
-
-    padding-top: 14px;
-
-    border-top: 1px solid var(--border);
+.eh-project-card-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
 }
 
-.eh-project-time,
-.eh-project-open {
-    display: flex;
-
-    align-items: center;
-
-    gap: 6px;
-
-    color: var(--text-muted);
-
-    font-size: .85rem;
+.eh-project-card-name {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary, #fff8f2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -0.2px;
 }
 
-.eh-project-time svg,
-.eh-project-open svg {
-    color: var(--accent);
+.eh-project-runtime-tag {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted, #8b7b68);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-.eh-project-open {
-    font-weight: 500;
-
-    transition: color var(--transition), transform var(--transition);
+.eh-project-card-badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
-.eh-project-link:hover .eh-project-open {
-    color: var(--accent);
-
-    transform: translateX(4px);
+.eh-project-port-pill {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(46, 204, 113, 0.12);
+  color: #4ade80;
+  border: 1px solid rgba(46, 204, 113, 0.25);
 }
 
-.eh-project-link:hover .eh-project-icon {
-    background: rgba(255, 138, 0, .18);
+/* Card Body */
+.eh-project-card-body {
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+}
 
-    box-shadow: var(--glow);
+.eh-project-desc {
+  margin: 0;
+  font-size: 0.84rem;
+  color: var(--text-secondary, #c9b8aa);
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.eh-project-commit-msg {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  color: var(--text-secondary, #c9b8aa);
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.eh-project-commit-msg .commit-icon {
+  flex-shrink: 0;
+  color: var(--text-muted, #8b7b68);
+}
+
+/* Metadata Strip */
+.eh-project-card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid rgba(255, 145, 60, 0.08);
+  border-bottom: 1px solid rgba(255, 145, 60, 0.08);
+}
+
+.eh-project-git-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.eh-git-branch-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 0.74rem;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-muted, #8b7b68);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+
+.eh-git-branch-tag.connected {
+  color: var(--accent, #ff8a00);
+  background: rgba(255, 138, 0, 0.08);
+  border-color: rgba(255, 138, 0, 0.2);
+}
+
+.eh-commit-hash-tag {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 0.72rem;
+  padding: 2px 6px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-muted, #8b7b68);
+}
+
+.eh-project-time-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.76rem;
+  color: var(--text-muted, #8b7b68);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Card Footer */
+.eh-project-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 2px;
+}
+
+.eh-project-footer-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-muted, #8b7b68);
+  transition: color 0.2s ease;
+}
+
+.eh-project-card:hover .eh-project-footer-label {
+  color: var(--accent, #ff8a00);
+}
+
+.eh-project-footer-arrow {
+  color: var(--text-muted, #8b7b68);
+  transition: all 0.2s ease;
+}
+
+.eh-project-card:hover .eh-project-footer-arrow {
+  color: var(--accent, #ff8a00);
+  transform: translateX(4px);
 }

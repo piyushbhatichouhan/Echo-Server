@@ -73,31 +73,24 @@ const getProjects = async (ownerId) => {
     p.git_remote_url,
 
     COALESCE(d.status,'Not Deployed') AS status,
-
+    d.port,
+    d.commit_hash,
+    d.commit_message,
     d.updated_at AS last_deployment
-
 FROM projects p
-
 LEFT JOIN LATERAL (
-
     SELECT
-
         status,
-
+        port,
+        commit_hash,
+        commit_message,
         updated_at
-
     FROM deployments
-
     WHERE project_id = p.id
-
     ORDER BY updated_at DESC
-
     LIMIT 1
-
 ) d ON TRUE
-
 WHERE p.owner_id = $1
-
 ORDER BY p.updated_at DESC;
     `,
     [ownerId],
