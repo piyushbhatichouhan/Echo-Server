@@ -86,6 +86,25 @@ async function checkDatabase() {
           ALTER TABLE cloud_files ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP;
           ALTER TABLE cloud_files ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW();
         END IF;
+
+        IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'users') THEN
+          ALTER TABLE users ADD COLUMN IF NOT EXISTS verified BOOLEAN DEFAULT FALSE;
+          ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_token_hash TEXT;
+          ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_token_expires TIMESTAMPTZ;
+          ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_token_hash TEXT;
+          ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_token_expires TIMESTAMPTZ;
+        END IF;
+
+        CREATE TABLE IF NOT EXISTS password_reset_tokens (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          token_hash TEXT NOT NULL,
+          expires_at TIMESTAMPTZ NOT NULL,
+          used_at TIMESTAMPTZ,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+        CREATE INDEX IF NOT EXISTS idx_pwd_reset_tokens_hash ON password_reset_tokens(token_hash);
+        CREATE INDEX IF NOT EXISTS idx_pwd_reset_tokens_user ON password_reset_tokens(user_id);
       END $$;
     `);
   } catch (err) {

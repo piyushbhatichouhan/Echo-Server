@@ -22,7 +22,7 @@ export const resendVerification = async (data) => {
 };
 
 export const verifyEmail = async (token) => {
-  const res = await api.get(`/auth/verify-email?token=${token}`);
+  const res = await api.get(`/auth/verify-email?token=${encodeURIComponent(token || "")}`);
 
   return res.data;
 };
@@ -45,7 +45,7 @@ export const resetPassword = async (token, password) => {
 };
 
 export const validateResetToken = async (token) => {
-  const res = await api.get(`/auth/reset-password/validate?token=${token}`);
+  const res = await api.get(`/auth/reset-password/validate?token=${encodeURIComponent(token || "")}`);
 
   return res.data;
 };
