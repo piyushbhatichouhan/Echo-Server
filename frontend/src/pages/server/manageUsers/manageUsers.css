@@ -103,7 +103,7 @@
   letter-spacing: 0.5px;
   background: var(--nav-hover-bg);
   color: var(--accent);
-  border: 1px solid rgba(255, 138, 0, 0.35);
+  border: 1px solid var(--border-glow);
 }
 
 .manage-subtitle {
@@ -228,7 +228,7 @@
 
 .manage-search-box:focus-within {
   border-color: var(--accent);
-  box-shadow: 0 0 8px rgba(255, 138, 0, 0.2);
+  box-shadow: var(--accent-glow);
 }
 
 .manage-search-icon {
@@ -283,7 +283,7 @@
 }
 
 .manage-filter-tab.active {
-  background: rgba(255, 138, 0, 0.18);
+  background: var(--nav-active-bg);
   color: var(--accent);
   border-color: var(--accent);
 }
@@ -346,7 +346,7 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  border: 1px solid rgba(255, 138, 0, 0.25);
+  border: 1px solid var(--border-glow);
 }
 
 .user-details-box {
@@ -488,7 +488,7 @@
 .btn--restore {
   background: var(--nav-hover-bg);
   color: var(--accent);
-  border: 1px solid rgba(255, 138, 0, 0.35);
+  border: 1px solid var(--border-glow);
 }
 
 .btn--restore:hover:not(:disabled) {

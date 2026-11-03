@@ -239,7 +239,7 @@ export default function Projects() {
                     backgroundColor:
                       storagePercentage > 85
                         ? "var(--danger, #ef4444)"
-                        : "var(--accent, #ff8a00)",
+                        : "var(--accent)",
                   }}
                 />
               </div>

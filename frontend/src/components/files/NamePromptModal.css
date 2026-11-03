@@ -24,8 +24,8 @@
 
 .name-prompt-icon-avatar.badge-folder {
   background: var(--nav-hover-bg);
-  color: #ffaa33;
-  border: 1px solid rgba(255, 138, 0, 0.28);
+  color: var(--accent);
+  border: 1px solid var(--border-glow);
   box-shadow: 0 0 16px var(--nav-hover-bg);
 }
 
@@ -38,8 +38,8 @@
 
 .name-prompt-icon-avatar.badge-archive {
   background: var(--nav-hover-bg);
-  color: #ffaa33;
-  border: 1px solid rgba(255, 138, 0, 0.28);
+  color: var(--accent);
+  border: 1px solid var(--border-glow);
   box-shadow: 0 0 16px var(--nav-hover-bg);
 }
 
@@ -58,7 +58,7 @@
 
 .name-prompt-hint {
   font-size: 0.82rem;
-  color: #bfa892;
+  color: var(--text-muted);
   font-family: ui-monospace, SFMono-Regular, monospace;
 }
 

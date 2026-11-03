@@ -103,7 +103,7 @@
   letter-spacing: 0.5px;
   background: var(--nav-hover-bg);
   color: var(--accent);
-  border: 1px solid rgba(255, 138, 0, 0.35);
+  border: 1px solid var(--border-glow);
 }
 
 .health-subtitle {
@@ -368,9 +368,9 @@
 }
 
 .health-card:hover {
-  border-color: rgba(255, 138, 0, 0.25);
+  border-color: var(--border-glow);
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45),
-              0 0 15px rgba(255, 138, 0, 0.04);
+              0 0 15px var(--border-glow);
 }
 
 .gauge-header {
@@ -393,7 +393,7 @@
 .icon--cpu {
   background: var(--nav-hover-bg);
   color: var(--accent);
-  border: 1px solid rgba(255, 138, 0, 0.3);
+  border: 1px solid var(--border-glow);
 }
 
 .icon--memory {
@@ -482,7 +482,7 @@
 
 .gauge-progress-bar.bar--normal {
   background: var(--accent-gradient);
-  box-shadow: 0 0 8px rgba(255, 138, 0, 0.4);
+  box-shadow: var(--accent-glow);
 }
 
 .gauge-progress-bar.bar--warning {
@@ -853,7 +853,7 @@
   border-radius: 8px;
   background: var(--nav-hover-bg);
   color: var(--accent);
-  border: 1px solid rgba(255, 138, 0, 0.3);
+  border: 1px solid var(--border-glow);
   font-size: 0.78rem;
   font-weight: 600;
   cursor: pointer;
@@ -861,8 +861,8 @@
 }
 
 .quick-clean-btn:hover:not(:disabled) {
-  background: rgba(255, 138, 0, 0.22);
-  border-color: rgba(255, 138, 0, 0.5);
+  background: var(--nav-active-bg);
+  border-color: var(--accent);
   transform: translateY(-1px);
 }
 

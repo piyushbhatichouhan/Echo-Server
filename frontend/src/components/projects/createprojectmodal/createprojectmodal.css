@@ -27,7 +27,7 @@
   overflow-y: auto;
   background: radial-gradient(ellipse at top, var(--border-glow) 0%, transparent 60%),
               var(--bg-card-gradient);
-  border: 1px solid rgba(255, 138, 0, 0.22);
+  border: 1px solid var(--border-glow);
   border-radius: 22px;
   box-shadow:
     0 30px 80px rgba(0, 0, 0, 0.7),
@@ -54,7 +54,7 @@
   width: 6px;
 }
 .createProjectDialog::-webkit-scrollbar-thumb {
-  background: rgba(255, 138, 0, 0.2);
+  background: var(--scrollbar-thumb);
   border-radius: 4px;
 }
 
@@ -84,17 +84,17 @@
   align-items: center;
   justify-content: center;
   background: var(--nav-hover-bg);
-  border: 1px solid rgba(255, 138, 0, 0.28);
-  color: #ffaa33;
+  border: 1px solid var(--border-glow);
+  color: var(--accent);
   flex-shrink: 0;
-  box-shadow: 0 0 16px rgba(255, 138, 0, 0.16);
+  box-shadow: var(--accent-glow);
 }
 
 .createProjectHeader h1 {
   margin: 0;
   font-size: 1.45rem;
   font-weight: 700;
-  color: #fff3e4;
+  color: var(--text-primary);
   letter-spacing: -0.01em;
 }
 
@@ -122,7 +122,7 @@
 }
 
 .createProjectClose:hover:not(:disabled) {
-  color: #ffaa33;
+  color: var(--accent);
   background: var(--nav-hover-bg);
   border-color: var(--border-glow);
   transform: rotate(90deg);
@@ -170,7 +170,7 @@
 }
 
 .fieldOptional {
-  color: #8c7664;
+  color: var(--text-muted);
   font-size: 0.78rem;
   font-weight: 400;
 }
@@ -217,7 +217,7 @@
 
 .runtimeHeading h3 {
   margin: 0;
-  color: #fff3e4;
+  color: var(--text-primary);
   font-size: 1.05rem;
   font-weight: 700;
 }
@@ -288,12 +288,12 @@
 }
 
 .runtimeSelected {
-  color: #ffaa33;
+  color: var(--accent);
 }
 
 .runtimeCard h4 {
   margin: 0;
-  color: #fff3e4;
+  color: var(--text-primary);
   font-size: 1rem;
   font-weight: 700;
 }
@@ -335,13 +335,13 @@
   font-size: 0.74rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #8c7664;
+  color: var(--text-muted);
   font-weight: 600;
 }
 
 .runtimePreviewHeader h3 {
   margin: 0;
-  color: #fff3e4;
+  color: var(--text-primary);
   font-size: 1.05rem;
   font-weight: 700;
 }
@@ -351,8 +351,8 @@
   padding: 4px 10px;
   border-radius: 6px;
   background: var(--nav-hover-bg);
-  border: 1px solid rgba(255, 138, 0, 0.25);
-  color: #ffaa33;
+  border: 1px solid var(--border-glow);
+  color: var(--accent);
   font-size: 0.78rem;
   font-weight: 600;
 }
@@ -366,7 +366,7 @@
 .runtimePreviewField label {
   display: block;
   margin-bottom: 6px;
-  color: #a89481;
+  color: var(--text-secondary);
   font-size: 0.8rem;
   font-weight: 500;
 }
@@ -398,12 +398,12 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #8c7664;
+  color: var(--text-muted);
   font-size: 0.84rem;
 }
 
 .footerInfo svg {
-  color: #ffaa33;
+  color: var(--accent);
   flex-shrink: 0;
 }
 
@@ -449,7 +449,7 @@
 
 .primaryButton:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 8px 24px rgba(255, 138, 0, 0.42);
+  box-shadow: var(--shadow-hover);
   filter: brightness(1.06);
 }
 
