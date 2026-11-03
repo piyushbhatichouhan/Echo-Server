@@ -1,79 +1,111 @@
 import "./projectcard.css";
-
 import { Link } from "react-router-dom";
-
 import {
-  Rocket,
-  Computer,
+  Layers,
   GitBranch,
-  Network,
+  GitCommit,
   Clock3,
   ChevronRight,
+  Server,
+  Zap,
+  Box,
 } from "lucide-react";
-
-import Card from "../card/card";
 import StatusBadge from "../statusbadge/statusbadge";
-
 import timeAgo from "../../../utils/timeAgo";
- 
+
+const APP_ICONS = {
+  node: <Server size={18} />,
+  vite: <Zap size={18} />,
+  next: <Layers size={18} />,
+  custom: <Box size={18} />,
+};
+
+const APP_LABELS = {
+  node: "Node.js",
+  vite: "Vite SPA",
+  next: "Next.js",
+  custom: "Docker",
+};
+
 export default function ProjectCard({ project }) {
+  const isRunning = (project.status || "").toLowerCase() === "running";
+  const appType = (project.application_type || "node").toLowerCase();
+  const appIcon = APP_ICONS[appType] || <Layers size={18} />;
+  const appLabel = APP_LABELS[appType] || project.application_type || "App";
+
   return (
     <Link to={`/projects/${project.id}`} className="eh-project-link">
-      <Card>
-        <div className="eh-project-card">
-          <div className="eh-project-top">
-            <div className="eh-project-title">
-              <div className="eh-project-icon">
-                <Rocket size={20} />
-              </div>
-
-              <div className="eh-project-heading">
-                <h3>{project.name}</h3>
-
-                <p>{project.description || "No description provided."}</p>
-              </div>
+      <div className={`eh-project-card ${isRunning ? "eh-project-card--running" : ""}`}>
+        {/* Top Header */}
+        <div className="eh-project-card-header">
+          <div className="eh-project-card-identity">
+            <div className="eh-project-card-icon">
+              {appIcon}
+              {isRunning && <span className="running-dot-ping" />}
             </div>
+            <div className="eh-project-card-heading">
+              <h3 className="eh-project-card-name" title={project.name}>
+                {project.name}
+              </h3>
+              <span className="eh-project-runtime-tag">{appLabel}</span>
+            </div>
+          </div>
 
+          <div className="eh-project-card-badges">
+            {project.port && isRunning && (
+              <span className="eh-project-port-pill" title={`Listening on port ${project.port}`}>
+                :{project.port}
+              </span>
+            )}
             <StatusBadge status={project.status} />
           </div>
+        </div>
 
-          <div className="eh-project-info">
-            <div className="eh-project-info-item">
-              <Computer size={15} />
+        {/* Description or commit snippet */}
+        <div className="eh-project-card-body">
+          {project.commit_message ? (
+            <p className="eh-project-commit-msg" title={project.commit_message}>
+              <GitCommit size={14} className="commit-icon" />
+              <span>"{project.commit_message.length > 55 ? `${project.commit_message.slice(0, 55)}...` : project.commit_message}"</span>
+            </p>
+          ) : (
+            <p className="eh-project-desc" title={project.description}>
+              {project.description || "Containerized application workspace ready for deployment."}
+            </p>
+          )}
+        </div>
 
-              <span>
-                {project.git_connected ? "GitHub Connected" : "No Git"}
+        {/* Metadata Strip */}
+        <div className="eh-project-card-meta">
+          <div className="eh-project-git-info">
+            {project.git_connected ? (
+              <span className="eh-git-branch-tag connected" title={project.git_branch || "main"}>
+                <GitBranch size={13} />
+                <span>{project.git_branch || "main"}</span>
               </span>
-            </div>
-
-            {project.git_connected && (
-              <div className="eh-project-info-item">
-                <GitBranch size={15} />
-
-                <span>{project.git_branch}</span>
-              </div>
+            ) : (
+              <span className="eh-git-branch-tag unlinked">Local Codebase</span>
             )}
 
-            <div className="eh-project-info-item">
-              <Network size={15} />
-            </div>
+            {project.commit_hash && (
+              <span className="eh-commit-hash-tag">
+                #{project.commit_hash.slice(0, 7)}
+              </span>
+            )}
           </div>
 
-          <div className="eh-project-footer">
-            <div className="eh-project-time">
-              <Clock3 size={15} />
-
-              <span>{timeAgo(project.updated_at)}</span>
-            </div>
-
-            <div className="eh-project-open">
-              <span>Open</span>
-
-              <ChevronRight size={18} />
-            </div>
-          </div>
+          <span className="eh-project-time-tag">
+            <Clock3 size={13} />
+            {timeAgo(project.last_deployment || project.updated_at)}
+          </span>
         </div>
-      </Card>
+
+        {/* Card Footer Action */}
+        <div className="eh-project-card-footer">
+          <span className="eh-project-footer-label">Open Workspace</span>
+          <ChevronRight size={15} className="eh-project-footer-arrow" />
+        </div>
+      </div>
     </Link>
   );
 }

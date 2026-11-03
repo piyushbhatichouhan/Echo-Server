@@ -19,7 +19,6 @@ import StatCard from "../../components/dashboard/StatCard/StatCard";
 import RecentProjects from "../../components/dashboard/RecentProjects/RecentProjects";
 import ServerHealth from "../../components/dashboard/ServerHealth/ServerHealth";
 import DeploymentActivity from "../../components/dashboard/DeploymentActivity/DeploymentActivity";
-import QuickActions from "../../components/dashboard/QuickActions/QuickActions";
 import CreateProjectModal from "../../components/projects/createprojectmodal/createprojectmodal";
 import Button from "../../components/common/button/button";
 import "./dashboard.css";
@@ -242,8 +241,6 @@ export default function Dashboard() {
 
         <div className="dashboard-side-col">
           <ServerHealth server={dashboard?.server} />
-
-          <QuickActions onNewProject={() => setIsCreateOpen(true)} />
         </div>
       </div>
 
