@@ -1,6 +1,6 @@
 import "./createprojectmodal.css";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { createProject } from "../../../services/project.api";
 
 import {
@@ -12,12 +12,15 @@ import {
   GitBranch,
   Zap,
   Layers,
+  X,
+  FolderPlus,
+  Plus,
 } from "lucide-react";
 
 const APPLICATIONS = {
   node: {
     title: "Node.js",
-    icon: <Server size={28} />,
+    icon: <Server size={24} />,
     description: "Express, Fastify, NestJS, and Node.js backend servers.",
     runtime: "Node.js (node:22-alpine)",
     install: "npm install",
@@ -28,7 +31,7 @@ const APPLICATIONS = {
 
   vite: {
     title: "Vite (React / Vue)",
-    icon: <Zap size={28} />,
+    icon: <Zap size={24} />,
     description: "Modern Single Page Apps served through high-performance Nginx.",
     runtime: "Multi-stage Nginx",
     install: "npm install",
@@ -39,7 +42,7 @@ const APPLICATIONS = {
 
   next: {
     title: "Next.js",
-    icon: <Layers size={28} />,
+    icon: <Layers size={24} />,
     description: "Next.js SSR and full-stack React applications.",
     runtime: "Node.js (node:22-alpine)",
     install: "npm install",
@@ -50,7 +53,7 @@ const APPLICATIONS = {
 
   static: {
     title: "Static Website",
-    icon: <Globe size={28} />,
+    icon: <Globe size={24} />,
     description: "Pure HTML, CSS, JavaScript files or pre-built static assets.",
     runtime: "Nginx Alpine",
     install: "-",
@@ -61,7 +64,7 @@ const APPLICATIONS = {
 
   python: {
     title: "Python",
-    icon: <Terminal size={28} />,
+    icon: <Terminal size={24} />,
     description: "FastAPI, Flask, Django, and Python web applications.",
     runtime: "Python 3.12 Slim",
     install: "pip install -r requirements.txt",
@@ -72,7 +75,7 @@ const APPLICATIONS = {
 
   custom: {
     title: "Custom Docker",
-    icon: <Box size={28} />,
+    icon: <Box size={24} />,
     description: "User-defined Dockerfile or custom container settings.",
     runtime: "Custom Dockerfile",
     install: "Custom",
@@ -87,6 +90,23 @@ export default function CreateProjectModal({ open, onClose, onCreated }) {
   const [description, setDescription] = useState("");
   const [applicationType, setApplicationType] = useState("node");
   const [loading, setLoading] = useState(false);
+
+  const handleClose = useCallback(() => {
+    if (loading) return;
+    onClose?.();
+  }, [loading, onClose]);
+
+  // Handle escape key
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        handleClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [open, handleClose]);
 
   if (!open) return null;
 
@@ -118,108 +138,138 @@ export default function CreateProjectModal({ open, onClose, onCreated }) {
   };
 
   return (
-    <div className="createProjectOverlay" onClick={onClose}>
+    <div
+      className="createProjectOverlay"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) handleClose();
+      }}
+      role="dialog"
+      aria-modal="true"
+    >
       <div className="createProjectDialog" onClick={(e) => e.stopPropagation()}>
         <div className="createProjectHeader">
-          <div>
-            <h1>Create New Project</h1>
-
-            <p>
-              Choose what you want to deploy. Runtime commands can be customized
-              later from Project Settings.
-            </p>
+          <div className="createProjectHeaderLeft">
+            <div className="createProjectIconBadge">
+              <FolderPlus size={22} />
+            </div>
+            <div>
+              <h1>Create New Project</h1>
+              <p>
+                Choose what you want to deploy. Runtime commands can be customized
+                later from Project Settings.
+              </p>
+            </div>
           </div>
 
-          <button className="createProjectClose" onClick={onClose}>
-            ✕
+          <button
+            type="button"
+            className="createProjectClose"
+            onClick={handleClose}
+            disabled={loading}
+            aria-label="Close modal"
+          >
+            <X size={18} />
           </button>
         </div>
 
         <form className="createProjectBody" onSubmit={submit}>
           <div className="projectInfoSection">
             <div className="field">
-              <label>Project Name</label>
+              <label htmlFor="project-name-input">Project Name <span className="fieldRequired">*</span></label>
 
               <input
-                placeholder="Portfolio API"
+                id="project-name-input"
+                placeholder="e.g. portfolio-api or payments-worker"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                autoFocus
+                disabled={loading}
+                required
               />
             </div>
 
             <div className="field">
-              <label>Description</label>
+              <label htmlFor="project-desc-input">Description <span className="fieldOptional">(optional)</span></label>
 
               <textarea
+                id="project-desc-input"
                 rows={3}
-                placeholder="Describe your project..."
+                placeholder="Briefly describe this project or service..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
+                disabled={loading}
               />
             </div>
           </div>
 
           <div className="runtimeSection">
             <div className="runtimeHeading">
-              <h3>Application Type</h3>
-
-              <span>Select one deployment template.</span>
+              <div>
+                <h3>Application Type</h3>
+                <span>Select a deployment template to preconfigure build & runtime settings.</span>
+              </div>
             </div>
 
             <div className="runtimeGrid">
-              {Object.entries(APPLICATIONS).map(([key, app]) => (
-                <div
-                  key={key}
-                  className={`runtimeCard ${
-                    applicationType === key ? "active" : ""
-                  }`}
-                  onClick={() => setApplicationType(key)}
-                >
-                  <div className="runtimeCardTop">
-                    <div className="runtimeIcon">{app.icon}</div>
+              {Object.entries(APPLICATIONS).map(([key, app]) => {
+                const isSelected = applicationType === key;
+                return (
+                  <div
+                    key={key}
+                    role="button"
+                    tabIndex={0}
+                    className={`runtimeCard ${isSelected ? "active" : ""}`}
+                    onClick={() => setApplicationType(key)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setApplicationType(key);
+                      }
+                    }}
+                  >
+                    <div className="runtimeCardTop">
+                      <div className="runtimeIcon">{app.icon}</div>
 
-                    {applicationType === key && (
-                      <CheckCircle2 size={22} className="runtimeSelected" />
-                    )}
+                      {isSelected && (
+                        <CheckCircle2 size={20} className="runtimeSelected" />
+                      )}
+                    </div>
+
+                    <h4>{app.title}</h4>
+                    <p>{app.description}</p>
                   </div>
-
-                  <h4>{app.title}</h4>
-
-                  <p>{app.description}</p>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
           <div className="runtimePreview">
             <div className="runtimePreviewHeader">
-              <h3>{current.title}</h3>
-
-              <span>{current.runtime}</span>
+              <div className="runtimePreviewTitleWrap">
+                <span className="runtimePreviewLabel">Default Configuration</span>
+                <h3>{current.title}</h3>
+              </div>
+              <span className="runtimeBadge">{current.runtime}</span>
             </div>
 
             <div className="runtimePreviewGrid">
-              <div>
-                <label>Install</label>
-
+              <div className="runtimePreviewField">
+                <label>Install Command</label>
                 <code>{current.install}</code>
               </div>
 
-              <div>
-                <label>Build</label>
-
+              <div className="runtimePreviewField">
+                <label>Build Command</label>
                 <code>{current.build}</code>
               </div>
 
-              <div>
-                <label>Start</label>
-
+              <div className="runtimePreviewField">
+                <label>Start Command</label>
                 <code>{current.start}</code>
               </div>
 
-              <div>
+              <div className="runtimePreviewField">
                 <label>Output Directory</label>
-
                 <code>{current.output}</code>
               </div>
             </div>
@@ -228,9 +278,8 @@ export default function CreateProjectModal({ open, onClose, onCreated }) {
           <div className="projectFooter">
             <div className="footerInfo">
               <div>
-                <GitBranch size={18} />
-
-                <span>Git can be connected later</span>
+                <GitBranch size={16} />
+                <span>Git repository and auto-deploy webhook can be configured after creation.</span>
               </div>
             </div>
 
@@ -238,7 +287,7 @@ export default function CreateProjectModal({ open, onClose, onCreated }) {
               <button
                 type="button"
                 className="secondaryButton"
-                onClick={onClose}
+                onClick={handleClose}
                 disabled={loading}
               >
                 Cancel
@@ -249,7 +298,17 @@ export default function CreateProjectModal({ open, onClose, onCreated }) {
                 disabled={!name.trim() || loading}
                 type="submit"
               >
-                {loading ? "Creating..." : "Create Project"}
+                {loading ? (
+                  <span className="createProjectSpinnerWrap">
+                    <span className="createProjectSpinner" />
+                    Creating...
+                  </span>
+                ) : (
+                  <>
+                    <Plus size={16} />
+                    <span>Create Project</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -258,3 +317,4 @@ export default function CreateProjectModal({ open, onClose, onCreated }) {
     </div>
   );
 }
+

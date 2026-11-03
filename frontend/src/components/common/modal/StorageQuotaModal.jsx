@@ -1,5 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import "./StorageQuotaModal.css";
+import { HardDrive, X, Check, Save } from "lucide-react";
+
+const PRESETS = [
+  { label: "500 MB", val: 500, unit: "MB" },
+  { label: "1 GB", val: 1, unit: "GB" },
+  { label: "5 GB", val: 5, unit: "GB" },
+  { label: "10 GB", val: 10, unit: "GB" },
+  { label: "50 GB", val: 50, unit: "GB" },
+];
 
 export default function StorageQuotaModal({
   open,
@@ -11,12 +20,20 @@ export default function StorageQuotaModal({
   const [storageValue, setStorageValue] = useState(1);
   const [storageUnit, setStorageUnit] = useState("GB");
 
+  const handleClose = useCallback(() => {
+    if (loading) return;
+    onClose?.();
+  }, [loading, onClose]);
+
   useEffect(() => {
     if (!user) return;
 
     const quota = Number(user.quotaBytes || 0);
- 
-    if (quota >= 1024 * 1024 * 1024) {
+
+    if (quota >= 1024 * 1024 * 1024 * 1024) {
+      setStorageUnit("TB");
+      setStorageValue(Number((quota / (1024 * 1024 * 1024 * 1024)).toFixed(2)));
+    } else if (quota >= 1024 * 1024 * 1024) {
       setStorageUnit("GB");
       setStorageValue(Number((quota / (1024 * 1024 * 1024)).toFixed(2)));
     } else {
@@ -25,82 +42,163 @@ export default function StorageQuotaModal({
     }
   }, [user]);
 
+  // Handle escape key
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        handleClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [open, handleClose]);
+
   if (!open || !user) return null;
 
   const avatar = user.username ? user.username.charAt(0).toUpperCase() : "?";
 
   const bytes =
-    storageUnit === "GB"
-      ? Math.round(storageValue * 1024 * 1024 * 1024)
-      : Math.round(storageValue * 1024 * 1024);
+    storageUnit === "TB"
+      ? Math.round(storageValue * 1024 * 1024 * 1024 * 1024)
+      : storageUnit === "GB"
+        ? Math.round(storageValue * 1024 * 1024 * 1024)
+        : Math.round(storageValue * 1024 * 1024);
+
+  const isValid = storageValue > 0 && !Number.isNaN(storageValue);
 
   return (
-    <div className="modalOverlay">
+    <div
+      className="storageQuotaOverlay"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) handleClose();
+      }}
+      role="dialog"
+      aria-modal="true"
+    >
       <div className="storageQuotaModal">
         <div className="quotaHeader">
-          <h2>Storage Quota</h2>
-
-          <p>Configure the maximum storage this user is allowed to use.</p>
+          <div className="quotaHeaderLeft">
+            <div className="quotaIconBadge">
+              <HardDrive size={20} />
+            </div>
+            <div>
+              <h2>Storage Quota</h2>
+              <p>Configure the maximum disk storage allocated to this user.</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="quotaCloseBtn"
+            onClick={handleClose}
+            disabled={loading}
+            aria-label="Close modal"
+          >
+            <X size={18} />
+          </button>
         </div>
 
         <div className="quotaUserCard">
           <div className="quotaAvatar">{avatar}</div>
-
           <div className="quotaUserInfo">
             <h3>{user.username}</h3>
-
-            <span>{user.email}</span>
+            <span>{user.email || "No email linked"}</span>
           </div>
         </div>
 
         <div className="quotaField">
-          <label>Quota</label>
+          <label htmlFor="quota-input">Maximum Allocated Quota</label>
 
           <div className="storageInputGroup">
             <input
+              id="quota-input"
               type="number"
-              min={1}
+              min={0.1}
               step="0.1"
               disabled={loading}
               value={storageValue}
               onChange={(e) => setStorageValue(Number(e.target.value))}
+              placeholder="e.g. 5"
+              autoFocus
             />
 
-            <select
-              disabled={loading}
-              value={storageUnit}
-              onChange={(e) => setStorageUnit(e.target.value)}
-            >
-              <option value="MB">MB</option>
-              <option value="GB">GB</option>
-            </select>
+            <div className="quotaUnitPills">
+              {["MB", "GB", "TB"].map((unit) => (
+                <button
+                  type="button"
+                  key={unit}
+                  disabled={loading}
+                  className={`quotaUnitPill ${storageUnit === unit ? "active" : ""}`}
+                  onClick={() => setStorageUnit(unit)}
+                >
+                  {unit}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="quotaPresetsRow">
+            <span className="presetsLabel">Quick presets:</span>
+            <div className="presetButtonsList">
+              {PRESETS.map((p) => (
+                <button
+                  type="button"
+                  key={p.label}
+                  disabled={loading}
+                  className={`presetBtn ${
+                    storageValue === p.val && storageUnit === p.unit ? "activePreset" : ""
+                  }`}
+                  onClick={() => {
+                    setStorageValue(p.val);
+                    setStorageUnit(p.unit);
+                  }}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="quotaHint">
-            This user will be allowed to store up to{" "}
+            User will be restricted to a hard limit of{" "}
             <strong>
-              {storageValue} {storageUnit}
-            </strong>
-            .
+              {storageValue || 0} {storageUnit}
+            </strong>{" "}
+            ({bytes ? (bytes / (1024 * 1024)).toLocaleString() : 0} MB).
           </div>
         </div>
 
         <div className="quotaButtons">
-          <button className="cancelButton" disabled={loading} onClick={onClose}>
+          <button
+            type="button"
+            className="cancelButton"
+            disabled={loading}
+            onClick={handleClose}
+          >
             Cancel
           </button>
 
           <button
+            type="button"
             className="saveButton"
-            disabled={
-              loading || storageValue <= 0 || Number.isNaN(storageValue)
-            }
+            disabled={loading || !isValid}
             onClick={() => onSave(bytes)}
           >
-            {loading ? "Saving..." : "Save Changes"}
+            {loading ? (
+              <span className="quotaSpinnerWrap">
+                <span className="quotaSpinner" />
+                Saving...
+              </span>
+            ) : (
+              <>
+                <Save size={16} />
+                <span>Save Changes</span>
+              </>
+            )}
           </button>
         </div>
       </div>
     </div>
   );
 }
+

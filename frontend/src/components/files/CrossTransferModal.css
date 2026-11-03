@@ -5,98 +5,110 @@
 }
 
 .transfer-summary-box {
-  background: rgba(245, 158, 11, 0.08);
-  border: 1px solid rgba(245, 158, 11, 0.2);
-  border-radius: 8px;
-  padding: 0.75rem 1rem;
+  background: rgba(255, 138, 0, 0.08);
+  border: 1px solid rgba(255, 138, 0, 0.22);
+  border-radius: 12px;
+  padding: 12px 16px;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 4px;
 }
 
 .summary-label {
-  font-size: 0.75rem;
+  font-size: 0.74rem;
   text-transform: uppercase;
-  color: var(--accent, #f59e0b);
-  font-weight: 600;
+  color: #ffaa33;
+  font-weight: 700;
   letter-spacing: 0.05em;
 }
 
 .summary-value {
-  font-size: 0.9rem;
-  color: var(--text-primary, #fff);
+  font-size: 0.92rem;
+  color: #fff3e4;
   word-break: break-all;
 }
 
 .transfer-dest-section {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 8px;
 }
 
 .transfer-dest-label {
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: var(--text-secondary, #94a3b8);
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #d8c4b0;
 }
 
 .transfer-folder-select {
   width: 100%;
-  padding: 0.65rem 0.85rem;
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.15));
-  border-radius: 8px;
-  color: var(--text-primary, #fff);
-  font-size: 0.88rem;
+  padding: 11px 14px;
+  background: rgba(18, 12, 8, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  color: #fff3e4;
+  font-size: 0.9rem;
   outline: none;
+  transition: all 0.2s ease;
 }
 
 .transfer-folder-select:focus {
-  border-color: var(--accent, #f59e0b);
+  border-color: rgba(255, 138, 0, 0.6);
+  box-shadow: 0 0 0 3px rgba(255, 138, 0, 0.18);
+  background: rgba(24, 15, 10, 0.98);
 }
 
 .transfer-intro {
   margin: 0;
-  font-size: 0.86rem;
-  color: var(--text-secondary, #94a3b8);
+  font-size: 0.88rem;
+  color: #bfa892;
   line-height: 1.5;
 }
 
 .cloud-import-list {
   max-height: 280px;
   overflow-y: auto;
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
-  border-radius: 8px;
-  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+/* Custom scrollbar */
+.cloud-import-list::-webkit-scrollbar {
+  width: 5px;
+}
+.cloud-import-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 138, 0, 0.2);
+  border-radius: 3px;
 }
 
 .transfer-loading {
   padding: 2.5rem;
   text-align: center;
-  color: var(--text-secondary, #94a3b8);
-  font-size: 0.86rem;
+  color: #8c7664;
+  font-size: 0.88rem;
 }
 
 .cloud-import-row {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.65rem 0.85rem;
+  padding: 10px 14px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: all 0.15s ease;
 }
 
 .cloud-import-row:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 138, 0, 0.04);
 }
 
 .cloud-import-row.selected {
-  background: rgba(245, 158, 11, 0.12);
+  background: rgba(255, 138, 0, 0.14);
 }
 
 .import-item-icon .folder {
-  color: var(--accent, #f59e0b);
+  color: #ffaa33;
 }
 
 .import-item-icon .file {
@@ -104,8 +116,8 @@
 }
 
 .import-item-name {
-  font-size: 0.85rem;
-  color: var(--text-primary, #fff);
+  font-size: 0.88rem;
+  color: #fff3e4;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -115,7 +127,8 @@
 .transfer-modal-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 0.75rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  gap: 12px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
+

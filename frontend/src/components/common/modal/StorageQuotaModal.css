@@ -1,385 +1,423 @@
-.modalOverlay {
-    position: fixed;
-    inset: 0;
+.storageQuotaOverlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 5000;
+  animation: quotaBackdropIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
 
-    display: flex;
-    justify-content: center;
-    align-items: center;
-
-    background: rgba(0, 0, 0, .65);
-    backdrop-filter: blur(8px);
-
-    z-index: 5000;
-
-    animation: fadeIn .2s ease;
+@keyframes quotaBackdropIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .storageQuotaModal {
- 
-    width: 460px;
-    max-width: calc(100vw - 40px);
+  width: 100%;
+  max-width: 500px;
+  background: radial-gradient(ellipse at top, rgba(255, 138, 0, 0.08) 0%, transparent 60%),
+              linear-gradient(180deg, rgba(33, 23, 16, 0.98), rgba(24, 18, 13, 0.99));
+  border: 1px solid rgba(255, 138, 0, 0.22);
+  border-radius: 20px;
+  padding: 26px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.65),
+    0 0 0 1px rgba(255, 138, 0, 0.06),
+    0 0 40px rgba(255, 138, 0, 0.08);
+  animation: quotaModalPop 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
 
-    background: #24170f;
-
-    border: 1px solid #5a3920;
-
-    border-radius: 22px;
-
-    padding: 28px;
-
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-
-    box-shadow:
-        0 20px 70px rgba(0, 0, 0, .55),
-        inset 0 1px 0 rgba(255, 255, 255, .03);
-
-    animation: modalPop .22s ease;
+@keyframes quotaModalPop {
+  0% {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 /* ---------------- HEADER ---------------- */
 
+.quotaHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.quotaHeaderLeft {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.quotaIconBadge {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 138, 0, 0.12);
+  border: 1px solid rgba(255, 138, 0, 0.28);
+  color: #ffaa33;
+  flex-shrink: 0;
+  box-shadow: 0 0 16px rgba(255, 138, 0, 0.14);
+}
+
 .quotaHeader h2 {
-
-    margin: 0;
-
-    font-size: 1.55rem;
-
-    color: #fff3e4;
-
-    font-weight: 700;
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #fff3e4;
+  letter-spacing: -0.01em;
 }
 
 .quotaHeader p {
+  margin: 4px 0 0;
+  color: #bfa892;
+  font-size: 0.86rem;
+  line-height: 1.4;
+}
 
-    margin-top: 8px;
+.quotaCloseBtn {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #bfa892;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
 
-    color: #bfa892;
+.quotaCloseBtn:hover:not(:disabled) {
+  background: rgba(255, 138, 0, 0.15);
+  border-color: rgba(255, 138, 0, 0.3);
+  color: #ffaa33;
+  transform: rotate(90deg);
+}
 
-    font-size: .92rem;
-
-    line-height: 1.45;
+.quotaCloseBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 /* ---------------- USER CARD ---------------- */
 
 .quotaUserCard {
-
-    display: flex;
-    align-items: center;
-    gap: 18px;
-
-    padding: 18px;
-
-    background: #2b1c12;
-
-    border: 1px solid #4a311b;
-
-    border-radius: 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 14px;
 }
 
 .quotaAvatar {
-
-    width: 58px;
-    height: 58px;
-
-    border-radius: 50%;
-
-    display: flex;
-    justify-content: center;
-    align-items: center;
-
-    background: linear-gradient(135deg,
-            #ff8a00,
-            #ffb347);
-
-    color: white;
-
-    font-size: 1.35rem;
-
-    font-weight: bold;
-
-    flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #ff8a00, #ffb347);
+  color: #1a0f06;
+  font-size: 1.15rem;
+  font-weight: 800;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(255, 138, 0, 0.25);
 }
 
 .quotaUserInfo {
-
-    display: flex;
-    flex-direction: column;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 
 .quotaUserInfo h3 {
-
-    margin: 0;
-
-    color: #ffe3b7;
-
-    font-size: 1rem;
+  margin: 0;
+  color: #fff3e4;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 .quotaUserInfo span {
-
-    margin-top: 4px;
-
-    color: #bca895;
-
-    font-size: .9rem;
-
-    word-break: break-word;
+  margin-top: 2px;
+  color: #8c7664;
+  font-size: 0.82rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ---------------- INPUT ---------------- */
 
 .quotaField {
-
-    display: flex;
-    flex-direction: column;
-
-    gap: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .quotaField label {
-
-    font-weight: 600;
-
-    color: #d8c4b0;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #d8c4b0;
 }
 
 .storageInputGroup {
-
-    display: flex;
-
-    gap: 14px;
+  display: flex;
+  gap: 10px;
 }
 
 .storageInputGroup input {
-
-    flex: 1;
-
-    padding: 14px 16px;
-
-    border-radius: 14px;
-
-    border: 1px solid #6b4523;
-
-    background: #312116;
-
-    color: white;
-
-    font-size: 1rem;
-
-    transition: .2s;
+  flex: 1;
+  padding: 11px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(18, 12, 8, 0.95);
+  color: #fff3e4;
+  font-size: 1rem;
+  font-weight: 600;
+  outline: none;
+  transition: all 0.2s ease;
 }
 
 .storageInputGroup input:focus {
-
-    outline: none;
-
-    border-color: #ff8a00;
-
-    box-shadow:
-        0 0 0 3px rgba(255, 138, 0, .18);
+  border-color: rgba(255, 138, 0, 0.6);
+  box-shadow: 0 0 0 3px rgba(255, 138, 0, 0.18);
+  background: rgba(24, 15, 10, 0.98);
 }
 
-.storageInputGroup select {
-
-    width: 95px;
-
-    padding: 14px;
-
-    border-radius: 14px;
-
-    border: 1px solid #6b4523;
-
-    background: #312116;
-
-    color: white;
-
-    font-size: .95rem;
-
-    cursor: pointer;
-
-    transition: .2s;
+.storageInputGroup input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
-.storageInputGroup select:focus {
-
-    outline: none;
-
-    border-color: #ff8a00;
-
-    box-shadow:
-        0 0 0 3px rgba(255, 138, 0, .18);
+/* Unit selector pills */
+.quotaUnitPills {
+  display: inline-flex;
+  padding: 4px;
+  background: rgba(18, 12, 8, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  gap: 4px;
 }
 
-.storageInputGroup input:disabled,
-.storageInputGroup select:disabled {
+.quotaUnitPill {
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: #a89481;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
 
-    opacity: .55;
+.quotaUnitPill:hover:not(:disabled):not(.active) {
+  color: #fff3e4;
+  background: rgba(255, 255, 255, 0.05);
+}
 
-    cursor: not-allowed;
+.quotaUnitPill.active {
+  background: linear-gradient(135deg, #ff8a00, #ffb347);
+  color: #1a0f06;
+  box-shadow: 0 2px 8px rgba(255, 138, 0, 0.3);
+}
+
+.quotaUnitPill:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ---------------- PRESETS ---------------- */
+
+.quotaPresetsRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.presetsLabel {
+  font-size: 0.8rem;
+  color: #8c7664;
+}
+
+.presetButtonsList {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.presetBtn {
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #bfa892;
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.presetBtn:hover:not(:disabled) {
+  background: rgba(255, 138, 0, 0.1);
+  border-color: rgba(255, 138, 0, 0.3);
+  color: #ffaa33;
+}
+
+.presetBtn.activePreset {
+  background: rgba(255, 138, 0, 0.18);
+  border-color: rgba(255, 138, 0, 0.45);
+  color: #ffaa33;
+  font-weight: 600;
 }
 
 /* ---------------- INFO BOX ---------------- */
 
 .quotaHint {
-
-    padding: 14px 16px;
-
-    background: rgba(255, 138, 0, .08);
-
-    border: 1px solid rgba(255, 138, 0, .18);
-
-    border-radius: 14px;
-
-    color: #cbb49e;
-
-    font-size: .9rem;
-
-    line-height: 1.45;
+  padding: 11px 14px;
+  background: rgba(255, 138, 0, 0.06);
+  border: 1px solid rgba(255, 138, 0, 0.18);
+  border-radius: 12px;
+  color: #bfa892;
+  font-size: 0.85rem;
+  line-height: 1.45;
 }
 
 .quotaHint strong {
-
-    color: #ffb347;
+  color: #ffaa33;
+  font-weight: 700;
 }
 
 /* ---------------- BUTTONS ---------------- */
 
 .quotaButtons {
-
-    display: flex;
-    justify-content: flex-end;
-
-    gap: 12px;
-
-    margin-top: 6px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .cancelButton,
 .saveButton {
-
-    min-width: 130px;
-
-    padding: 13px 20px;
-
-    border-radius: 12px;
-
-    font-size: .95rem;
-
-    font-weight: 600;
-
-    cursor: pointer;
-
-    transition: .18s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  outline: none;
 }
 
 .cancelButton {
-
-    border: 1px solid #5a3920;
-
-    background: transparent;
-
-    color: #d4c0ab;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #cbb49e;
 }
 
-.cancelButton:hover {
-
-    background: rgba(255, 255, 255, .05);
+.cancelButton:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.09);
+  color: #fff3e4;
+  border-color: rgba(255, 255, 255, 0.14);
 }
 
 .saveButton {
-
-    border: none;
-
-    color: white;
-
-    background: linear-gradient(135deg,
-            #ff8a00,
-            #ffb347);
+  background: linear-gradient(135deg, #ff8a00 0%, #e67600 100%);
+  color: white;
+  box-shadow: 0 6px 18px rgba(255, 138, 0, 0.32);
 }
 
 .saveButton:hover:not(:disabled) {
-
-    transform: translateY(-1px);
-
-    box-shadow:
-        0 8px 20px rgba(255, 138, 0, .28);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(255, 138, 0, 0.42);
+  filter: brightness(1.06);
 }
 
-.saveButton:disabled,
-.cancelButton:disabled {
-
-    opacity: .5;
-
-    cursor: not-allowed;
-
-    transform: none;
-
-    box-shadow: none;
+.saveButton:active:not(:disabled) {
+  transform: translateY(0);
 }
 
-/* ---------------- ANIMATIONS ---------------- */
-
-@keyframes fadeIn {
-
-    from {
-        opacity: 0;
-    }
-
-    to {
-        opacity: 1;
-    }
+.cancelButton:disabled,
+.saveButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+  filter: none;
 }
 
-@keyframes modalPop {
+.quotaSpinnerWrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
 
-    from {
+.quotaSpinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: quotaSpin 0.7s linear infinite;
+}
 
-        opacity: 0;
-
-        transform:
-            translateY(10px) scale(.97);
-    }
-
-    to {
-
-        opacity: 1;
-
-        transform: none;
-    }
+@keyframes quotaSpin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ---------------- MOBILE ---------------- */
 
-@media (max-width:600px) {
+@media (max-width: 600px) {
+  .storageQuotaModal {
+    padding: 20px;
+    gap: 16px;
+  }
 
-    .storageQuotaModal {
+  .storageInputGroup {
+    flex-direction: column;
+  }
 
-        padding: 22px;
+  .quotaButtons {
+    flex-direction: column-reverse;
+  }
 
-        gap: 20px;
-    }
-
-    .storageInputGroup {
-
-        flex-direction: column;
-    }
-
-    .storageInputGroup select {
-
-        width: 100%;
-    }
-
-    .quotaButtons {
-
-        flex-direction: column-reverse;
-    }
-
-    .cancelButton,
-    .saveButton {
-
-        width: 100%;
-    }
+  .cancelButton,
+  .saveButton {
+    width: 100%;
+  }
 }
