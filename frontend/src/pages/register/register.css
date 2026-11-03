@@ -1,59 +1,11 @@
-:root {
-    --bg: #0d0907;
-    --surface: #17110d;
-    --surface-2: #211711;
-
-    --primary: #ff8c32;
-    --primary-dark: #d96c18;
-
-    --border: rgba(255, 140, 50, .15);
-
-    --text: #ffffff;
-    --muted: #a89b93;
-
-    --shadow:
-        0 15px 45px rgba(0, 0, 0, .45);
- 
-    --orange-glow:
-        0 0 35px rgba(255, 140, 50, .25);
-}
-
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-body {
-
-    background: var(--bg);
-
-    color: var(--text);
-
-    font-family:
-        Inter,
-        sans-serif;
-
-}
-
 .login {
-
     min-height: 100vh;
-
     display: flex;
-
     justify-content: center;
-
     align-items: center;
-
     position: relative;
-
     overflow: auto;
-
-    background:
-        radial-gradient(circle at top,
-            #1b120d,
-            #0d0907 60%);
+    background: radial-gradient(circle at top, var(--bg-card-hover), var(--bg-primary) 60%);
 }
 
 .login__background {

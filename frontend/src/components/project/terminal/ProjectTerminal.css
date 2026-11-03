@@ -109,9 +109,9 @@
 }
 
 .eh-quick-cmd-btn:hover:not(:disabled) {
-  background: rgba(255, 140, 0, 0.15);
-  border-color: rgba(255, 140, 0, 0.4);
-  color: #ff8c00;
+  background: var(--nav-hover-bg);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .eh-quick-cmd-btn:disabled {

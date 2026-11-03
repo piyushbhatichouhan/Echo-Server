@@ -14,6 +14,7 @@
   font-size: 1.35rem;
 
   font-weight: 700;
+  color: var(--text-primary);
 }
 
 .eh-control-grid {
@@ -41,33 +42,39 @@
 }
 
 .eh-running {
-  background: #12391f;
-  color: #5dff8c;
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
 .eh-building,
 .eh-starting_container,
 .eh-creating_container {
-  background: #473512;
-  color: #ffcf5d;
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
 .eh-failed {
-  background: #4d1717;
-  color: #ff6b6b;
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
 .eh-crashed {
-  background: #571919;
-  color: #ff4040;
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.35);
 }
 
 .eh-stopped {
-  background: #2f2f2f;
-  color: #b8b8b8;
+  background: rgba(148, 163, 184, 0.15);
+  color: #94a3b8;
+  border: 1px solid rgba(148, 163, 184, 0.25);
 }
 
 .eh-not_found {
-  background: #2b2b2b;
-  color: #999;
+  background: rgba(100, 116, 139, 0.15);
+  color: #64748b;
+  border: 1px solid rgba(100, 116, 139, 0.25);
 }

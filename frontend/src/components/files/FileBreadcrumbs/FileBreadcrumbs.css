@@ -1,5 +1,5 @@
 /* =========================================================
-   EchoHub Elevated Breadcrumb Path Navigator
+   EchoHub Breadcrumb Path Navigator (Theme Adaptive)
    ========================================================= */
 
 .eh-breadcrumbs {
@@ -9,12 +9,10 @@
   gap: 4px;
   margin-bottom: 14px;
   padding: 8px 12px;
-  background: rgba(28, 19, 13, 0.6);
-  border: 1px solid rgba(255, 155, 48, 0.16);
-  border-radius: 10px;
-  box-shadow: 
-    0 4px 14px rgba(0, 0, 0, 0.25),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-small, 10px);
+  box-shadow: var(--shadow);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
 }
@@ -26,23 +24,23 @@
   gap: 6px;
   border: none;
   background: transparent;
-  color: rgba(240, 230, 220, 0.85);
+  color: var(--text-secondary);
   cursor: pointer;
   padding: 4px 8px;
   border-radius: 6px;
   font-size: 0.84rem;
   font-weight: 500;
-  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all var(--transition);
 }
 
 .eh-breadcrumb-root svg {
-  color: #ffaa40;
+  color: var(--accent);
 }
 
 .eh-breadcrumb-root:hover,
 .eh-breadcrumb-button:hover {
-  background: rgba(255, 155, 48, 0.14);
-  color: #ffffff;
+  background: var(--nav-hover-bg);
+  color: var(--text-primary);
   transform: translateY(-1px);
 }
 
@@ -58,11 +56,11 @@
 }
 
 .eh-breadcrumb-item svg {
-  color: rgba(240, 230, 220, 0.35);
+  color: var(--text-muted);
   flex-shrink: 0;
 }
 
 .eh-breadcrumb-item:last-child .eh-breadcrumb-button {
-  color: #ffaa40;
+  color: var(--accent);
   font-weight: 600;
 }

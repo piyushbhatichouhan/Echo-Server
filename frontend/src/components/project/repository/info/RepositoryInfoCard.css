@@ -91,7 +91,7 @@
 }
 
 .eh-info-tile:hover {
-  border-color: rgba(255, 140, 0, 0.3);
+  border-color: var(--border-glow);
 }
 
 .eh-tile-header {

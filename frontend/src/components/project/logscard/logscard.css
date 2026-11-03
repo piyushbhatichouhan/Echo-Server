@@ -4,15 +4,16 @@
 
     overflow: hidden;
 
-    background: #111;
+    background: var(--bg-primary);
 
-    color: #0f0;
+    color: var(--text-primary);
 
     padding: 16px;
 
     font-family: monospace;
 
     border-radius: 10px;
+    border: 1px solid var(--border);
 
 }
  
@@ -47,11 +48,12 @@ h2 {
 
 .eh-logs-card {
 
-    background: #14110F;
+    background: var(--bg-card);
 
     border-radius: 14px;
 
-    border: 1px solid rgba(255, 255, 255, .08);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
 
     overflow: hidden;
 
@@ -67,7 +69,7 @@ h2 {
 
     padding: 16px 20px;
 
-    border-bottom: 1px solid rgba(255, 255, 255, .08);
+    border-bottom: 1px solid var(--border);
 
 }
 
@@ -100,7 +102,7 @@ h2 {
 
 .eh-log-time {
 
-    color: #9a7d62;
+    color: var(--text-muted);
 
     min-width: 75px;
 
@@ -108,7 +110,7 @@ h2 {
 
 .eh-log-message {
 
-    color: #DDDDDD;
+    color: var(--text-primary);
 
     white-space: pre-wrap;
 
@@ -122,7 +124,7 @@ h2 {
 
 .eh-log-container::-webkit-scrollbar-thumb {
 
-    background: #4a2d18;
+    background: var(--scrollbar-thumb);
 
     border-radius: 4px;
 
@@ -130,9 +132,9 @@ h2 {
 
 .eh-log-latest {
 
-    background: rgba(255, 145, 40, .10);
+    background: var(--nav-hover-bg);
 
-    border-left: 3px solid #ff9d3f;
+    border-left: 3px solid var(--accent);
 
     border-radius: 6px;
 

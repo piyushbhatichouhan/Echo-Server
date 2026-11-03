@@ -25,14 +25,14 @@
   width: min(1060px, 95vw);
   max-height: calc(100vh - 48px);
   overflow-y: auto;
-  background: radial-gradient(ellipse at top, rgba(255, 138, 0, 0.08) 0%, transparent 60%),
-              linear-gradient(180deg, rgba(33, 23, 16, 0.98), rgba(24, 18, 13, 0.99));
+  background: radial-gradient(ellipse at top, var(--border-glow) 0%, transparent 60%),
+              var(--bg-card-gradient);
   border: 1px solid rgba(255, 138, 0, 0.22);
   border-radius: 22px;
   box-shadow:
     0 30px 80px rgba(0, 0, 0, 0.7),
-    0 0 0 1px rgba(255, 138, 0, 0.06),
-    0 0 45px rgba(255, 138, 0, 0.08);
+    0 0 0 1px var(--border-subtle),
+    0 0 45px var(--border-subtle);
   animation: createProjectScaleIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   display: flex;
   flex-direction: column;
@@ -66,7 +66,7 @@
   align-items: flex-start;
   padding: 26px 30px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.07);
-  background: linear-gradient(180deg, rgba(255, 138, 0, 0.05), transparent);
+  background: linear-gradient(180deg, transparent, transparent);
   gap: 16px;
 }
 
@@ -83,7 +83,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 138, 0, 0.12);
+  background: var(--nav-hover-bg);
   border: 1px solid rgba(255, 138, 0, 0.28);
   color: #ffaa33;
   flex-shrink: 0;
@@ -123,8 +123,8 @@
 
 .createProjectClose:hover:not(:disabled) {
   color: #ffaa33;
-  background: rgba(255, 138, 0, 0.15);
-  border-color: rgba(255, 138, 0, 0.3);
+  background: var(--nav-hover-bg);
+  border-color: var(--border-glow);
   transform: rotate(90deg);
 }
 
@@ -180,9 +180,9 @@
   width: 100%;
   padding: 12px 15px;
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(18, 12, 8, 0.95);
-  color: #fff3e4;
+  border: 1px solid var(--border);
+  background: var(--bg-input);
+  color: var(--text-primary);
   outline: none;
   font-size: 0.92rem;
   font-family: inherit;
@@ -197,14 +197,14 @@
 
 .field input::placeholder,
 .field textarea::placeholder {
-  color: #6a5545;
+  color: var(--text-muted);
 }
 
 .field input:focus,
 .field textarea:focus {
-  border-color: rgba(255, 138, 0, 0.6);
-  box-shadow: 0 0 0 3px rgba(255, 138, 0, 0.18);
-  background: rgba(24, 15, 10, 0.98);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--border-glow);
+  background: var(--bg-input);
 }
 
 /* ---------------- RUNTIME TEMPLATES ---------------- */
@@ -250,22 +250,22 @@
 
 .runtimeCard:hover {
   transform: translateY(-2px);
-  border-color: rgba(255, 138, 0, 0.35);
-  background: rgba(255, 138, 0, 0.04);
+  border-color: var(--border-glow);
+  background: var(--nav-hover-bg);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
 }
 
 .runtimeCard:focus-visible {
-  border-color: #ffaa33;
-  box-shadow: 0 0 0 3px rgba(255, 138, 0, 0.2);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--border-glow);
 }
 
 .runtimeCard.active {
-  border-color: #ff8a00;
-  background: linear-gradient(180deg, rgba(255, 138, 0, 0.12), rgba(255, 138, 0, 0.04));
+  border-color: var(--accent);
+  background: linear-gradient(180deg, var(--nav-active-bg), var(--nav-hover-bg));
   box-shadow:
-    0 0 0 1px rgba(255, 138, 0, 0.3),
-    0 8px 24px rgba(255, 138, 0, 0.15);
+    0 0 0 1px var(--accent),
+    0 8px 24px var(--nav-hover-bg);
 }
 
 .runtimeCardTop {
@@ -281,9 +281,9 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  color: #1a0f06;
-  background: linear-gradient(135deg, #ff8a00, #ffb347);
-  box-shadow: 0 4px 12px rgba(255, 138, 0, 0.25);
+  color: var(--btn-primary-text);
+  background: var(--btn-primary-bg);
+  box-shadow: var(--shadow);
   flex-shrink: 0;
 }
 
@@ -350,7 +350,7 @@
   display: inline-block;
   padding: 4px 10px;
   border-radius: 6px;
-  background: rgba(255, 138, 0, 0.12);
+  background: var(--nav-hover-bg);
   border: 1px solid rgba(255, 138, 0, 0.25);
   color: #ffaa33;
   font-size: 0.78rem;
@@ -375,9 +375,9 @@
   display: block;
   padding: 9px 12px;
   border-radius: 8px;
-  background: rgba(12, 8, 5, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  color: #ffb86c;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  color: var(--accent);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 0.82rem;
   word-break: break-all;
@@ -430,21 +430,21 @@
 }
 
 .secondaryButton {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #cbb49e;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
 }
 
 .secondaryButton:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.09);
-  color: #fff3e4;
-  border-color: rgba(255, 255, 255, 0.14);
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+  border-color: var(--border);
 }
 
 .primaryButton {
-  background: linear-gradient(135deg, #ff8a00 0%, #e67600 100%);
-  color: white;
-  box-shadow: 0 6px 18px rgba(255, 138, 0, 0.32);
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+  box-shadow: var(--shadow);
 }
 
 .primaryButton:hover:not(:disabled) {

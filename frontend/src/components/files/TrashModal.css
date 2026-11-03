@@ -17,15 +17,15 @@
 .trash-hint {
   margin: 0;
   font-size: 0.88rem;
-  color: #bfa892;
+  color: var(--text-secondary);
 }
 
 .trash-list-scroll {
   max-height: 380px;
   overflow-y: auto;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border);
   border-radius: 14px;
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--bg-primary);
 }
 
 /* Custom scrollbar */
@@ -33,7 +33,7 @@
   width: 5px;
 }
 .trash-list-scroll::-webkit-scrollbar-thumb {
-  background: rgba(255, 138, 0, 0.2);
+  background: var(--scrollbar-thumb);
   border-radius: 3px;
 }
 
@@ -44,11 +44,11 @@
   justify-content: center;
   padding: 3rem 1.5rem;
   text-align: center;
-  color: #8c7664;
+  color: var(--text-muted);
 }
 
 .trash-empty-icon {
-  color: rgba(255, 138, 0, 0.25);
+  color: var(--border-glow);
   margin-bottom: 1rem;
 }
 
@@ -56,13 +56,13 @@
   margin: 0 0 0.35rem 0;
   font-size: 1.1rem;
   font-weight: 700;
-  color: #fff3e4;
+  color: var(--text-primary);
 }
 
 .trash-empty-state p {
   margin: 0;
   font-size: 0.85rem;
-  color: #8c7664;
+  color: var(--text-muted);
 }
 
 .trash-items-table {
@@ -84,11 +84,11 @@
 }
 
 .trash-row:hover {
-  background: rgba(255, 138, 0, 0.04);
+  background: var(--nav-hover-bg);
 }
 
 .trash-row-icon .folder-icon {
-  color: #ffaa33;
+  color: var(--accent);
 }
 
 .trash-row-icon .file-icon {
@@ -106,7 +106,7 @@
 .trash-item-name {
   font-size: 0.9rem;
   font-weight: 600;
-  color: #fff3e4;
+  color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -114,7 +114,7 @@
 
 .trash-item-path {
   font-size: 0.78rem;
-  color: #8c7664;
+  color: var(--text-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -126,13 +126,13 @@
   flex-direction: column;
   align-items: flex-end;
   font-size: 0.76rem;
-  color: #8c7664;
+  color: var(--text-muted);
   min-width: 110px;
   gap: 2px;
 }
 
 .trash-item-size {
-  color: #bfa892;
+  color: var(--text-secondary);
   font-family: ui-monospace, SFMono-Regular, monospace;
 }
 
@@ -146,9 +146,9 @@
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
-  background: rgba(255, 138, 0, 0.12);
-  border: 1px solid rgba(255, 138, 0, 0.28);
-  color: #ffaa33;
+  background: var(--nav-hover-bg);
+  border: 1px solid var(--border-glow);
+  color: var(--accent);
   border-radius: 8px;
   font-size: 0.8rem;
   font-weight: 600;
@@ -157,11 +157,11 @@
 }
 
 .trash-restore-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #ff8a00, #ffb347);
-  color: #1a0f06;
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
   border-color: transparent;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(255, 138, 0, 0.25);
+  box-shadow: var(--shadow);
 }
 
 .trash-restore-btn:disabled {

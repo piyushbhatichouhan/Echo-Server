@@ -11,7 +11,7 @@ export default function Sidebar() {
   return (
     <aside className="eh-sidebar">
       <div className="eh-sidebar-logo">
-        <h2>EchoHub</h2>
+        <h2>Echo Server</h2>
 
         <p>Self Hosted Platform</p>
       </div>

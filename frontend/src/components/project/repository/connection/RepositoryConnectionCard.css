@@ -138,7 +138,7 @@
 
 .eh-branch-select:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px rgba(255, 140, 0, 0.2);
+  box-shadow: 0 0 0 2px var(--border-glow);
 }
 
 .eh-token-toggle-section {

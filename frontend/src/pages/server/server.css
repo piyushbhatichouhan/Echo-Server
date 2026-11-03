@@ -1,109 +1,115 @@
+/* =========================================================
+   EchoHub Server Management Hub (Theme Adaptive)
+   ========================================================= */
+
 .server {
+  padding: 36px 32px 60px;
+  max-width: 1440px;
+  margin: 0 auto;
+  width: 100%;
+  animation: fadeInServer 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
 
-    padding: 40px;
-
+@keyframes fadeInServer {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .server__header {
-
-    margin-bottom: 35px;
-
+  margin-bottom: 32px;
 }
 
 .server__header h1 {
-
-    color: var(--primary);
-
-    font-size: 38px;
-
-    margin-bottom: 10px;
- 
+  color: var(--text-primary);
+  font-size: 2.1rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0 0 8px 0;
 }
 
 .server__header p {
-
-    color: var(--muted);
-
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  margin: 0;
 }
 
 .server__grid {
-
-    display: grid;
-
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-
-    gap: 22px;
-
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
 }
 
 .serverCard {
-
-    background: var(--surface);
-
-    border: 1px solid rgba(255, 150, 70, .08);
-
-    border-radius: 18px;
-
-    padding: 28px;
-
-    display: flex;
-
-    justify-content: space-between;
-
-    align-items: center;
-
-    cursor: pointer;
-
-    transition: .25s;
-
+  background: var(--bg-card-gradient);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-large, 18px);
+  padding: 26px 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  transition: all var(--transition);
+  position: relative;
+  overflow: hidden;
 }
 
 .serverCard:hover {
-
-    transform: translateY(-4px);
-
-    border-color: rgba(255, 150, 70, .35);
-
-    box-shadow: 0 15px 35px rgba(255, 140, 40, .12);
-
+  transform: translateY(-3px);
+  border-color: var(--border-glow);
+  box-shadow: var(--shadow-hover), var(--glow);
 }
 
 .serverCard h2 {
-
-    color: white;
-
-    margin-bottom: 10px;
-
+  color: var(--text-primary);
+  font-size: 1.18rem;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.01em;
 }
 
 .serverCard p {
-
-    color: var(--muted);
-
-    line-height: 1.5;
-
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  line-height: 1.45;
+  margin: 0;
 }
 
 .serverCard span {
+  font-size: 24px;
+  color: var(--accent);
+  flex-shrink: 0;
+  transition: transform var(--transition);
+}
 
-    font-size: 30px;
-
-    color: var(--primary);
-
+.serverCard:hover span {
+  transform: translateX(4px);
 }
 
 .serverCard--disabled {
+  opacity: 0.55;
+  cursor: default;
+}
 
-    opacity: .55;
-
-    cursor: default;
-
+.serverCard--disabled span {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--text-muted);
 }
 
 .serverCard--disabled:hover {
+  transform: none;
+  box-shadow: var(--shadow);
+  border-color: var(--border);
+}
 
-    transform: none;
-
-    box-shadow: none;
-
+.serverCard--disabled:hover span {
+  transform: none;
 }

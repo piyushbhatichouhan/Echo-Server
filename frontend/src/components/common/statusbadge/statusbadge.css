@@ -1,45 +1,39 @@
 .eh-status-badge {
-
-    padding: 8px 14px;
-
-    border-radius: 999px;
-
-    font-size: .85rem;
-
-    font-weight: 600;
-
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border: 1px solid transparent;
+  transition: all var(--transition);
 }
 
 .eh-status-badge.running {
-
-    background: #1b5e20;
-
-    color: white;
- 
+  background: rgba(16, 185, 129, 0.14);
+  color: var(--success, #10b981);
+  border-color: rgba(16, 185, 129, 0.3);
 }
 
 .eh-status-badge.stopped {
-
-    background: #616161;
-
-    color: white;
-
+  background: rgba(100, 116, 139, 0.15);
+  color: var(--stopped, #94a3b8);
+  border-color: rgba(100, 116, 139, 0.3);
 }
 
 .eh-status-badge.failed {
-
-    background: #b71c1c;
-
-    color: white;
-
+  background: rgba(239, 68, 68, 0.14);
+  color: var(--danger, #ef4444);
+  border-color: rgba(239, 68, 68, 0.3);
 }
 
 .eh-status-badge.starting,
 .eh-status-badge.building,
 .eh-status-badge.health_check {
-
-    background: #ef6c00;
-
-    color: white;
-
+  background: rgba(245, 158, 11, 0.14);
+  color: var(--warning, #f59e0b);
+  border-color: rgba(245, 158, 11, 0.3);
 }
