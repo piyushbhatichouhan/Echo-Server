@@ -1,69 +1,118 @@
+/* ==========================================================================
+   Base Generic Modal Component Styles
+   EchoHub Theme: Warm Obsidian & Amber Palette
+   ========================================================================== */
+
 .eh-modal-overlay {
-
-    position: fixed;
-
-    inset: 0;
-
-    background: rgba(0, 0, 0, .65);
-
-    display: flex;
-
-    justify-content: center;
-
-    align-items: center;
-
-    z-index: 1000;
-
-    backdrop-filter: blur(5px);
-
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(8px);
+  padding: 20px;
+  box-sizing: border-box;
+  animation: modalBackdropFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
- 
+
+@keyframes modalBackdropFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 .eh-modal {
+  width: min(540px, 94vw);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, rgba(33, 23, 16, 0.98) 0%, rgba(24, 18, 13, 0.99) 100%);
+  border: 1px solid rgba(255, 138, 0, 0.22);
+  border-radius: 20px;
+  box-shadow: 0 24px 60px -12px rgba(0, 0, 0, 0.75),
+              0 0 20px -5px rgba(255, 138, 0, 0.08),
+              inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+  animation: modalPopIn 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+}
 
-    width: min(520px, 92vw);
-
-    background: var(--bg-secondary);
-
-    border: 1px solid var(--border);
-
-    border-radius: var(--radius);
-
-    box-shadow: var(--shadow);
-
-    overflow: hidden;
-
+@keyframes modalPopIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 .eh-modal-header {
-
-    display: flex;
-
-    justify-content: space-between;
-
-    align-items: center;
-
-    padding: 20px;
-
-    border-bottom: 1px solid var(--border);
-
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(255, 138, 0, 0.12);
+  background: rgba(42, 29, 20, 0.4);
+  flex-shrink: 0;
 }
 
-.eh-modal-body {
-
-    padding: 24px;
-
+.eh-modal-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary, #fff8f2);
+  letter-spacing: -0.3px;
 }
 
 .eh-modal-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: var(--text-secondary, #c9b8aa);
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  padding: 0;
+}
 
-    background: none;
+.eh-modal-close:hover {
+  background: rgba(255, 138, 0, 0.15);
+  border-color: rgba(255, 138, 0, 0.35);
+  color: var(--accent, #ff8a00);
+  transform: rotate(90deg);
+}
 
-    border: none;
+.eh-modal-body {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+  color: var(--text-primary, #fff8f2);
+}
 
-    color: var(--text-secondary);
+/* Custom scrollbar for modal body */
+.eh-modal-body::-webkit-scrollbar {
+  width: 6px;
+}
 
-    font-size: 1.3rem;
+.eh-modal-body::-webkit-scrollbar-track {
+  background: transparent;
+}
 
-    cursor: pointer;
+.eh-modal-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 138, 0, 0.2);
+  border-radius: 999px;
+}
 
+.eh-modal-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 138, 0, 0.4);
 }

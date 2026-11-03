@@ -50,47 +50,54 @@
 
 
 .eh-env-modal {
-
     display: flex;
-
     flex-direction: column;
-
-    gap: 14px;
-
+    gap: 16px;
 }
 
 .eh-env-modal label {
-
+    font-size: 0.88rem;
     font-weight: 600;
-
+    color: #d8c4b0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
 .eh-env-modal input,
 .eh-env-modal textarea {
-
     width: 100%;
-
-    border: none;
-
+    border: 1px solid rgba(255, 255, 255, 0.12);
     outline: none;
-
     border-radius: 12px;
-
-    padding: 12px;
-
-    background: var(--eh-surface-2);
-
-    color: var(--eh-text);
-
+    padding: 12px 14px;
+    background: rgba(18, 12, 8, 0.95);
+    color: #fff3e4;
     resize: vertical;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.88rem;
+    transition: all 0.2s ease;
+}
 
+.eh-env-modal input::placeholder,
+.eh-env-modal textarea::placeholder {
+    color: #6a5545;
+}
+
+.eh-env-modal input:focus,
+.eh-env-modal textarea:focus {
+    border-color: rgba(255, 138, 0, 0.6);
+    box-shadow: 0 0 0 3px rgba(255, 138, 0, 0.18);
+    background: rgba(24, 15, 10, 0.98);
 }
 
 .eh-modal-actions {
     display: flex;
     justify-content: flex-end;
     gap: 12px;
-    margin-top: 12px;
+    margin-top: 8px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .eh-env-header-actions {

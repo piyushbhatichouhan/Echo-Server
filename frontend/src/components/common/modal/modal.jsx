@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+import { X } from "lucide-react";
 import "./modal.css";
 
 export default function Modal({
@@ -9,8 +11,24 @@ export default function Modal({
   overlayClassName = "",
   className = "",
   zIndex,
+  width,
 }) {
   const isVisible = open ?? isOpen;
+
+  // Close on Escape key press
+  useEffect(() => {
+    if (!isVisible || !onClose) return;
+
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isVisible, onClose]);
+
   if (!isVisible) return null;
 
   return (
@@ -21,14 +39,25 @@ export default function Modal({
     >
       <div
         className={`eh-modal ${className}`.trim()}
+        style={width ? { width, maxWidth: "94vw" } : undefined}
         onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
       >
         <div className="eh-modal-header">
-          <h2>{title}</h2>
+          {typeof title === "string" ? <h2>{title}</h2> : title}
 
-          <button className="eh-modal-close" onClick={onClose}>
-            ✕
-          </button>
+          {onClose && (
+            <button
+              type="button"
+              className="eh-modal-close"
+              onClick={onClose}
+              aria-label="Close modal"
+              title="Close (Esc)"
+            >
+              <X size={18} />
+            </button>
+          )}
         </div>
 
         <div className="eh-modal-body">{children}</div>
@@ -36,4 +65,3 @@ export default function Modal({
     </div>
   );
 }
- 
