@@ -44,7 +44,7 @@ export default function StatCard({
                       ? "var(--danger, #ef4444)"
                       : progress > 75
                       ? "var(--warning, #f59e0b)"
-                      : "var(--accent, #ff8a00)",
+                      : "var(--accent)",
                 }}
               />
             </div>

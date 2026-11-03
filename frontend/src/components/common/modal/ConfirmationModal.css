@@ -57,7 +57,7 @@
   width: 5px;
 }
 .confirmationModal::-webkit-scrollbar-thumb {
-  background: rgba(255, 138, 0, 0.2);
+  background: var(--scrollbar-thumb);
   border-radius: 3px;
 }
 
@@ -183,19 +183,19 @@
 }
 
 .confirmationTargetEntity strong {
-  color: #ffaa33;
+  color: var(--accent);
   font-size: 1.05rem;
   letter-spacing: -0.01em;
 }
 
 .confirmationTargetEntity span {
-  color: #8c7664;
+  color: var(--text-muted);
   font-size: 0.85rem;
 }
 
 .confirmationListHeading {
   margin: 4px 0 0;
-  color: #e2d1c1;
+  color: var(--text-secondary);
   font-weight: 600;
   font-size: 0.86rem;
 }
@@ -206,7 +206,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  color: #ad9683;
+  color: var(--text-muted);
   font-size: 0.85rem;
 }
 
@@ -224,7 +224,7 @@
 }
 
 .confirmationField label {
-  color: #d8c4b0;
+  color: var(--text-secondary);
   font-size: 0.88rem;
   font-weight: 500;
   line-height: 1.4;
@@ -235,9 +235,9 @@
   padding: 2px 8px;
   margin: 0 4px;
   background: var(--nav-hover-bg);
-  border: 1px solid rgba(255, 138, 0, 0.3);
+  border: 1px solid var(--border-glow);
   border-radius: 6px;
-  color: #ffaa33;
+  color: var(--accent);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-weight: 700;
   font-size: 0.88rem;

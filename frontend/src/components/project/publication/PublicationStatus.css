@@ -1,10 +1,10 @@
 .publication-card {
-    background: linear-gradient(180deg, #2b211c 0%, #241b17 100%);
-    border: 1px solid rgba(255, 170, 90, 0.18);
+    background: var(--bg-card-gradient, var(--bg-card, #181d27));
+    border: 1px solid var(--border-subtle, var(--border, #283042));
     border-radius: 18px;
     padding: 24px;
     box-shadow:
-        0 12px 30px rgba(0, 0, 0, 0.35),
+        var(--card-shadow, 0 12px 30px rgba(0, 0, 0, 0.35)),
         inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
@@ -14,14 +14,15 @@
 
 .publication-header h3 {
     margin: 0;
-    color: #ffb15c;
+    color: var(--text-primary, #f0f6fc);
     font-size: 1.35rem;
     font-weight: 700;
+    letter-spacing: -0.01em;
 }
 
 .publication-header p {
     margin-top: 6px;
-    color: #a99d92;
+    color: var(--text-secondary, #8b949e);
     font-size: 0.9rem;
 }
 
@@ -33,8 +34,8 @@
 }
 
 .publication-status-item {
-    background: rgba(255, 255, 255, 0.025);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: var(--bg-secondary, rgba(255, 255, 255, 0.025));
+    border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.06));
     border-radius: 14px;
     padding: 16px;
     transition: 0.2s ease;
@@ -42,16 +43,18 @@
 
 .publication-status-item:hover {
     transform: translateY(-2px);
-    border-color: rgba(255, 177, 92, 0.25);
+    border-color: var(--border-glow, rgba(56, 189, 248, 0.3));
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }
 
 .publication-status-label {
     display: block;
     margin-bottom: 12px;
-    color: #9f9489;
+    color: var(--text-muted, #6e7681);
     font-size: 0.78rem;
     text-transform: uppercase;
     letter-spacing: 0.08em;
+    font-weight: 600;
 }
 
 .status-badge {
@@ -75,20 +78,23 @@
 
 .status-active,
 .status-verified {
-    color: #62e58a;
-    background: rgba(98, 229, 138, 0.12);
+    color: #3fb950;
+    background: rgba(63, 185, 80, 0.14);
+    border: 1px solid rgba(63, 185, 80, 0.25);
 }
 
 .status-pending {
-    color: #ffc857;
-    background: rgba(255, 200, 87, 0.12);
+    color: #e3b341;
+    background: rgba(227, 179, 65, 0.14);
+    border: 1px solid rgba(227, 179, 65, 0.25);
 }
 
 .status-failed,
 .status-error,
 .status-inactive {
-    color: #ff6f6f;
-    background: rgba(255, 111, 111, 0.12);
+    color: #f85149;
+    background: rgba(248, 81, 73, 0.14);
+    border: 1px solid rgba(248, 81, 73, 0.25);
 }
 
 /* ---------- URL ---------- */
@@ -100,28 +106,31 @@
 .publication-label {
     display: block;
     margin-bottom: 8px;
-    color: #9f9489;
+    color: var(--text-muted, #6e7681);
     font-size: 0.8rem;
     text-transform: uppercase;
     letter-spacing: 0.08em;
+    font-weight: 600;
 }
 
 .publication-box {
-    background: #171311;
-    border: 1px solid #3a2d27;
+    background: var(--bg-input, #10141d);
+    border: 1px solid var(--border, #283042);
     border-radius: 12px;
     padding: 14px 16px;
     overflow-x: auto;
 }
 
 .publication-link a {
-    color: #7dc8ff;
+    color: var(--accent, #38bdf8);
     text-decoration: none;
     font-size: 0.92rem;
     word-break: break-all;
+    font-weight: 500;
 }
 
 .publication-link a:hover {
+    color: var(--accent-hover, #7dd3fc);
     text-decoration: underline;
 }
 
@@ -141,7 +150,7 @@
 /* ---------- EMPTY STATE ---------- */
 
 .publication-card p {
-    color: #9f9489;
+    color: var(--text-secondary, #8b949e);
 }
 
 /* ---------- RESPONSIVE ---------- */

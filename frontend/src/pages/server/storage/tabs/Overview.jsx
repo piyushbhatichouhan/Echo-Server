@@ -59,7 +59,7 @@ export default function Overview({ overview, loading }) {
       desc: "Workspace source files, builds, and artifacts",
       bytes: projectsBytes,
       icon: FolderKanban,
-      color: "#ff8a00",
+      color: "var(--accent)",
       pct: ((projectsBytes / denominator) * 100).toFixed(1),
     },
     {

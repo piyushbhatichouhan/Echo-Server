@@ -103,7 +103,7 @@
   letter-spacing: 0.5px;
   background: var(--nav-hover-bg);
   color: var(--accent);
-  border: 1px solid rgba(255, 138, 0, 0.35);
+  border: 1px solid var(--border-glow);
 }
 
 .logs-subtitle {
@@ -280,7 +280,7 @@
 .logs-category-tab:hover {
   background: var(--bg-card);
   color: var(--text-primary);
-  border-color: rgba(255, 138, 0, 0.28);
+  border-color: var(--border-glow);
 }
 
 .logs-category-tab.active {
@@ -320,7 +320,7 @@
 
 .logs-search-box:focus-within {
   border-color: var(--accent);
-  box-shadow: 0 0 8px rgba(255, 138, 0, 0.2);
+  box-shadow: var(--accent-glow);
 }
 
 .logs-search-icon {
@@ -375,7 +375,7 @@
 }
 
 .logs-level-pill.active {
-  background: rgba(255, 138, 0, 0.2);
+  background: var(--nav-hover-bg);
   color: var(--accent);
   border-color: var(--accent);
 }
@@ -506,7 +506,7 @@
   display: flex;
   flex-direction: column;
   background: #140e0a;
-  border: 1px solid rgba(255, 138, 0, 0.22);
+  border: 1px solid var(--border);
   border-radius: 16px;
   overflow: hidden;
   box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.65),
@@ -519,7 +519,7 @@
   justify-content: space-between;
   padding: 10px 18px;
   background: var(--bg-card);
-  border-bottom: 1px solid rgba(255, 138, 0, 0.14);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .terminal-dots {
@@ -590,12 +590,12 @@
 }
 
 .logs-terminal-body::-webkit-scrollbar-thumb {
-  background: rgba(255, 138, 0, 0.25);
+  background: var(--nav-hover-bg);
   border-radius: 4px;
 }
 
 .logs-terminal-body::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 138, 0, 0.45);
+  background: var(--nav-active-bg);
 }
 
 /* Loading & Empty States */
@@ -617,7 +617,7 @@
 }
 
 .empty-icon {
-  color: rgba(255, 138, 0, 0.35);
+  color: var(--text-muted);
 }
 
 .logs-terminal-empty h4 {
@@ -692,8 +692,8 @@
 }
 
 .source--deployment {
-  background: rgba(255, 138, 0, 0.18);
-  color: #ffaa33;
+  background: var(--nav-hover-bg);
+  color: var(--accent);
 }
 
 .source--system {
@@ -744,7 +744,7 @@
 /* Line Message */
 .line-message {
   flex: 1;
-  color: #fff8f2;
+  color: var(--text-primary);
 }
 
 .line--error .line-message {
@@ -782,7 +782,7 @@
   margin: 0;
   font-family: inherit;
   font-size: 0.76rem;
-  color: #ffaa33;
+  color: var(--accent);
 }
 
 /* Jump to Bottom Floating Button */
@@ -864,7 +864,7 @@
 
 .logs-btn--primary:hover {
   background: #ff9a24;
-  box-shadow: 0 4px 14px rgba(255, 138, 0, 0.35);
+  box-shadow: var(--accent-glow);
 }
 
 /* ==========================================================================
