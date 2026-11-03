@@ -20,4 +20,8 @@ router.post("/cleanup-ports", controller.cleanupPorts);
 
 router.get("/health", controller.getServerHealth);
 
+router.get("/logs", controller.getServerLogs);
+router.get("/logs/containers", controller.getLogContainers);
+router.delete("/logs", controller.clearServerLogs);
+
 module.exports = router;

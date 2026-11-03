@@ -55,8 +55,10 @@ export default function Server() {
     },
     {
       title: "Logs",
-      description: "View server logs.",
-      available: false,
+      description: "Inspect live system, container, deployment, and API access logs.",
+      available: true,
+      route: "/server/logs",
+      iconText: "📜",
     },
     {
       title: "Backups",

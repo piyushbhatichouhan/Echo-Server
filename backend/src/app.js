@@ -7,6 +7,8 @@ const app = express();
 const runtimeMonitor = require("./services/runtime-monitor.service");
 
 const { runUserDeletionJob } = require("./jobs/userDeletion.job");
+const { requestLogger } = require("./services/serverLog.service");
+
 // Middleware
 app.use(
   cors({
@@ -14,6 +16,7 @@ app.use(
   }),
 );
 app.use(express.json());
+app.use(requestLogger);
 
 // API Routes
 app.use("/api", routes);
