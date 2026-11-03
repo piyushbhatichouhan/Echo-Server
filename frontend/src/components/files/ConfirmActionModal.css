@@ -30,7 +30,7 @@
 .confirm-modal-msg {
   font-size: 0.95rem;
   line-height: 1.55;
-  color: #d8c4b0;
+  color: var(--text-secondary);
   margin: 0;
   word-break: break-word;
 }

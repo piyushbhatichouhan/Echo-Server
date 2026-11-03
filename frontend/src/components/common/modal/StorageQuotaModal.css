@@ -24,8 +24,8 @@
 .storageQuotaModal {
   width: 100%;
   max-width: 500px;
-  background: radial-gradient(ellipse at top, rgba(255, 138, 0, 0.08) 0%, transparent 60%),
-              linear-gradient(180deg, rgba(33, 23, 16, 0.98), rgba(24, 18, 13, 0.99));
+  background: radial-gradient(ellipse at top, var(--border-glow) 0%, transparent 60%),
+              var(--bg-card-gradient);
   border: 1px solid rgba(255, 138, 0, 0.22);
   border-radius: 20px;
   padding: 26px 28px;
@@ -34,8 +34,8 @@
   gap: 20px;
   box-shadow:
     0 24px 60px rgba(0, 0, 0, 0.65),
-    0 0 0 1px rgba(255, 138, 0, 0.06),
-    0 0 40px rgba(255, 138, 0, 0.08);
+    0 0 0 1px var(--border-subtle),
+    0 0 40px var(--border-subtle);
   animation: quotaModalPop 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
@@ -74,7 +74,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 138, 0, 0.12);
+  background: var(--nav-hover-bg);
   border: 1px solid rgba(255, 138, 0, 0.28);
   color: #ffaa33;
   flex-shrink: 0;
@@ -112,8 +112,8 @@
 }
 
 .quotaCloseBtn:hover:not(:disabled) {
-  background: rgba(255, 138, 0, 0.15);
-  border-color: rgba(255, 138, 0, 0.3);
+  background: var(--nav-hover-bg);
+  border-color: var(--border-glow);
   color: #ffaa33;
   transform: rotate(90deg);
 }
@@ -196,9 +196,9 @@
   flex: 1;
   padding: 11px 14px;
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(18, 12, 8, 0.95);
-  color: #fff3e4;
+  border: 1px solid var(--border);
+  background: var(--bg-input);
+  color: var(--text-primary);
   font-size: 1rem;
   font-weight: 600;
   outline: none;
@@ -206,9 +206,9 @@
 }
 
 .storageInputGroup input:focus {
-  border-color: rgba(255, 138, 0, 0.6);
-  box-shadow: 0 0 0 3px rgba(255, 138, 0, 0.18);
-  background: rgba(24, 15, 10, 0.98);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--border-glow);
+  background: var(--bg-input);
 }
 
 .storageInputGroup input:disabled {
@@ -220,8 +220,8 @@
 .quotaUnitPills {
   display: inline-flex;
   padding: 4px;
-  background: rgba(18, 12, 8, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   border-radius: 12px;
   gap: 4px;
 }
@@ -231,7 +231,7 @@
   border-radius: 8px;
   border: none;
   background: transparent;
-  color: #a89481;
+  color: var(--text-secondary);
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
@@ -239,14 +239,14 @@
 }
 
 .quotaUnitPill:hover:not(:disabled):not(.active) {
-  color: #fff3e4;
-  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+  background: var(--nav-hover-bg);
 }
 
 .quotaUnitPill.active {
-  background: linear-gradient(135deg, #ff8a00, #ffb347);
-  color: #1a0f06;
-  box-shadow: 0 2px 8px rgba(255, 138, 0, 0.3);
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+  box-shadow: 0 2px 8px var(--border-glow);
 }
 
 .quotaUnitPill:disabled {
@@ -287,14 +287,14 @@
 }
 
 .presetBtn:hover:not(:disabled) {
-  background: rgba(255, 138, 0, 0.1);
-  border-color: rgba(255, 138, 0, 0.3);
+  background: var(--nav-hover-bg);
+  border-color: var(--border-glow);
   color: #ffaa33;
 }
 
 .presetBtn.activePreset {
   background: rgba(255, 138, 0, 0.18);
-  border-color: rgba(255, 138, 0, 0.45);
+  border-color: var(--border-glow);
   color: #ffaa33;
   font-weight: 600;
 }
@@ -303,8 +303,8 @@
 
 .quotaHint {
   padding: 11px 14px;
-  background: rgba(255, 138, 0, 0.06);
-  border: 1px solid rgba(255, 138, 0, 0.18);
+  background: var(--border-subtle);
+  border: 1px solid var(--border);
   border-radius: 12px;
   color: #bfa892;
   font-size: 0.85rem;
@@ -355,7 +355,7 @@
 }
 
 .saveButton {
-  background: linear-gradient(135deg, #ff8a00 0%, #e67600 100%);
+  background: var(--btn-primary-bg);
   color: white;
   box-shadow: 0 6px 18px rgba(255, 138, 0, 0.32);
 }

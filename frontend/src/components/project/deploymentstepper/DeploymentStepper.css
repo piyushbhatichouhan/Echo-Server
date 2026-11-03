@@ -1,6 +1,7 @@
 .eh-deployment-stepper {
-  background: rgba(18, 18, 20, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
   border-radius: 16px;
   padding: 18px 22px;
   margin-bottom: 20px;
@@ -24,7 +25,7 @@
   margin: 0;
   font-size: 0.95rem;
   font-weight: 600;
-  color: #f4f4f5;
+  color: var(--text-primary);
   letter-spacing: -0.01em;
 }
 
@@ -104,9 +105,9 @@
 }
 
 .eh-step-pending .eh-step-icon-wrapper {
-  background: rgba(255, 255, 255, 0.04);
-  color: #71717a;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--bg-input);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
 }
 
 .eh-step-completed .eh-step-icon-wrapper {
@@ -138,28 +139,28 @@
 .eh-step-label {
   font-size: 0.82rem;
   font-weight: 600;
-  color: #e4e4e7;
+  color: var(--text-primary);
   white-space: nowrap;
 }
 
 .eh-step-pending .eh-step-label {
-  color: #71717a;
+  color: var(--text-muted);
 }
 
 .eh-step-desc {
   font-size: 0.7rem;
-  color: #a1a1aa;
+  color: var(--text-secondary);
   white-space: nowrap;
 }
 
 .eh-step-pending .eh-step-desc {
-  color: #52525b;
+  color: var(--text-muted);
 }
 
 .eh-step-connector {
   flex: 1;
   height: 2px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--border);
   margin: 0 12px;
   min-width: 24px;
   transition: background 0.3s ease;

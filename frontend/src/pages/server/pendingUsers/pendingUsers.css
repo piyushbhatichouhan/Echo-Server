@@ -1,6 +1,5 @@
 /* ==========================================================================
-   Pending Users Page Styles (Super Admin)
-   EchoHub Theme: Warm Obsidian & Amber Palette
+   Pending Users Page Styles (Theme Adaptive)
    ========================================================================== */
 
 .pending-users-page {
@@ -37,11 +36,10 @@
   gap: 20px;
   flex-wrap: wrap;
   padding: 24px 28px;
-  background: linear-gradient(135deg, rgba(33, 23, 16, 0.85) 0%, rgba(24, 18, 13, 0.95) 100%);
-  border: 1px solid rgba(255, 138, 0, 0.18);
-  border-radius: 18px;
-  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.45),
-              0 0 20px -5px rgba(255, 138, 0, 0.05);
+  background: var(--bg-card-gradient);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-large, 18px);
+  box-shadow: var(--shadow);
 }
 
 .pending-header-left {
@@ -56,7 +54,7 @@
   gap: 8px;
   background: transparent;
   border: none;
-  color: var(--text-secondary, #c9b8aa);
+  color: var(--text-secondary);
   font-size: 0.84rem;
   font-weight: 500;
   cursor: pointer;
@@ -66,7 +64,7 @@
 }
 
 .pending-back-btn:hover {
-  color: var(--accent, #ff8a00);
+  color: var(--accent);
   transform: translateX(-2px);
 }
 
@@ -87,7 +85,7 @@
   margin: 0;
   font-size: 1.65rem;
   font-weight: 800;
-  color: var(--text-primary, #fff8f2);
+  color: var(--text-primary);
   letter-spacing: -0.5px;
 }
 
@@ -101,15 +99,15 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  background: rgba(255, 138, 0, 0.15);
-  color: var(--accent, #ff8a00);
-  border: 1px solid rgba(255, 138, 0, 0.35);
+  background: var(--nav-hover-bg);
+  color: var(--accent);
+  border: 1px solid var(--border-glow);
 }
 
 .pending-subtitle {
   margin: 0;
   font-size: 0.88rem;
-  color: var(--text-secondary, #c9b8aa);
+  color: var(--text-secondary);
   max-width: 680px;
   line-height: 1.45;
 }
@@ -132,15 +130,15 @@
 }
 
 .pending-count-pill.pill--has-pending {
-  background: rgba(251, 191, 36, 0.12);
-  color: #fbbf24;
-  border: 1px solid rgba(251, 191, 36, 0.3);
+  background: rgba(245, 158, 11, 0.12);
+  color: var(--warning, #f59e0b);
+  border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
 .pending-count-pill.pill--all-clear {
-  background: rgba(74, 222, 128, 0.12);
-  color: #4ade80;
-  border: 1px solid rgba(74, 222, 128, 0.3);
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--success, #10b981);
+  border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
 .pill-dot {
@@ -151,9 +149,9 @@
   box-shadow: 0 0 6px currentColor;
 }
 
-/* ==========================================================================
+/* =========================================================
    Toolbar
-   ========================================================================== */
+   ========================================================= */
 
 .pending-toolbar {
   display: flex;
@@ -162,9 +160,9 @@
   gap: 16px;
   flex-wrap: wrap;
   padding: 14px 18px;
-  border-radius: 14px;
-  background: rgba(33, 23, 16, 0.75);
-  border: 1px solid rgba(255, 138, 0, 0.12);
+  border-radius: var(--radius, 14px);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
 }
 
 .pending-search-box {
@@ -173,27 +171,27 @@
   gap: 8px;
   flex: 1;
   max-width: 440px;
-  background: rgba(24, 18, 13, 0.85);
-  border: 1px solid rgba(255, 138, 0, 0.18);
+  background: var(--bg-input);
+  border: 1px solid var(--border);
   border-radius: 9px;
   padding: 8px 14px;
-  transition: border-color 0.2s ease;
+  transition: border-color var(--transition);
 }
 
 .pending-search-box:focus-within {
-  border-color: var(--accent, #ff8a00);
-  box-shadow: 0 0 8px rgba(255, 138, 0, 0.2);
+  border-color: var(--border-focus);
+  box-shadow: var(--glow);
 }
 
 .pending-search-icon {
-  color: var(--text-secondary, #c9b8aa);
+  color: var(--text-muted);
   flex-shrink: 0;
 }
 
 .pending-search-input {
   background: transparent;
   border: none;
-  color: var(--text-primary, #fff8f2);
+  color: var(--text-primary);
   font-size: 0.86rem;
   width: 100%;
   outline: none;
@@ -202,7 +200,7 @@
 .pending-search-clear {
   background: transparent;
   border: none;
-  color: var(--text-secondary, #c9b8aa);
+  color: var(--text-muted);
   cursor: pointer;
   padding: 0;
   display: flex;
@@ -211,12 +209,12 @@
 
 .pending-result-count {
   font-size: 0.82rem;
-  color: var(--text-secondary, #c9b8aa);
+  color: var(--text-secondary);
 }
 
-/* ==========================================================================
+/* =========================================================
    List & Cards
-   ========================================================================== */
+   ========================================================= */
 
 .pending-list {
   display: flex;
@@ -231,9 +229,9 @@
   align-items: center;
   justify-content: center;
   padding: 64px 24px;
-  border-radius: 18px;
-  background: rgba(33, 23, 16, 0.65);
-  border: 1px solid rgba(255, 138, 0, 0.12);
+  border-radius: var(--radius-large, 18px);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   text-align: center;
   gap: 12px;
 }
@@ -242,7 +240,7 @@
   width: 68px;
   height: 68px;
   border-radius: 50%;
-  background: rgba(74, 222, 128, 0.1);
+  background: rgba(16, 185, 129, 0.1);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -250,20 +248,20 @@
 }
 
 .empty-success-icon {
-  color: #4ade80;
+  color: var(--success, #10b981);
 }
 
 .pending-empty-state h3 {
   margin: 0;
   font-size: 1.25rem;
   font-weight: 700;
-  color: var(--text-primary, #fff8f2);
+  color: var(--text-primary);
 }
 
 .pending-empty-state p {
   margin: 0;
   font-size: 0.88rem;
-  color: var(--text-secondary, #c9b8aa);
+  color: var(--text-secondary);
   max-width: 420px;
   line-height: 1.45;
 }
@@ -278,7 +276,7 @@
 .pending-card-skeleton {
   height: 88px;
   border-radius: 16px;
-  background: rgba(42, 29, 20, 0.5);
+  background: var(--bg-card);
   position: relative;
   overflow: hidden;
 }
@@ -293,7 +291,7 @@
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(255, 138, 0, 0.06) 50%,
+    var(--border-glow) 50%,
     transparent 100%
   );
   animation: pendingShimmer 1.6s infinite;
@@ -322,9 +320,9 @@
   text-align: center;
   padding: 36px 32px;
   border-radius: 20px;
-  background: rgba(33, 23, 16, 0.95);
-  border: 1px solid rgba(248, 113, 113, 0.3);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  background: var(--bg-card);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  box-shadow: var(--shadow);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -332,13 +330,13 @@
 }
 
 .pending-btn--primary {
-  background: var(--accent, #ff8a00);
-  color: #18120d;
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
   font-weight: 700;
   padding: 10px 22px;
 }
 
 .pending-btn--primary:hover {
-  background: #ff9a24;
-  box-shadow: 0 4px 14px rgba(255, 138, 0, 0.35);
+  background: var(--btn-primary-hover);
+  box-shadow: 0 4px 14px var(--border-glow);
 }

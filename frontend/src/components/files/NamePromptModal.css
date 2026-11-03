@@ -23,10 +23,10 @@
 }
 
 .name-prompt-icon-avatar.badge-folder {
-  background: rgba(255, 138, 0, 0.12);
+  background: var(--nav-hover-bg);
   color: #ffaa33;
   border: 1px solid rgba(255, 138, 0, 0.28);
-  box-shadow: 0 0 16px rgba(255, 138, 0, 0.12);
+  box-shadow: 0 0 16px var(--nav-hover-bg);
 }
 
 .name-prompt-icon-avatar.badge-file {
@@ -37,10 +37,10 @@
 }
 
 .name-prompt-icon-avatar.badge-archive {
-  background: rgba(255, 138, 0, 0.12);
+  background: var(--nav-hover-bg);
   color: #ffaa33;
   border: 1px solid rgba(255, 138, 0, 0.28);
-  box-shadow: 0 0 16px rgba(255, 138, 0, 0.12);
+  box-shadow: 0 0 16px var(--nav-hover-bg);
 }
 
 .name-prompt-icon-avatar.badge-rename {
@@ -80,7 +80,7 @@
 .name-prompt-label {
   font-size: 0.88rem;
   font-weight: 600;
-  color: #d8c4b0;
+  color: var(--text-secondary);
 }
 
 .name-prompt-input-wrapper {
@@ -88,15 +88,15 @@
   display: flex;
   align-items: center;
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(18, 12, 8, 0.95);
+  border: 1px solid var(--border);
+  background: var(--bg-input);
   transition: all 0.2s ease;
 }
 
 .name-prompt-input-wrapper:focus-within {
-  border-color: rgba(255, 138, 0, 0.6);
-  box-shadow: 0 0 0 3px rgba(255, 138, 0, 0.18);
-  background: rgba(24, 15, 10, 0.98);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--border-glow);
+  background: var(--bg-input);
 }
 
 .name-prompt-input-wrapper.has-error {
@@ -108,14 +108,14 @@
   width: 100%;
   padding: 0.75rem 1rem;
   font-size: 0.95rem;
-  color: #fff3e4;
+  color: var(--text-primary);
   background: transparent;
   border: none;
   outline: none;
 }
 
 .name-prompt-input::placeholder {
-  color: #6a5545;
+  color: var(--text-muted);
 }
 
 .name-prompt-error {
@@ -126,12 +126,12 @@
 
 .name-prompt-sub-hint {
   font-size: 0.78rem;
-  color: #8c7664;
+  color: var(--text-muted);
 }
 
 .name-prompt-sub-hint code {
-  color: #ffaa33;
-  background: rgba(255, 138, 0, 0.1);
+  color: var(--accent);
+  background: var(--nav-hover-bg);
   padding: 1px 5px;
   border-radius: 4px;
 }

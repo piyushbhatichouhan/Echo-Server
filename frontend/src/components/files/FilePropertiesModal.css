@@ -23,10 +23,10 @@
 }
 
 .file-props-avatar.folder {
-  background: rgba(255, 138, 0, 0.12);
-  color: #ffaa33;
-  border: 1px solid rgba(255, 138, 0, 0.28);
-  box-shadow: 0 0 16px rgba(255, 138, 0, 0.12);
+  background: var(--nav-hover-bg);
+  color: var(--accent);
+  border: 1px solid var(--border-glow);
+  box-shadow: 0 0 16px var(--nav-hover-bg);
 }
 
 .file-props-avatar.file {
@@ -40,22 +40,22 @@
   margin: 0 0 0.25rem 0;
   font-size: 1.15rem;
   font-weight: 700;
-  color: #fff3e4;
+  color: var(--text-primary);
   word-break: break-all;
   letter-spacing: -0.01em;
 }
 
 .file-props-title span {
   font-size: 0.82rem;
-  color: #8c7664;
+  color: var(--text-muted);
 }
 
 .file-props-grid {
   display: flex;
   flex-direction: column;
   gap: 0.65rem;
-  background: rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
   border-radius: 14px;
   padding: 12px 16px;
 }
@@ -66,7 +66,7 @@
   justify-content: space-between;
   gap: 1rem;
   padding: 8px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid var(--border-subtle);
   font-size: 0.88rem;
 }
 
@@ -78,17 +78,17 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: #bfa892;
+  color: var(--text-secondary);
   font-weight: 500;
   white-space: nowrap;
 }
 
 .file-props-label svg {
-  color: #ffaa33;
+  color: var(--accent);
 }
 
 .file-props-val {
-  color: #fff3e4;
+  color: var(--text-primary);
   text-align: right;
   word-break: break-all;
   font-family: ui-monospace, SFMono-Regular, monospace;

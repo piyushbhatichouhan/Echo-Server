@@ -113,23 +113,15 @@
 
 .eh-file-dirty {
     display: inline-block;
-    width: 5px;
-    height: 5px;
+    width: 6px;
+    height: 6px;
     margin-left: 8px;
     border-radius: 50%;
-
-    background: #ff8c00;
-
-    box-shadow:
-        0 0 6px #ff8c00,
-        0 0 12px rgba(255, 140, 0, 0.8),
-        0 0 20px rgba(255, 140, 0, 0.35);
-
-    animation: ehDirtyPulse 2.2s ease-in-out infinite;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
 }
 
-
 .eh-editor-dirty {
-    color: #ffb347;
+    color: var(--accent);
     font-size: 14px;
 }

@@ -27,12 +27,12 @@
   max-height: calc(100vh - 40px);
   overflow-y: auto;
   background: radial-gradient(ellipse at top, rgba(239, 68, 68, 0.08) 0%, transparent 60%),
-              linear-gradient(180deg, rgba(33, 23, 16, 0.98), rgba(24, 18, 13, 0.99));
+              var(--bg-card-gradient);
   border: 1px solid rgba(239, 68, 68, 0.28);
   border-radius: 20px;
   box-shadow:
     0 24px 60px rgba(0, 0, 0, 0.65),
-    0 0 0 1px rgba(255, 138, 0, 0.06),
+    0 0 0 1px var(--border-subtle),
     0 0 35px rgba(239, 68, 68, 0.12);
   padding: 26px 28px;
   display: flex;
@@ -234,7 +234,7 @@
   display: inline-block;
   padding: 2px 8px;
   margin: 0 4px;
-  background: rgba(255, 138, 0, 0.15);
+  background: var(--nav-hover-bg);
   border: 1px solid rgba(255, 138, 0, 0.3);
   border-radius: 6px;
   color: #ffaa33;
@@ -253,9 +253,9 @@
   width: 100%;
   padding: 12px 38px 12px 14px;
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(18, 12, 8, 0.95);
-  color: #fff3e4;
+  border: 1px solid var(--border);
+  background: var(--bg-input);
+  color: var(--text-primary);
   font-size: 0.95rem;
   outline: none;
   transition: all 0.2s ease;
@@ -263,13 +263,13 @@
 }
 
 .confirmationInputWrapper input::placeholder {
-  color: #645041;
+  color: var(--text-muted);
 }
 
 .confirmationInputWrapper input:focus {
   border-color: rgba(239, 68, 68, 0.6);
   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18);
-  background: rgba(24, 15, 10, 0.98);
+  background: var(--bg-input);
 }
 
 .confirmationInputWrapper input.inputValid {

@@ -1,6 +1,5 @@
 /* ==========================================================================
-   Pending User Card Styles
-   EchoHub Theme: Warm Obsidian & Amber Palette
+   Pending User Card Styles (Theme Adaptive)
    ========================================================================== */
 
 .pending-user-card {
@@ -9,18 +8,17 @@
   align-items: center;
   gap: 20px;
   padding: 20px 24px;
-  background: linear-gradient(135deg, rgba(33, 23, 16, 0.85) 0%, rgba(24, 18, 13, 0.95) 100%);
-  border: 1px solid rgba(255, 138, 0, 0.12);
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  background: var(--bg-card-gradient);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-large, 16px);
+  box-shadow: var(--shadow);
+  transition: all var(--transition);
 }
 
 .pending-user-card:hover {
-  border-color: rgba(255, 138, 0, 0.3);
+  border-color: var(--border-glow);
   transform: translateY(-2px);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45),
-              0 0 15px rgba(255, 138, 0, 0.05);
+  box-shadow: var(--shadow-hover), var(--glow);
 }
 
 .pending-user-main {
@@ -35,15 +33,15 @@
   width: 48px;
   height: 48px;
   border-radius: 14px;
-  background: linear-gradient(135deg, #ff8a00 0%, #d46b00 100%);
-  color: #18120d;
+  background: var(--accent-gradient);
+  color: var(--btn-primary-text);
   font-size: 1.25rem;
   font-weight: 800;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 4px 14px rgba(255, 138, 0, 0.25);
+  box-shadow: 0 4px 14px var(--border-glow);
 }
 
 .pending-info {
@@ -65,7 +63,7 @@
   margin: 0;
   font-size: 1.12rem;
   font-weight: 700;
-  color: var(--text-primary, #fff8f2);
+  color: var(--text-primary);
   letter-spacing: -0.3px;
 }
 
@@ -77,17 +75,17 @@
   border-radius: 999px;
   font-size: 0.74rem;
   font-weight: 700;
-  background: rgba(251, 191, 36, 0.12);
-  color: #fbbf24;
-  border: 1px solid rgba(251, 191, 36, 0.28);
+  background: rgba(245, 158, 11, 0.12);
+  color: var(--warning, #f59e0b);
+  border: 1px solid rgba(245, 158, 11, 0.28);
 }
 
 .pending-status-dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #fbbf24;
-  box-shadow: 0 0 6px #fbbf24;
+  background: var(--warning, #f59e0b);
+  box-shadow: 0 0 6px var(--warning, #f59e0b);
   animation: pendingPulse 2s infinite ease-in-out;
 }
 
@@ -114,7 +112,7 @@
   align-items: center;
   gap: 6px;
   font-size: 0.82rem;
-  color: var(--text-secondary, #c9b8aa);
+  color: var(--text-secondary);
 }
 
 .pending-actions {
@@ -129,11 +127,11 @@
   align-items: center;
   gap: 7px;
   padding: 9px 16px;
-  border-radius: 10px;
+  border-radius: var(--radius-small, 10px);
   font-size: 0.84rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all var(--transition);
   border: none;
 }
 
@@ -143,28 +141,28 @@
 }
 
 .pending-btn--approve {
-  background: rgba(74, 222, 128, 0.15);
-  color: #4ade80;
-  border: 1px solid rgba(74, 222, 128, 0.35);
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--success, #10b981);
+  border: 1px solid rgba(16, 185, 129, 0.35);
 }
 
 .pending-btn--approve:hover:not(:disabled) {
-  background: #4ade80;
-  color: #0f291e;
-  border-color: #4ade80;
+  background: var(--success, #10b981);
+  color: #0b1a13;
+  border-color: var(--success, #10b981);
   transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(74, 222, 128, 0.3);
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);
 }
 
 .pending-btn--reject {
-  background: rgba(248, 113, 113, 0.12);
-  color: #f87171;
-  border: 1px solid rgba(248, 113, 113, 0.3);
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--danger, #ef4444);
+  border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
 .pending-btn--reject:hover:not(:disabled) {
-  background: rgba(248, 113, 113, 0.22);
-  border-color: rgba(248, 113, 113, 0.5);
+  background: rgba(239, 68, 68, 0.22);
+  border-color: rgba(239, 68, 68, 0.5);
   transform: translateY(-1px);
 }
 

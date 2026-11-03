@@ -1,16 +1,15 @@
 /* ==========================================================================
-   Users Storage Tab Styles
-   EchoHub Theme: Warm Obsidian & Amber Palette
+   Storage Users Tab Styles (Theme Adaptive)
    ========================================================================== */
 
-.users-storage-tab {
+.storage-users-tab {
   display: flex;
   flex-direction: column;
   gap: 20px;
-  animation: usersStorageFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: usersTabFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@keyframes usersStorageFadeIn {
+@keyframes usersTabFadeIn {
   from {
     opacity: 0;
     transform: translateY(4px);
@@ -22,10 +21,10 @@
 }
 
 /* ==========================================================================
-   Summary Metric Tiles
+   Metrics Row
    ========================================================================== */
 
-.users-storage-metrics-strip {
+.storage-metrics-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 16px;
@@ -36,16 +35,16 @@
   flex-direction: column;
   gap: 6px;
   padding: 20px 24px;
-  background: linear-gradient(135deg, rgba(33, 23, 16, 0.85) 0%, rgba(24, 18, 13, 0.95) 100%);
-  border: 1px solid rgba(255, 138, 0, 0.14);
+  background: var(--bg-card-gradient);
+  border: 1px solid var(--border);
   border-radius: 16px;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--shadow);
 }
 
 .tile-label {
   font-size: 0.78rem;
   font-weight: 700;
-  color: var(--text-secondary, #c9b8aa);
+  color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -53,17 +52,17 @@
 .tile-value {
   font-size: 1.55rem;
   font-weight: 800;
-  color: var(--text-primary, #fff8f2);
+  color: var(--text-primary);
   letter-spacing: -0.4px;
 }
 
 .tile-value.highlight {
-  color: var(--accent, #ff8a00);
+  color: var(--accent);
 }
 
 .tile-sub {
   font-size: 0.76rem;
-  color: #8c7b70;
+  color: var(--text-muted);
 }
 
 /* ==========================================================================
@@ -77,9 +76,9 @@
   gap: 16px;
   flex-wrap: wrap;
   padding: 14px 18px;
-  border-radius: 14px;
-  background: rgba(33, 23, 16, 0.75);
-  border: 1px solid rgba(255, 138, 0, 0.12);
+  border-radius: var(--radius, 14px);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
 }
 
 .storage-search-box {
@@ -88,27 +87,27 @@
   gap: 8px;
   flex: 1;
   max-width: 440px;
-  background: rgba(24, 18, 13, 0.85);
-  border: 1px solid rgba(255, 138, 0, 0.18);
+  background: var(--bg-input);
+  border: 1px solid var(--border);
   border-radius: 9px;
   padding: 8px 14px;
-  transition: border-color 0.2s ease;
+  transition: border-color var(--transition);
 }
 
 .storage-search-box:focus-within {
-  border-color: var(--accent, #ff8a00);
-  box-shadow: 0 0 8px rgba(255, 138, 0, 0.2);
+  border-color: var(--border-focus);
+  box-shadow: var(--glow);
 }
 
 .storage-search-icon {
-  color: var(--text-secondary, #c9b8aa);
+  color: var(--text-muted);
   flex-shrink: 0;
 }
 
 .storage-search-input {
   background: transparent;
   border: none;
-  color: var(--text-primary, #fff8f2);
+  color: var(--text-primary);
   font-size: 0.86rem;
   width: 100%;
   outline: none;
@@ -117,7 +116,7 @@
 .storage-search-clear {
   background: transparent;
   border: none;
-  color: var(--text-secondary, #c9b8aa);
+  color: var(--text-muted);
   cursor: pointer;
   padding: 0;
   display: flex;
@@ -126,7 +125,7 @@
 
 .storage-count-label {
   font-size: 0.82rem;
-  color: var(--text-secondary, #c9b8aa);
+  color: var(--text-secondary);
 }
 
 /* ==========================================================================
@@ -145,17 +144,17 @@
   justify-content: space-between;
   gap: 24px;
   padding: 18px 24px;
-  background: linear-gradient(135deg, rgba(33, 23, 16, 0.85) 0%, rgba(24, 18, 13, 0.95) 100%);
-  border: 1px solid rgba(255, 138, 0, 0.12);
+  background: var(--bg-card-gradient);
+  border: 1px solid var(--border);
   border-radius: 16px;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25);
-  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: var(--shadow);
+  transition: all var(--transition);
 }
 
 .user-storage-row-card:hover {
-  border-color: rgba(255, 138, 0, 0.3);
+  border-color: var(--border-glow);
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.38);
+  box-shadow: var(--shadow-hover), var(--glow);
 }
 
 /* Left: Identity */
@@ -170,15 +169,15 @@
   width: 42px;
   height: 42px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #2a1d14 0%, #3a271c 100%);
-  color: var(--accent, #ff8a00);
+  background: var(--accent-gradient);
+  color: var(--btn-primary-text);
   font-size: 1.15rem;
   font-weight: 800;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  border: 1px solid rgba(255, 138, 0, 0.25);
+  box-shadow: 0 4px 12px var(--border-glow);
 }
 
 .identity-text {
@@ -191,7 +190,7 @@
 .user-name {
   font-size: 0.98rem;
   font-weight: 700;
-  color: var(--text-primary, #fff8f2);
+  color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -199,7 +198,7 @@
 
 .user-email {
   font-size: 0.78rem;
-  color: var(--text-secondary, #c9b8aa);
+  color: var(--text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -228,20 +227,20 @@
 }
 
 .stat-label {
-  color: var(--text-secondary, #c9b8aa);
+  color: var(--text-secondary);
 }
 
 .stat-used {
-  color: var(--text-primary, #fff8f2);
+  color: var(--text-primary);
   font-weight: 700;
 }
 
 .stat-divider {
-  color: #635347;
+  color: var(--text-muted);
 }
 
 .stat-quota {
-  color: var(--text-secondary, #c9b8aa);
+  color: var(--text-secondary);
 }
 
 .quota-free-badge {
@@ -249,25 +248,25 @@
   align-items: center;
   gap: 8px;
   font-size: 0.76rem;
-  color: var(--text-secondary, #c9b8aa);
+  color: var(--text-secondary);
 }
 
 .quota-pct-badge {
   font-weight: 800;
   padding: 2px 6px;
   border-radius: 4px;
-  background: rgba(0, 0, 0, 0.35);
-  color: var(--text-primary, #fff8f2);
+  background: var(--bg-input);
+  color: var(--text-primary);
   font-variant-numeric: tabular-nums;
 }
 
 .storage-quota-track {
   width: 100%;
   height: 8px;
-  background: rgba(24, 18, 13, 0.9);
+  background: var(--bg-input);
   border-radius: 999px;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
 }
 
 .storage-quota-fill {
@@ -277,8 +276,8 @@
 }
 
 .storage-quota-fill.bar--normal {
-  background: linear-gradient(90deg, #ff8a00, #ffaa33);
-  box-shadow: 0 0 8px rgba(255, 138, 0, 0.4);
+  background: var(--accent-gradient);
+  box-shadow: 0 0 8px var(--border-glow);
 }
 
 .storage-quota-fill.bar--warning {
@@ -306,16 +305,17 @@
   border-radius: 9px;
   font-size: 0.8rem;
   font-weight: 600;
-  background: rgba(255, 138, 0, 0.12);
-  color: var(--accent, #ff8a00);
-  border: 1px solid rgba(255, 138, 0, 0.28);
+  background: var(--nav-hover-bg);
+  color: var(--accent);
+  border: 1px solid var(--border-glow);
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all var(--transition);
 }
 
 .quota-action-btn:hover {
-  background: rgba(255, 138, 0, 0.22);
-  border-color: rgba(255, 138, 0, 0.5);
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+  border-color: var(--accent);
   transform: translateY(-1px);
 }
 
@@ -326,9 +326,9 @@
   align-items: center;
   justify-content: center;
   padding: 64px 24px;
-  border-radius: 18px;
-  background: rgba(33, 23, 16, 0.65);
-  border: 1px solid rgba(255, 138, 0, 0.12);
+  border-radius: var(--radius-large, 18px);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   text-align: center;
   gap: 12px;
 }
@@ -337,8 +337,8 @@
   width: 68px;
   height: 68px;
   border-radius: 50%;
-  background: rgba(255, 138, 0, 0.1);
-  color: var(--accent, #ff8a00);
+  background: var(--nav-hover-bg);
+  color: var(--accent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -349,13 +349,13 @@
   margin: 0;
   font-size: 1.25rem;
   font-weight: 700;
-  color: var(--text-primary, #fff8f2);
+  color: var(--text-primary);
 }
 
 .storage-empty-state p {
   margin: 0;
   font-size: 0.88rem;
-  color: var(--text-secondary, #c9b8aa);
+  color: var(--text-secondary);
   max-width: 420px;
 }
 
@@ -369,13 +369,13 @@
 .stats-row-skeleton {
   height: 80px;
   border-radius: 16px;
-  background: rgba(42, 29, 20, 0.5);
+  background: var(--bg-card);
 }
 
 .user-storage-card-skeleton {
   height: 84px;
   border-radius: 16px;
-  background: rgba(42, 29, 20, 0.5);
+  background: var(--bg-card);
 }
 
 @media (max-width: 860px) {

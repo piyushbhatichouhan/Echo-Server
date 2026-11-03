@@ -58,7 +58,7 @@
 .eh-env-modal label {
     font-size: 0.88rem;
     font-weight: 600;
-    color: #d8c4b0;
+    color: var(--text-secondary);
     display: flex;
     align-items: center;
     gap: 6px;
@@ -67,12 +67,12 @@
 .eh-env-modal input,
 .eh-env-modal textarea {
     width: 100%;
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    border: 1px solid var(--border);
     outline: none;
     border-radius: 12px;
     padding: 12px 14px;
-    background: rgba(18, 12, 8, 0.95);
-    color: #fff3e4;
+    background: var(--bg-input);
+    color: var(--text-primary);
     resize: vertical;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     font-size: 0.88rem;
@@ -81,14 +81,14 @@
 
 .eh-env-modal input::placeholder,
 .eh-env-modal textarea::placeholder {
-    color: #6a5545;
+    color: var(--text-muted);
 }
 
 .eh-env-modal input:focus,
 .eh-env-modal textarea:focus {
-    border-color: rgba(255, 138, 0, 0.6);
-    box-shadow: 0 0 0 3px rgba(255, 138, 0, 0.18);
-    background: rgba(24, 15, 10, 0.98);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--border-glow);
+    background: var(--bg-input);
 }
 
 .eh-modal-actions {

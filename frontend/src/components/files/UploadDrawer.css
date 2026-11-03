@@ -1,5 +1,5 @@
 /* =========================================================
-   EchoHub Elevated Floating Upload Drawer
+   EchoHub Floating Upload Drawer (Theme Adaptive)
    ========================================================= */
 
 .upload-drawer-container {
@@ -8,28 +8,21 @@
   right: 28px;
   width: 380px;
   max-width: calc(100vw - 40px);
-  background: linear-gradient(
-    145deg,
-    rgba(33, 23, 16, 0.94) 0%,
-    rgba(22, 15, 10, 0.98) 100%
-  );
-  border: 1px solid rgba(255, 155, 48, 0.28);
-  border-radius: 14px;
-  box-shadow: 
-    0 16px 48px rgba(0, 0, 0, 0.55),
-    0 0 24px rgba(255, 155, 48, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius, 14px);
+  box-shadow: var(--shadow);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   overflow: hidden;
   z-index: 1050;
   display: flex;
   flex-direction: column;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all var(--transition);
 }
 
 .upload-drawer-container.minimized {
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--shadow);
 }
 
 .upload-drawer-header {
@@ -37,8 +30,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.03);
-  border-bottom: 1px solid rgba(255, 155, 48, 0.12);
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
   cursor: pointer;
   user-select: none;
 }
@@ -49,11 +42,11 @@
   gap: 8px;
   font-size: 0.88rem;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--text-primary);
 }
 
 .upload-drawer-icon {
-  color: #ffaa40;
+  color: var(--accent);
 }
 
 .upload-drawer-controls {
@@ -71,20 +64,20 @@
   background: transparent;
   border: none;
   border-radius: 6px;
-  color: rgba(240, 230, 220, 0.6);
+  color: var(--text-muted);
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .drawer-icon-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
+  background: var(--nav-hover-bg);
+  color: var(--text-primary);
 }
 
 .drawer-cancel-text-btn {
   background: rgba(239, 68, 68, 0.14);
   border: 1px solid rgba(239, 68, 68, 0.3);
-  color: #f87171;
+  color: var(--danger, #ef4444);
   font-size: 0.74rem;
   font-weight: 600;
   padding: 3px 8px;
@@ -94,9 +87,9 @@
 }
 
 .drawer-cancel-text-btn:hover {
-  background: #ef4444;
+  background: var(--danger, #ef4444);
   color: #ffffff;
-  border-color: #ef4444;
+  border-color: var(--danger, #ef4444);
 }
 
 .upload-drawer-list {
@@ -108,7 +101,7 @@
 
 .upload-drawer-item {
   padding: 10px 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid var(--border-subtle);
   display: flex;
   flex-direction: column;
   gap: 5px;
@@ -129,7 +122,7 @@
 .upload-item-name {
   font-size: 0.82rem;
   font-weight: 500;
-  color: #ffffff;
+  color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -139,16 +132,16 @@
 .upload-percent {
   font-size: 0.78rem;
   font-weight: 700;
-  color: #ffaa40;
+  color: var(--accent);
   font-variant-numeric: tabular-nums;
 }
 
 .status-success {
-  color: #34d399;
+  color: var(--success, #10b981);
 }
 
 .status-error {
-  color: #f87171;
+  color: var(--danger, #ef4444);
 }
 
 .upload-item-meta {
@@ -156,18 +149,18 @@
   align-items: center;
   justify-content: space-between;
   font-size: 0.72rem;
-  color: rgba(240, 230, 220, 0.5);
+  color: var(--text-muted);
 }
 
 .upload-item-error-msg {
-  color: #f87171;
+  color: var(--danger, #ef4444);
   font-weight: 500;
 }
 
 .upload-progress-bar-bg {
   width: 100%;
   height: 5px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--bg-input);
   border-radius: 999px;
   overflow: hidden;
   margin-top: 2px;
@@ -175,8 +168,8 @@
 
 .upload-progress-bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, #d97706 0%, #ff8a00 50%, #ffad42 100%);
+  background: var(--accent-gradient);
   border-radius: 999px;
-  box-shadow: 0 0 8px rgba(255, 138, 0, 0.4);
+  box-shadow: 0 0 8px var(--border-glow);
   transition: width 0.2s ease-out;
 }
