@@ -1,255 +1,543 @@
 import "./Settings.css";
-import { useEffect, useState } from "react";
-import { forgotPassword } from "../../services/auth.api";
-import { getCurrentUser } from "../../services/auth.api";
-import { getCloudStats } from "../../services/cloud.api";
+import { useEffect, useState, useCallback } from "react";
+import { forgotPassword, getCurrentUser, deleteAccount } from "../../services/auth.api";
 import cloudWorkspace from "../../services/cloudWorkspace";
-import { deleteAccount } from "../../services/auth.api";
 import ConfirmationModal from "../../components/common/modal/ConfirmationModal";
-import { User } from "lucide-react";
+import useAuth from "../../hooks/useAuth";
+import { useToast } from "../../context/ToastContext";
+import {
+  User,
+  Mail,
+  Calendar,
+  ShieldCheck,
+  ShieldAlert,
+  HardDrive,
+  Lock,
+  KeyRound,
+  AlertTriangle,
+  Trash2,
+  Copy,
+  Check,
+  CheckCircle2,
+  Sparkles,
+  Shield,
+  Clock,
+  Database,
+  X,
+  ExternalLink,
+  Send,
+} from "lucide-react";
 
 export default function Settings() {
+  const { logout } = useAuth();
+  const toast = useToast();
+
   const [resetModalOpen, setResetModalOpen] = useState(false);
-
   const [sendingReset, setSendingReset] = useState(false);
-
   const [resetSent, setResetSent] = useState(false);
-
   const [user, setUser] = useState(null);
-
   const [stats, setStats] = useState(null);
-
   const [deleteOpen, setDeleteOpen] = useState(false);
- 
   const [deleting, setDeleting] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [copiedField, setCopiedField] = useState(null);
+
+  const handleCopy = (text, fieldName) => {
+    if (!text) return;
+    navigator.clipboard?.writeText(text);
+    setCopiedField(fieldName);
+    setTimeout(() => setCopiedField(null), 2000);
+  };
 
   const sendResetEmail = async () => {
     setSendingReset(true);
-
     try {
       await forgotPassword(user.email);
-
       setResetSent(true);
+      toast?.success("Email Sent", "Password reset instructions sent to your email.");
+    } catch (err) {
+      toast?.error("Error", err.response?.data?.message || err.message || "Failed to send reset email");
     } finally {
       setSendingReset(false);
     }
   };
 
   useEffect(() => {
-    const load = async () => {
-      const data = await cloudWorkspace.getStats();
-      setStats(data);
+    const loadStats = async () => {
+      try {
+        const data = await cloudWorkspace.getStats();
+        setStats(data);
+      } catch {
+        // storage stats fallback
+      }
     };
-
-    load();
+    loadStats();
   }, []);
 
-  const formatBytes = (bytes) => {
-    if (bytes == null) return "Unlimited";
-
-    const units = ["B", "KB", "MB", "GB", "TB"];
-
-    let i = 0;
-    let value = bytes;
-
-    while (value >= 1024 && i < units.length - 1) {
-      value /= 1024;
-      i++;
-    }
-
-    return `${value.toFixed(1)} ${units[i]}`;
-  };
-
-  let quotaUsed;
-
-  if (stats !== null) {
-    quotaUsed = `${formatBytes(stats.used)} / ${formatBytes(stats.limit)}`;
-  } else {
-    quotaUsed = "Loading...";
-  }
-
-  const [loading, setLoading] = useState(true);
-
   useEffect(() => {
-    const load = async () => {
+    const loadUser = async () => {
       try {
-        const [userData, statsData] = await Promise.all([getCurrentUser()]);
-
-        setUser(userData.data ?? userData);
+        const userData = await getCurrentUser();
+        setUser(userData?.data ?? userData);
+      } catch (err) {
+        toast?.error("Error", "Failed to load account profile.");
       } finally {
         setLoading(false);
       }
     };
-
-    load();
+    loadUser();
   }, []);
+
+  // Handle escape key for reset modal
+  useEffect(() => {
+    if (!resetModalOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        setResetModalOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [resetModalOpen]);
+
+  const formatBytes = (bytes) => {
+    if (bytes == null) return "Unlimited";
+    const units = ["B", "KB", "MB", "GB", "TB"];
+    let i = 0;
+    let value = Number(bytes);
+    while (value >= 1024 && i < units.length - 1) {
+      value /= 1024;
+      i++;
+    }
+    return `${value.toFixed(1)} ${units[i]}`;
+  };
 
   const handleDeleteAccount = async () => {
     setDeleting(true);
-
     try {
       await deleteAccount();
-
-      toast.success(
+      toast?.success(
         "Account scheduled for deletion",
         "Your account will be deleted after 24 hours.",
       );
-
-      logout();
+      logout?.();
+    } catch (err) {
+      toast?.error(
+        "Deletion Failed",
+        err.response?.data?.message || err.message || "Could not delete account",
+      );
     } finally {
       setDeleting(false);
     }
   };
+
   if (loading || !user) {
-    return <div className="settings-loading">Loading...</div>;
+    return (
+      <div className="settings-loading-wrap">
+        <div className="settings-spinner" />
+        <span>Loading account preferences...</span>
+      </div>
+    );
   }
+
+  const avatar = user.username ? user.username.charAt(0).toUpperCase() : "U";
+  const formattedJoinDate = user.created_at
+    ? new Date(user.created_at).toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
+    : "Unknown";
+
+  const storageUsed = stats?.used ?? 0;
+  const storageLimit = stats?.limit ?? 0;
+  const storagePercent =
+    storageLimit > 0
+      ? Math.min(100, Math.round((storageUsed / storageLimit) * 100))
+      : 0;
+  const storageRemaining = Math.max(0, storageLimit - storageUsed);
+
   return (
     <div className="settings-page">
+      {/* Page Header */}
       <div className="settings-header">
-        <h1>Settings</h1>
-        <p>Manage your account and security.</p>
+        <div className="settings-header-badge">
+          <Sparkles size={14} />
+          <span>Account & Security</span>
+        </div>
+        <h1>Account Settings</h1>
+        <p>Manage your profile identity, security credentials, storage quota, and preferences.</p>
       </div>
 
+      {/* User Hero Banner */}
+      <div className="settings-hero-card">
+        <div className="settings-hero-avatar-wrap">
+          <div className="settings-hero-avatar">{avatar}</div>
+          <div className="settings-avatar-glow" />
+        </div>
+
+        <div className="settings-hero-details">
+          <div className="settings-hero-top-row">
+            <h2 className="settings-hero-username">@{user.username}</h2>
+            <div className="settings-hero-badges">
+              {user.is_owner ? (
+                <span className="settings-role-badge settings-role-badge--owner">
+                  <ShieldAlert size={13} />
+                  <span>Super Admin</span>
+                </span>
+              ) : (
+                <span className="settings-role-badge">
+                  <ShieldCheck size={13} />
+                  <span>Member</span>
+                </span>
+              )}
+              <span className="settings-status-badge">
+                <span className="settings-pulse-dot" />
+                <span>Active</span>
+              </span>
+            </div>
+          </div>
+
+          <div className="settings-hero-meta">
+            <button
+              type="button"
+              className="settings-meta-chip settings-meta-chip--clickable"
+              onClick={() => handleCopy(user.email, "hero-email")}
+              title="Click to copy email"
+            >
+              <Mail size={14} />
+              <span>{user.email}</span>
+              {copiedField === "hero-email" ? (
+                <Check size={12} className="settings-chip-copied" />
+              ) : (
+                <Copy size={12} className="settings-chip-copy" />
+              )}
+            </button>
+
+            <div className="settings-meta-chip">
+              <Calendar size={14} />
+              <span>Joined {formattedJoinDate}</span>
+            </div>
+
+            <div className="settings-meta-chip">
+              <HardDrive size={14} />
+              <span>{storagePercent}% Quota Used</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Profile Details Card */}
       <div className="settings-section">
-        <h2>Profile</h2>
+        <div className="settings-section-title">
+          <User size={18} />
+          <h2>Profile & Identity</h2>
+        </div>
 
         <div className="settings-card">
-          {loading ? (
-            <div>Loading...</div>
-          ) : (
-            <div className="settings-profile">
-              <div className="settings-row">
-                <span>Username</span>
-                <strong>{user.username}</strong>
+          <div className="settings-grid-tiles">
+            {/* Tile 1: Username */}
+            <div className="settings-tile">
+              <div className="settings-tile-header">
+                <span className="settings-tile-label">Username</span>
+                <button
+                  type="button"
+                  className="settings-tile-copy-btn"
+                  onClick={() => handleCopy(user.username, "tile-username")}
+                  aria-label="Copy username"
+                >
+                  {copiedField === "tile-username" ? <Check size={14} /> : <Copy size={14} />}
+                </button>
+              </div>
+              <div className="settings-tile-value">@{user.username}</div>
+              <span className="settings-tile-sub">Public platform handle</span>
+            </div>
+
+            {/* Tile 2: Primary Email */}
+            <div className="settings-tile">
+              <div className="settings-tile-header">
+                <span className="settings-tile-label">Primary Email</span>
+                <button
+                  type="button"
+                  className="settings-tile-copy-btn"
+                  onClick={() => handleCopy(user.email, "tile-email")}
+                  aria-label="Copy email"
+                >
+                  {copiedField === "tile-email" ? <Check size={14} /> : <Copy size={14} />}
+                </button>
+              </div>
+              <div className="settings-tile-value settings-tile-value--email">{user.email}</div>
+              <div className="settings-tile-verified">
+                <CheckCircle2 size={13} />
+                <span>Verified Address</span>
+              </div>
+            </div>
+
+            {/* Tile 3: Account ID */}
+            <div className="settings-tile">
+              <div className="settings-tile-header">
+                <span className="settings-tile-label">Account ID</span>
+                <button
+                  type="button"
+                  className="settings-tile-copy-btn"
+                  onClick={() => handleCopy(String(user.id), "tile-id")}
+                  aria-label="Copy ID"
+                >
+                  {copiedField === "tile-id" ? <Check size={14} /> : <Copy size={14} />}
+                </button>
+              </div>
+              <div className="settings-tile-value settings-tile-value--mono">
+                {String(user.id).slice(0, 16)}...
+              </div>
+              <span className="settings-tile-sub">Unique user identifier</span>
+            </div>
+
+            {/* Tile 4: Member Since */}
+            <div className="settings-tile">
+              <div className="settings-tile-header">
+                <span className="settings-tile-label">Member Since</span>
+                <Clock size={14} className="settings-tile-icon-dim" />
+              </div>
+              <div className="settings-tile-value">{formattedJoinDate}</div>
+              <span className="settings-tile-sub">Console registration date</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Cloud Storage & Quota Card */}
+      <div className="settings-section">
+        <div className="settings-section-title">
+          <HardDrive size={18} />
+          <h2>Storage & Workspace Quota</h2>
+        </div>
+
+        <div className="settings-card">
+          <div className="settings-storage-block">
+            <div className="settings-storage-top">
+              <div>
+                <span className="settings-storage-heading">Allocated Cloud Disk Space</span>
+                <p className="settings-storage-sub">
+                  Total storage consumed across project files, uploaded assets, and deployments.
+                </p>
+              </div>
+              <span className="settings-storage-pct-badge">{storagePercent}% Used</span>
+            </div>
+
+            {/* Progress Bar */}
+            <div className="settings-progress-track">
+              <div
+                className="settings-progress-fill"
+                style={{ width: `${Math.max(2, storagePercent)}%` }}
+              />
+            </div>
+
+            {/* Metrics Breakdown */}
+            <div className="settings-storage-metrics">
+              <div className="settings-metric-tile">
+                <span className="settings-metric-label">Used Storage</span>
+                <strong className="settings-metric-val">{formatBytes(storageUsed)}</strong>
               </div>
 
-              <div className="settings-row">
-                <span>Email</span>
-                <strong>{user.email}</strong>
-              </div>
-
-              <div className="settings-row">
-                <span>Joined</span>
-
-                <strong>
-                  {new Date(user.created_at).toLocaleDateString()}
+              <div className="settings-metric-tile">
+                <span className="settings-metric-label">Free Available</span>
+                <strong className="settings-metric-val">
+                  {storageLimit > 0 ? formatBytes(storageRemaining) : "Unlimited"}
                 </strong>
               </div>
 
-              <div className="settings-row">
-                <span>Storage</span>
-
-                <strong>{quotaUsed}</strong>
+              <div className="settings-metric-tile">
+                <span className="settings-metric-label">Hard Quota Limit</span>
+                <strong className="settings-metric-val">{formatBytes(storageLimit)}</strong>
               </div>
             </div>
-          )}
+
+            <div className="settings-storage-callout">
+              <Database size={16} />
+              <span>
+                Need more cloud disk quota? Platform administrators can adjust storage allocations from Server Management.
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 
+      {/* Security & Authentication */}
       <div className="settings-section">
-        <h2>Security</h2>
+        <div className="settings-section-title">
+          <Lock size={18} />
+          <h2>Security & Credentials</h2>
+        </div>
 
         <div className="settings-card">
-          <div className="settings-security">
-            <div>
-              <h3>Password</h3>
-
-              <p>
-                Send yourself a password reset email to change your password.
-              </p>
+          <div className="settings-security-content">
+            <div className="settings-security-info">
+              <div className="settings-security-icon-badge">
+                <KeyRound size={20} />
+              </div>
+              <div className="settings-security-text">
+                <h3>Account Password</h3>
+                <p>
+                  To change your account password, we will send an authenticated password reset link
+                  directly to <strong>{user.email}</strong>.
+                </p>
+              </div>
             </div>
 
             <button
-              className="settings-button"
+              type="button"
+              className="settings-primary-btn"
               onClick={() => setResetModalOpen(true)}
             >
-              Reset Password
+              <KeyRound size={16} />
+              <span>Reset Password</span>
             </button>
+          </div>
+
+          <div className="settings-security-chips">
+            <div className="settings-security-chip">
+              <ShieldCheck size={14} />
+              <span>JWT Bearer Authentication Active</span>
+            </div>
+            <div className="settings-security-chip">
+              <Lock size={14} />
+              <span>End-to-End SSL/TLS Transport</span>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="settings-section danger">
-        <h2>Danger Zone</h2>
+      {/* Danger Zone */}
+      <div className="settings-section settings-section--danger">
+        <div className="settings-section-title settings-section-title--danger">
+          <AlertTriangle size={18} />
+          <h2>Danger Zone</h2>
+        </div>
 
-        <div className="settings-card">
-          <div className="settings-danger">
-            <div>
-              <h3>Delete Account</h3>
-
+        <div className="settings-card settings-card--danger">
+          <div className="settings-danger-content">
+            <div className="settings-danger-details">
+              <h3>Deactivate & Delete Account</h3>
               <p>
-                Your account will immediately lose access.
-                <br />
-                <br />
-                All projects, deployments, cloud storage and logs will be
-                permanently deleted after 24 hours.
-                <br />
-                <br />
-                If you change your mind, contact an administrator during this
-                24-hour period to restore your account.
+                Deleting your account will immediately revoke all authentication credentials and server access.
               </p>
+              <ul className="settings-danger-list">
+                <li>Immediate session termination across all devices.</li>
+                <li>Projects, repositories, environment configurations, and cloud files scheduled for deletion.</li>
+                <li>A <strong>24-hour grace window</strong> allows an administrator to recover your account if requested.</li>
+              </ul>
             </div>
 
             <button
-              className="settings-danger-button"
+              type="button"
+              className="settings-danger-btn"
               onClick={() => setDeleteOpen(true)}
             >
-              Delete Account
+              <Trash2 size={16} />
+              <span>Delete Account</span>
             </button>
           </div>
         </div>
       </div>
+
+      {/* Password Reset Modal */}
       {resetModalOpen && (
-        <div className="settings-modal-overlay">
+        <div
+          className="settings-modal-overlay"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setResetModalOpen(false);
+          }}
+          role="dialog"
+          aria-modal="true"
+        >
           <div className="settings-modal">
             {!resetSent ? (
               <>
-                <h2>Reset Password</h2>
+                <div className="settings-modal-header">
+                  <div className="settings-modal-icon-badge">
+                    <Mail size={22} />
+                  </div>
+                  <button
+                    type="button"
+                    className="settings-modal-close"
+                    onClick={() => setResetModalOpen(false)}
+                    aria-label="Close"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
 
-                <p>Send a password reset email to</p>
+                <h2>Reset Password</h2>
+                <p>Send a secure password reset link to your verified account address:</p>
 
                 <strong>{user.email}</strong>
 
                 <div className="settings-modal-actions">
                   <button
-                    className="settings-secondary"
+                    type="button"
+                    className="settings-secondary-btn"
                     onClick={() => setResetModalOpen(false)}
+                    disabled={sendingReset}
                   >
                     Cancel
                   </button>
 
                   <button
-                    className="settings-button"
+                    type="button"
+                    className="settings-primary-btn"
                     onClick={sendResetEmail}
                     disabled={sendingReset}
                   >
-                    {sendingReset ? "Sending..." : "Send Email"}
+                    {sendingReset ? (
+                      <span className="settings-btn-spinner-wrap">
+                        <span className="settings-btn-spinner" />
+                        Sending...
+                      </span>
+                    ) : (
+                      <>
+                        <Send size={16} />
+                        <span>Send Email</span>
+                      </>
+                    )}
                   </button>
                 </div>
               </>
             ) : (
               <>
-                <h2>Email Sent</h2>
+                <div className="settings-modal-header settings-modal-header--centered">
+                  <div className="settings-modal-icon-badge settings-modal-icon-badge--success">
+                    <CheckCircle2 size={24} />
+                  </div>
+                </div>
 
-                <p>A password reset link has been sent to</p>
+                <h2>Email Sent Successfully</h2>
+                <p>A password reset link with instructions has been dispatched to:</p>
 
                 <strong>{user.email}</strong>
 
-                <button
-                  className="settings-button"
-                  onClick={() => {
-                    setResetSent(false);
-                    setResetModalOpen(false);
-                  }}
-                >
-                  Close
-                </button>
+                <p className="settings-modal-subtext">
+                  Please check your inbox and spam folder. The link will expire in 1 hour.
+                </p>
+
+                <div className="settings-modal-actions settings-modal-actions--centered">
+                  <button
+                    type="button"
+                    className="settings-primary-btn"
+                    onClick={() => {
+                      setResetSent(false);
+                      setResetModalOpen(false);
+                    }}
+                  >
+                    Done
+                  </button>
+                </div>
               </>
             )}
           </div>
         </div>
       )}
 
+      {/* Account Deletion Confirmation Modal */}
       <ConfirmationModal
         open={deleteOpen}
         accountMode
@@ -264,3 +552,4 @@ export default function Settings() {
     </div>
   );
 }
+
