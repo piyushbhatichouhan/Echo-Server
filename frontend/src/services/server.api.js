@@ -24,3 +24,18 @@ export const getServerHealth = async () => {
   const response = await api.get("/server/health");
   return response.data.data;
 };
+
+export const getServerLogs = async (params = {}) => {
+  const response = await api.get("/server/logs", { params });
+  return response.data.data;
+};
+
+export const getLogContainers = async () => {
+  const response = await api.get("/server/logs/containers");
+  return response.data.data;
+};
+
+export const clearServerLogs = async () => {
+  const response = await api.delete("/server/logs");
+  return response.data;
+};
