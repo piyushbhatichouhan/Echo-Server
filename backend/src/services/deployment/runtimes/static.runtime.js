@@ -46,6 +46,15 @@ async function prepare(context) {
 
   context.cwd = workspace.getProjectFilesDirectory(project.id);
 
+  let hasPackageJson = false;
+  try {
+    await fs.access(path.join(context.cwd, "package.json"));
+    hasPackageJson = true;
+  } catch {
+    hasPackageJson = false;
+  }
+  context.hasPackageJson = hasPackageJson;
+
   context.outputDirectory = path.resolve(
     context.cwd,
     settings.output_directory || ".",
@@ -59,12 +68,13 @@ async function prepare(context) {
 }
 
 function generateDockerfile(context) {
-  const { settings, environment } = context;
+  const { settings, environment, hasPackageJson } = context;
   const rawOutput = (settings.output_directory || "").trim();
   const output = rawOutput && rawOutput !== "." ? rawOutput : "dist";
 
   const hasBuildStep = Boolean(
-    settings.build_command?.trim() || settings.install_command?.trim()
+    (settings.build_command?.trim() || settings.install_command?.trim()) &&
+      hasPackageJson,
   );
 
   const envDeclarations = (environment || [])
@@ -110,7 +120,11 @@ CMD ["nginx", "-g", "daemon off;"]
   }
 
   // Pure static site (HTML/CSS/JS directly without build tool)
-  const sourceDir = rawOutput && rawOutput !== "." ? `${rawOutput}/` : ".";
+  let sourceDir = rawOutput && rawOutput !== "." ? `${rawOutput}/` : ".";
+  if (!hasPackageJson && rawOutput === "dist") {
+    sourceDir = ".";
+  }
+
   return `
 FROM nginx:alpine
 
@@ -333,23 +347,52 @@ async function start(context) {
   );
 }
 async function healthCheck(context) {
-  const { deployment, settings } = context;
+  const { project, deployment, settings } = context;
 
   await context.infrastructure.logger.stage(
     deployment.id,
-    "Checking Application Health",
+    "Verifying Application Health & Port",
   );
 
-  const healthy = await healthService.checkApplication(context.project.id, 80);
+  const containerPort =
+    context.containerPort ||
+    deployment.container_port ||
+    module.exports.INTERNAL_PORT ||
+    80;
 
-  if (!healthy) {
-    throw new Error("Application failed health check.");
+  const result = await healthService.verifyAndDetectPort(
+    project.id,
+    containerPort,
+    {
+      deploymentId: deployment.id,
+      logger: context.infrastructure.logger,
+      hostPort: deployment.port,
+      maxWaitMs: 25000,
+      checkIntervalMs: 1000,
+    },
+  );
+
+  if (result.autoDetected) {
+    context.containerPort = result.port;
   }
 
-  await context.infrastructure.logger.info(
-    deployment.id,
-    "Application responded successfully.",
-  );
+  if (result.success) {
+    await context.infrastructure.logger.info(
+      deployment.id,
+      `Static application confirmed online and responding on port ${result.port}.`,
+    );
+  } else {
+    const status = await context.infrastructure.container.getStatus(project.id);
+    if (!status.running) {
+      throw new Error(
+        `Application container exited prematurely (Exit code: ${status.exitCode}). Check logs for details.`,
+      );
+    }
+
+    throw new Error(
+      `Application failed health check on port ${containerPort} (Host port ${deployment.port}). Container is running but not responding to HTTP requests.`,
+    );
+  }
 }
 
 async function stop(context) {

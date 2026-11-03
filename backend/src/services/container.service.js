@@ -298,18 +298,82 @@ const waitUntilContainerRunning = async (
 
 const getContainerIPAddress = async (projectId) => {
   const container = getContainer(projectId);
-
   const info = await container.inspect();
+  const networks = info.NetworkSettings?.Networks || {};
 
-  const networks = info.NetworkSettings.Networks;
-
-  const firstNetwork = Object.values(networks)[0];
-
-  if (!firstNetwork?.IPAddress) {
-    throw new Error("Container has no network IP.");
+  if (
+    process.env.DOCKER_NETWORK &&
+    networks[process.env.DOCKER_NETWORK]?.IPAddress
+  ) {
+    return networks[process.env.DOCKER_NETWORK].IPAddress;
   }
 
-  return firstNetwork.IPAddress;
+  for (const net of Object.values(networks)) {
+    if (net?.IPAddress) {
+      return net.IPAddress;
+    }
+  }
+
+  if (info.NetworkSettings?.IPAddress) {
+    return info.NetworkSettings.IPAddress;
+  }
+
+  throw new Error("Container has no network IP.");
+};
+
+const getContainerConnectionInfo = async (projectId) => {
+  const container = getContainer(projectId);
+  const info = await container.inspect();
+
+  const rawName = info.Name || "";
+  const containerName = rawName.startsWith("/") ? rawName.slice(1) : rawName;
+
+  const networks = info.NetworkSettings?.Networks || {};
+  const ips = [];
+
+  if (
+    process.env.DOCKER_NETWORK &&
+    networks[process.env.DOCKER_NETWORK]?.IPAddress
+  ) {
+    ips.push(networks[process.env.DOCKER_NETWORK].IPAddress);
+  }
+
+  for (const net of Object.values(networks)) {
+    if (net?.IPAddress && !ips.includes(net.IPAddress)) {
+      ips.push(net.IPAddress);
+    }
+  }
+
+  if (
+    info.NetworkSettings?.IPAddress &&
+    !ips.includes(info.NetworkSettings.IPAddress)
+  ) {
+    ips.push(info.NetworkSettings.IPAddress);
+  }
+
+  const portBindings =
+    info.HostConfig?.PortBindings || info.NetworkSettings?.Ports || {};
+  const hostPortsByContainerPort = {};
+  for (const [key, bindings] of Object.entries(portBindings)) {
+    const containerPortNum = parseInt(key, 10);
+    if (Array.isArray(bindings) && bindings[0]?.HostPort) {
+      hostPortsByContainerPort[containerPortNum] = Number(bindings[0].HostPort);
+    }
+  }
+
+  return {
+    container,
+    containerName,
+    ips,
+    hostPortsByContainerPort,
+    state: {
+      running: Boolean(info.State?.Running),
+      status: info.State?.Status || "unknown",
+      exitCode: info.State?.ExitCode ?? 0,
+      oomKilled: Boolean(info.State?.OOMKilled),
+      error: info.State?.Error || null,
+    },
+  };
 };
 
 const getContainerTelemetry = async (projectId) => {
@@ -411,6 +475,7 @@ module.exports = {
   startContainerByProject,
   waitUntilContainerRunning,
   getContainerIPAddress,
+  getContainerConnectionInfo,
   getContainerTelemetry,
   executeTerminalCommand,
   removeContainerByHostPort,

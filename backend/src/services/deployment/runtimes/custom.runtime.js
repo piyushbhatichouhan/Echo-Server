@@ -278,6 +278,7 @@ async function healthCheck(context) {
     {
       deploymentId: deployment.id,
       logger: context.infrastructure.logger,
+      hostPort: deployment.port,
       maxWaitMs: 25000,
       checkIntervalMs: 1000,
     },
