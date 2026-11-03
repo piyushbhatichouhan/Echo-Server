@@ -1,15 +1,44 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  ArrowLeft,
+  ShieldCheck,
+  ShieldAlert,
+  Search,
+  X,
+  RefreshCw,
+  Users as UsersIcon,
+  UserCheck,
+  UserX,
+  Mail,
+  Calendar,
+  AlertTriangle,
+  RotateCcw,
+  Trash2,
+  Lock,
+  Unlock,
+  Key,
+} from "lucide-react";
+import { useUsers } from "../../../hooks/useUsers";
+import useAuth from "../../../hooks/useAuth";
+import { useToast } from "../../../context/ToastContext";
+import ConfirmationModal from "../../../components/common/modal/ConfirmationModal";
 import "./manageUsers.css";
 
-import { useUsers } from "../../../hooks/useUsers";
-import Button from "../../../components/common/button/button";
-import { useToast } from "../../../context/ToastContext";
-
-import ConfirmationModal from "../../../components/common/modal/ConfirmationModal";
+const STATUS_FILTERS = [
+  { id: "all", label: "All Users" },
+  { id: "active", label: "Active" },
+  { id: "disabled", label: "Disabled" },
+  { id: "pending_deletion", label: "Pending Deletion" },
+];
 
 export default function ManageUsers() {
+  const navigate = useNavigate();
+  const toast = useToast();
+  const { user: currentUser } = useAuth();
+
   const {
-    users,
+    users = [],
     loading,
     disableUser,
     enableUser,
@@ -17,227 +46,456 @@ export default function ManageUsers() {
     refresh,
     restoreUser,
   } = useUsers();
- 
+
   const [search, setSearch] = useState("");
-  const toast = useToast();
-  const visibleUsers = users.filter((user) => !user.is_owner);
-
-  const filteredUsers = visibleUsers.filter((user) => {
-    return (
-      user.username.toLowerCase().includes(search.toLowerCase()) ||
-      user.email.toLowerCase().includes(search.toLowerCase())
-    );
-  });
-
+  const [statusFilter, setStatusFilter] = useState("all");
   const [workingUser, setWorkingUser] = useState(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const [confirmOpen, setConfirmOpen] = useState(false);
-
-  const [confirmAction, setConfirmAction] = useState(null);
-
-  const [confirmTitle, setConfirmTitle] = useState("");
-
-  const [confirmMessage, setConfirmMessage] = useState("");
-
+  // Modal states
   const [selectedUser, setSelectedUser] = useState(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
-  const handleDisable = async (id) => {
-    if (!window.confirm("Disable this user?")) return;
+  // In-app modal confirmation for enable/disable instead of window.confirm
+  const [actionModal, setActionModal] = useState({
+    open: false,
+    type: null, // 'disable' | 'enable'
+    targetUser: null,
+  });
 
-    setWorkingUser(id);
-
-    try {
-      await disableUser(id);
-
-      toast.success("User disabled", "The account has been disabled.");
-
-      await refresh();
-    } catch (error) {
-      toast.error("Error", error.response?.data?.message || error.message);
-    } finally {
-      setWorkingUser(null);
-    }
-  };
-
-  const handleEnable = async (id) => {
-    if (!window.confirm("Enable this user?")) return;
-    setWorkingUser(id);
-    try {
-      await enableUser(id);
-
-      toast.success("User enabled", "The account has been enabled.");
-
-      await refresh();
-    } catch (error) {
-      toast.error("Error", error.response?.data?.message || error.message);
-    } finally {
-      setWorkingUser(null);
-    }
-  };
-
-  const askDelete = (user) => {
-    setSelectedUser(user);
-    setDeleteOpen(true);
-
-    setConfirmTitle("Delete User");
-
-    setConfirmMessage(
-      `Delete "${user.username}"?\n\nThis action cannot be undone.`,
+  // Guard: Super Admin only
+  if (!currentUser?.isOwner) {
+    return (
+      <div className="users-unauthorized">
+        <div className="users-unauthorized-card">
+          <ShieldAlert size={48} className="unauthorized-icon" />
+          <h2>Super Admin Access Required</h2>
+          <p>User directory and account management is restricted to the platform owner.</p>
+          <button
+            type="button"
+            className="users-btn users-btn--primary"
+            onClick={() => navigate("/dashboard")}
+          >
+            Return to Dashboard
+          </button>
+        </div>
+      </div>
     );
+  }
 
-    setConfirmAction(() => () => handleDelete(user.id));
+  // Filter out owners from the list (can't delete/disable yourself)
+  const visibleUsers = useMemo(() => {
+    return users.filter((u) => !u.is_owner);
+  }, [users]);
+
+  // Counts for tabs
+  const counts = useMemo(() => {
+    let active = 0;
+    let disabled = 0;
+    let pendingDeletion = 0;
+
+    for (const u of visibleUsers) {
+      if (u.pending_deletion) {
+        pendingDeletion++;
+      } else if (u.disabled) {
+        disabled++;
+      } else {
+        active++;
+      }
+    }
+
+    return {
+      all: visibleUsers.length,
+      active,
+      disabled,
+      pending_deletion: pendingDeletion,
+    };
+  }, [visibleUsers]);
+
+  // Filtered users
+  const filteredUsers = useMemo(() => {
+    const q = search.trim().toLowerCase();
+
+    return visibleUsers.filter((u) => {
+      // Status filter
+      if (statusFilter === "active" && (u.disabled || u.pending_deletion)) return false;
+      if (statusFilter === "disabled" && !u.disabled) return false;
+      if (statusFilter === "pending_deletion" && !u.pending_deletion) return false;
+
+      // Text query
+      if (!q) return true;
+      return (
+        (u.username || "").toLowerCase().includes(q) ||
+        (u.email || "").toLowerCase().includes(q) ||
+        (u.id || "").toLowerCase().includes(q)
+      );
+    });
+  }, [visibleUsers, statusFilter, search]);
+
+  const handleManualRefresh = async () => {
+    setIsRefreshing(true);
+    await refresh();
+    setTimeout(() => setIsRefreshing(false), 500);
+  };
+
+  const handleToggleState = (u, actionType) => {
+    setActionModal({
+      open: true,
+      type: actionType,
+      targetUser: u,
+    });
+  };
+
+  const confirmToggleState = async () => {
+    const { type, targetUser } = actionModal;
+    if (!targetUser) return;
+
+    setWorkingUser(targetUser.id);
+    setActionModal({ open: false, type: null, targetUser: null });
+
+    try {
+      if (type === "disable") {
+        await disableUser(targetUser.id);
+        toast.success("User Disabled", `Account for "${targetUser.username}" is now disabled.`);
+      } else {
+        await enableUser(targetUser.id);
+        toast.success("User Enabled", `Account for "${targetUser.username}" is now active.`);
+      }
+      await refresh();
+    } catch (err) {
+      toast.error("Operation Failed", err.response?.data?.message || err.message);
+    } finally {
+      setWorkingUser(null);
+    }
+  };
+
+  const askDelete = (u) => {
+    setSelectedUser(u);
+    setDeleteOpen(true);
   };
 
   const handleDelete = async (id) => {
     setWorkingUser(id);
     try {
       await deleteUser(id);
-
-      toast.success("User deleted", "The account has been removed.");
-
+      toast.success("User Deleted", "The account has been scheduled for removal.");
       await refresh();
-    } catch (error) {
-      toast.error("Error", error.response?.data?.message || error.message);
+    } catch (err) {
+      toast.error("Delete Failed", err.response?.data?.message || err.message);
+    } finally {
+      setWorkingUser(null);
+      setDeleteOpen(false);
+      setSelectedUser(null);
+    }
+  };
+
+  const handleRestore = async (id) => {
+    setWorkingUser(id);
+    try {
+      await restoreUser(id);
+      toast.success("Account Restored", "Scheduled account deletion cancelled.");
+      await refresh();
+    } catch (err) {
+      toast.error("Restore Failed", err.response?.data?.message || err.message);
     } finally {
       setWorkingUser(null);
     }
   };
 
-  const handleRestore = async (id) => {
-    try {
-      await restoreUser(id);
-
-      toast.success("User restored", "Deletion has been cancelled.");
-
-      await refresh();
-    } catch (error) {
-      toast.error("Error", error.response?.data?.message || error.message);
-    }
-  };
-
   return (
-    <div className="manageUsers">
-      <div className="usersHeader">
-        <div>
-          <h1>Manage Users</h1>
+    <div className="manage-users-page">
+      {/* Header Banner */}
+      <div className="manage-header">
+        <div className="manage-header-left">
+          <button
+            type="button"
+            className="manage-back-btn"
+            onClick={() => navigate("/server")}
+          >
+            <ArrowLeft size={16} />
+            <span>Server Management</span>
+          </button>
 
-          <p>Manage registered EchoHub users.</p>
-          <p>{visibleUsers.length} registered users</p>
+          <div className="manage-title-group">
+            <div className="manage-title-row">
+              <h1 className="manage-title">User Directory & Accounts</h1>
+              <span className="super-admin-pill">
+                <ShieldCheck size={12} />
+                <span>Super Admin</span>
+              </span>
+            </div>
+            <p className="manage-subtitle">
+              Manage developer account authorizations, toggle access permissions, and audit registered users.
+            </p>
+          </div>
         </div>
 
-        <input
-          className="usersSearch"
-          placeholder="Search users..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+        {/* Header Right Actions */}
+        <div className="manage-header-actions">
+          <div className="users-stat-strip">
+            <div className="stat-pill">
+              <span className="stat-num">{counts.all}</span>
+              <span className="stat-lbl">Total</span>
+            </div>
+            <div className="stat-pill stat-pill--active">
+              <span className="stat-num">{counts.active}</span>
+              <span className="stat-lbl">Active</span>
+            </div>
+            {counts.disabled > 0 && (
+              <div className="stat-pill stat-pill--disabled">
+                <span className="stat-num">{counts.disabled}</span>
+                <span className="stat-lbl">Disabled</span>
+              </div>
+            )}
+            {counts.pending_deletion > 0 && (
+              <div className="stat-pill stat-pill--danger">
+                <span className="stat-num">{counts.pending_deletion}</span>
+                <span className="stat-lbl">Deleting</span>
+              </div>
+            )}
+          </div>
+
+          <button
+            type="button"
+            className={`manage-btn manage-btn--secondary ${isRefreshing ? "refreshing" : ""}`}
+            onClick={handleManualRefresh}
+            disabled={isRefreshing}
+            title="Refresh user list"
+          >
+            <RefreshCw size={15} />
+            <span>{isRefreshing ? "Fetching..." : "Refresh"}</span>
+          </button>
+        </div>
       </div>
 
-      {loading ? (
-        <div className="usersLoading">Loading users...</div>
-      ) : filteredUsers.length === 0 ? (
-        <div className="usersEmpty">
-          <h3>No users found</h3>
-
-          <p>Try another search.</p>
+      {/* Toolbar & Filter Strip */}
+      <div className="manage-toolbar">
+        {/* Search Input */}
+        <div className="manage-search-box">
+          <Search size={15} className="manage-search-icon" />
+          <input
+            type="text"
+            placeholder="Search by username, email, or user ID..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="manage-search-input"
+          />
+          {search && (
+            <button
+              type="button"
+              className="manage-search-clear"
+              onClick={() => setSearch("")}
+            >
+              <X size={14} />
+            </button>
+          )}
         </div>
-      ) : (
-        <div className="usersList">
-          {filteredUsers.map((user) => (
-            <div className="userCard" key={user.id}>
-              <div className="userCard__left">
-                <div className="userAvatar">
-                  {user.username.charAt(0).toUpperCase()}
-                </div>
 
-                <div className="userInfo">
-                  <div className="userTop">
-                    <h2>{user.username}</h2>
+        {/* Status Filter Tabs */}
+        <div className="manage-status-tabs">
+          {STATUS_FILTERS.map((f) => {
+            const count = counts[f.id] ?? 0;
+            const isActive = statusFilter === f.id;
+            return (
+              <button
+                key={f.id}
+                type="button"
+                className={`manage-filter-tab ${isActive ? "active" : ""}`}
+                onClick={() => setStatusFilter(f.id)}
+              >
+                <span>{f.label}</span>
+                <span className="filter-count">{count}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
-                    <span
-                      className={`userStatus ${
-                        user.disabled
-                          ? "userStatus--disabled"
-                          : "userStatus--active"
-                      }`}
-                    >
-                      {user.disabled ? "Disabled" : "Active"}
-                    </span>
-                  </div>
-
-                  <p>{user.email}</p>
-
-                  <span className="userJoined">
-                    Joined {new Date(user.created_at).toLocaleDateString()}
-                  </span>
-                </div>
-              </div>
-
-              <div className="userActions">
-                {user.pending_deletion && (
-                  <div className="userPendingDeletion">Pending deletion</div>
-                )}
-                {user.disabled ? (
-                  <Button
-                    variant="success"
-                    onClick={() => handleEnable(user.id)}
-                    loading={workingUser === user.id}
-                    disabled={workingUser !== null}
-                  >
-                    Enable
-                  </Button>
-                ) : (
-                  <Button
-                    variant="warning"
-                    onClick={() => handleDisable(user.id)}
-                    loading={workingUser === user.id}
-                    disabled={workingUser !== null}
-                  >
-                    Disable
-                  </Button>
-                )}
-
-                {user.pending_deletion ? (
-                  <Button
-                    variant="primary"
-                    onClick={() => handleRestore(user.id)}
-                  >
-                    Restore
-                  </Button>
-                ) : (
-                  <Button variant="danger" onClick={() => askDelete(user)}>
-                    Delete
-                  </Button>
-                )}
-              </div>
-            </div>
+      {/* Main Users List / Skeletons / Empty */}
+      {loading ? (
+        <div className="users-skeleton-list">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="users-card-skeleton" />
           ))}
         </div>
+      ) : visibleUsers.length === 0 ? (
+        <div className="users-empty-state">
+          <div className="empty-icon-wrap">
+            <UsersIcon size={40} />
+          </div>
+          <h3>No Registered Users</h3>
+          <p>There are no developer accounts registered on this EchoHub instance yet.</p>
+        </div>
+      ) : filteredUsers.length === 0 ? (
+        <div className="users-empty-state">
+          <div className="empty-icon-wrap">
+            <Search size={36} />
+          </div>
+          <h3>No Matching Users</h3>
+          <p>No user accounts match your filter criteria or search query "{search}".</p>
+        </div>
+      ) : (
+        <div className="users-cards-list">
+          {filteredUsers.map((u) => {
+            const avatar = (u.username || "U").charAt(0).toUpperCase();
+            const isWorking = workingUser === u.id;
+
+            let statusLabel = "Active";
+            let statusClass = "status--active";
+
+            if (u.pending_deletion) {
+              statusLabel = "Pending Deletion";
+              statusClass = "status--deleting";
+            } else if (u.disabled) {
+              statusLabel = "Disabled";
+              statusClass = "status--disabled";
+            }
+
+            return (
+              <div key={u.id} className="user-management-card">
+                <div className="user-card-left">
+                  <div className="user-avatar-badge">{avatar}</div>
+
+                  <div className="user-details-box">
+                    <div className="user-title-row">
+                      <h3 className="user-name">{u.username}</h3>
+                      <span className={`user-status-pill ${statusClass}`}>
+                        <span className="status-ping-dot" />
+                        {statusLabel}
+                      </span>
+                    </div>
+
+                    <div className="user-meta-strip">
+                      <span className="user-meta-item">
+                        <Mail size={13} />
+                        <span>{u.email}</span>
+                      </span>
+
+                      {u.created_at && (
+                        <span className="user-meta-item">
+                          <Calendar size={13} />
+                          <span>Joined {new Date(u.created_at).toLocaleDateString()}</span>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="user-card-actions">
+                  {/* If marked for deletion, show Restore */}
+                  {u.pending_deletion ? (
+                    <button
+                      type="button"
+                      className="user-action-btn btn--restore"
+                      onClick={() => handleRestore(u.id)}
+                      disabled={isWorking}
+                    >
+                      <RotateCcw size={14} />
+                      <span>{isWorking ? "Restoring..." : "Restore Account"}</span>
+                    </button>
+                  ) : (
+                    <>
+                      {/* Enable or Disable Button */}
+                      {u.disabled ? (
+                        <button
+                          type="button"
+                          className="user-action-btn btn--enable"
+                          onClick={() => handleToggleState(u, "enable")}
+                          disabled={isWorking}
+                        >
+                          <Unlock size={14} />
+                          <span>Enable</span>
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="user-action-btn btn--disable"
+                          onClick={() => handleToggleState(u, "disable")}
+                          disabled={isWorking}
+                        >
+                          <Lock size={14} />
+                          <span>Disable</span>
+                        </button>
+                      )}
+
+                      {/* Delete Button */}
+                      <button
+                        type="button"
+                        className="user-action-btn btn--delete"
+                        onClick={() => askDelete(u)}
+                        disabled={isWorking}
+                        title="Delete user account"
+                      >
+                        <Trash2 size={14} />
+                        <span>Delete</span>
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       )}
+
+      {/* Confirmation Modal for Delete User */}
       <ConfirmationModal
         open={deleteOpen}
         user={selectedUser}
-        title={confirmTitle}
-        message={confirmMessage}
-        danger
-        onCancel={() => {
-          setDeleteOpen(false);
-          setSelectedUser(null);
-        }}
-        onConfirm={async () => {
-          await confirmAction();
-
-          setDeleteOpen(false);
-          setSelectedUser(null);
-        }}
+        loading={workingUser !== null}
         onClose={() => {
           setDeleteOpen(false);
           setSelectedUser(null);
         }}
-        onDelete={handleDelete}
-        loading={loading}
+        onDelete={() => handleDelete(selectedUser?.id)}
       />
+
+      {/* In-App Confirmation Dialog for Enable / Disable (Replaces window.confirm) */}
+      {actionModal.open && actionModal.targetUser && (
+        <div className="modal-backdrop-custom">
+          <div className="action-confirm-card">
+            <div className="action-confirm-header">
+              {actionModal.type === "disable" ? (
+                <Lock size={32} className="modal-icon-warn" />
+              ) : (
+                <Unlock size={32} className="modal-icon-success" />
+              )}
+              <h3>
+                {actionModal.type === "disable"
+                  ? `Disable "${actionModal.targetUser.username}"?`
+                  : `Enable "${actionModal.targetUser.username}"?`}
+              </h3>
+            </div>
+
+            <p className="action-confirm-desc">
+              {actionModal.type === "disable"
+                ? `Disabling this account will immediately revoke access and prevent the developer from logging in or deploying workloads.`
+                : `Enabling this account will restore access and allow the developer to log in and manage their workspaces.`}
+            </p>
+
+            <div className="action-confirm-buttons">
+              <button
+                type="button"
+                className="confirm-btn confirm-btn--cancel"
+                onClick={() => setActionModal({ open: false, type: null, targetUser: null })}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className={`confirm-btn ${
+                  actionModal.type === "disable"
+                    ? "confirm-btn--warning"
+                    : "confirm-btn--primary"
+                }`}
+                onClick={confirmToggleState}
+              >
+                {actionModal.type === "disable" ? "Yes, Disable Account" : "Yes, Enable Account"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,167 +1,242 @@
+import { useMemo } from "react";
+import {
+  HardDrive,
+  FolderKanban,
+  GitBranch,
+  Cloud,
+  Database,
+  CheckCircle2,
+  AlertTriangle,
+  PieChart,
+  Layers,
+} from "lucide-react";
 import "./Overview.css";
 
+function formatBytes(bytes = 0) {
+  if (bytes == null || isNaN(bytes)) return "0 B";
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  let value = Number(bytes);
+  let unit = 0;
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024;
+    unit++;
+  }
+  return `${value.toFixed(value >= 10 ? 0 : 1)} ${units[unit]}`;
+}
+
 export default function Overview({ overview, loading }) {
-  const formatBytes = (bytes = 0) => {
-    const units = ["B", "KB", "MB", "GB", "TB"];
-
-    let value = bytes;
-    let unit = 0;
-
-    while (value >= 1024 && unit < units.length - 1) {
-      value /= 1024;
-      unit++;
-    }
-
-    return `${value.toFixed(value >= 10 ? 0 : 1)} ${units[unit]}`;
-  };
- 
-  if (loading) {
+  if (loading || !overview) {
     return (
-      <div className="overviewLoading">Loading storage information...</div>
+      <div className="overview-skeleton-container">
+        <div className="overview-hero-skeleton" />
+        <div className="overview-grid-skeleton">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="overview-card-skeleton" />
+          ))}
+        </div>
+        <div className="overview-dist-skeleton" />
+      </div>
     );
   }
 
-  const usage =
-    overview.totalDisk === 0
-      ? 0
-      : (overview.usedDisk / overview.totalDisk) * 100;
+  const totalDisk = overview.totalDisk || 1;
+  const usedDisk = overview.usedDisk || 0;
+  const freeDisk = overview.freeDisk || 0;
+  const usagePercentage = Math.min(100, Math.max(0, (usedDisk / totalDisk) * 100));
+
+  const projectsBytes = overview.projects || 0;
+  const gitBytes = overview.git || 0;
+  const cloudBytes = overview.cloud || 0;
+  const backupsBytes = overview.backups || 0;
+
+  const totalTrackedCategories = projectsBytes + gitBytes + cloudBytes + backupsBytes;
+  const denominator = totalTrackedCategories > 0 ? totalTrackedCategories : 1;
+
+  const categories = [
+    {
+      id: "projects",
+      title: "Projects",
+      desc: "Workspace source files, builds, and artifacts",
+      bytes: projectsBytes,
+      icon: FolderKanban,
+      color: "#ff8a00",
+      pct: ((projectsBytes / denominator) * 100).toFixed(1),
+    },
+    {
+      id: "git",
+      title: "Git Repositories",
+      desc: "Cloned git working trees & local objects",
+      bytes: gitBytes,
+      icon: GitBranch,
+      color: "#4ade80",
+      pct: ((gitBytes / denominator) * 100).toFixed(1),
+    },
+    {
+      id: "cloud",
+      title: "Cloud Storage",
+      desc: "User uploaded assets & cloud bucket files",
+      bytes: cloudBytes,
+      icon: Cloud,
+      color: "#38bdf8",
+      pct: ((cloudBytes / denominator) * 100).toFixed(1),
+    },
+    {
+      id: "backups",
+      title: "Database & Backups",
+      desc: "PostgreSQL database dumps and snapshots",
+      bytes: backupsBytes,
+      icon: Database,
+      color: "#c084fc",
+      pct: ((backupsBytes / denominator) * 100).toFixed(1),
+    },
+  ];
 
   return (
-    <div className="overviewPage">
-      {/* Hero */}
+    <div className="storage-overview-tab">
+      {/* Hero Storage Gauge Card */}
+      <section className="storage-hero-card">
+        <div className="hero-left-col">
+          <div className="hero-label-row">
+            <HardDrive size={15} className="hero-drive-icon" />
+            <span className="hero-drive-label">HOST SYSTEM STORAGE</span>
+          </div>
 
-      <section className="overviewHero">
-        <div className="overviewHeroInfo">
-          <span className="overviewLabel">STORAGE OVERVIEW</span>
+          <div className="hero-usage-row">
+            <h2 className="hero-used-val">{formatBytes(usedDisk)}</h2>
+            <span className="hero-total-val">used of {formatBytes(totalDisk)} total</span>
+          </div>
 
-          <h2>{formatBytes(overview.usedDisk)}</h2>
-
-          <p>used of {formatBytes(overview.totalDisk)}</p>
-
-          <div className="overviewProgress">
+          <div className="hero-progress-track">
             <div
-              className="overviewProgressFill"
-              style={{ width: `${usage}%` }}
+              className={`hero-progress-fill ${
+                usagePercentage > 90
+                  ? "fill--danger"
+                  : usagePercentage > 75
+                    ? "fill--warning"
+                    : "fill--normal"
+              }`}
+              style={{ width: `${Math.max(3, usagePercentage)}%` }}
             />
           </div>
 
-          <small>{formatBytes(overview.freeDisk)} free</small>
+          <div className="hero-footer-row">
+            <span className="hero-free-badge">
+              <strong>{formatBytes(freeDisk)}</strong> free capacity available
+            </span>
+          </div>
         </div>
 
-        <div className="overviewHealthCard">
-          <span className="overviewHealth">● Healthy</span>
+        <div className="hero-health-box">
+          <div className="health-status-badge">
+            <span className="health-dot" />
+            <span>Healthy Storage Pool</span>
+          </div>
 
-          <div className="overviewPercentage">{usage.toFixed(1)}%</div>
-
-          <small>Disk Usage</small>
+          <div className="health-percentage-val">{usagePercentage.toFixed(1)}%</div>
+          <span className="health-sub">Disk Saturation</span>
         </div>
       </section>
 
-      {/* Categories */}
-
-      <section>
-        <div className="sectionHeader">
-          <h3>Storage Categories</h3>
+      {/* 4 Storage Categories Grid */}
+      <section className="storage-categories-section">
+        <div className="section-title-row">
+          <Layers size={17} className="section-title-icon" />
+          <h3>Storage Breakdown by Service</h3>
         </div>
 
-        <div className="overviewGrid">
-          <div className="overviewCard">
-            <span className="overviewEmoji">📁</span>
+        <div className="categories-grid">
+          {categories.map((cat) => {
+            const Icon = cat.icon;
+            return (
+              <div key={cat.id} className="category-metric-card">
+                <div className="cat-card-top">
+                  <div
+                    className="cat-icon-wrap"
+                    style={{
+                      background: `${cat.color}20`,
+                      color: cat.color,
+                      borderColor: `${cat.color}40`,
+                    }}
+                  >
+                    <Icon size={20} />
+                  </div>
 
-            <div>
-              <h4>Projects</h4>
-              <strong>{formatBytes(overview.projects)}</strong>
-            </div>
-          </div>
+                  <span className="cat-pct-tag" style={{ color: cat.color }}>
+                    {cat.pct}%
+                  </span>
+                </div>
 
-          <div className="overviewCard">
-            <span className="overviewEmoji">🌿</span>
-
-            <div>
-              <h4>Git</h4>
-              <strong>{formatBytes(overview.git)}</strong>
-            </div>
-          </div>
-
-          <div className="overviewCard">
-            <span className="overviewEmoji">☁</span>
-
-            <div>
-              <h4>Cloud</h4>
-              <strong>{formatBytes(overview.cloud)}</strong>
-            </div>
-          </div>
-
-          <div className="overviewCard">
-            <span className="overviewEmoji">💾</span>
-
-            <div>
-              <h4>Backups</h4>
-              <strong>{formatBytes(overview.backups)}</strong>
-            </div>
-          </div>
+                <div className="cat-card-body">
+                  <span className="cat-title">{cat.title}</span>
+                  <h4 className="cat-bytes">{formatBytes(cat.bytes)}</h4>
+                  <p className="cat-desc">{cat.desc}</p>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </section>
 
-      {/* Distribution */}
-
-      <section className="distributionCard">
-        <div className="sectionHeader">
-          <h3>Storage Distribution</h3>
+      {/* Storage Distribution Visualization Card */}
+      <section className="storage-distribution-card">
+        <div className="section-title-row">
+          <PieChart size={17} className="section-title-icon" />
+          <h3>Storage Distribution Breakdown</h3>
         </div>
 
-        <div className="distributionList">
-          <Distribution
-            label="Projects"
-            value={overview.projects}
-            total={overview.usedDisk}
-            color="#ff8a00"
-          />
+        {/* Multi-Segment Stacked Progress Bar */}
+        <div className="stacked-progress-bar">
+          {categories.map((cat) => (
+            <div
+              key={cat.id}
+              className="stacked-bar-segment"
+              style={{
+                width: `${Math.max(Number(cat.pct) > 0 ? 3 : 0, Number(cat.pct))}%`,
+                background: cat.color,
+              }}
+              title={`${cat.title}: ${cat.pct}% (${formatBytes(cat.bytes)})`}
+            />
+          ))}
+        </div>
 
-          <Distribution
-            label="Git"
-            value={overview.git}
-            total={overview.usedDisk}
-            color="#6ab04c"
-          />
+        {/* Detailed Rows */}
+        <div className="distribution-list">
+          {categories.map((cat) => {
+            const Icon = cat.icon;
+            return (
+              <div key={cat.id} className="distribution-row">
+                <div className="dist-row-left">
+                  <span
+                    className="dist-color-dot"
+                    style={{ background: cat.color }}
+                  />
+                  <Icon size={15} style={{ color: cat.color }} />
+                  <span className="dist-label">{cat.title}</span>
+                </div>
 
-          <Distribution
-            label="Cloud"
-            value={overview.cloud}
-            total={overview.usedDisk}
-            color="#4da3ff"
-          />
+                <div className="dist-row-center">
+                  <div className="dist-bar-track">
+                    <div
+                      className="dist-bar-fill"
+                      style={{
+                        width: `${Math.max(2, Number(cat.pct))}%`,
+                        background: cat.color,
+                      }}
+                    />
+                  </div>
+                </div>
 
-          <Distribution
-            label="Backups"
-            value={overview.backups}
-            total={overview.usedDisk}
-            color="#9b59b6"
-          />
+                <div className="dist-row-right">
+                  <span className="dist-bytes">{formatBytes(cat.bytes)}</span>
+                  <span className="dist-pct" style={{ color: cat.color }}>
+                    {cat.pct}%
+                  </span>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </section>
-    </div>
-  );
-}
-
-function Distribution({ label, value, total, color }) {
-  const percentage = total === 0 ? 0 : (value / total) * 100;
-
-  return (
-    <div className="distributionRow">
-      <span>{label}</span>
-
-      <div className="distributionBar">
-        <div
-          className="distributionFill"
-          style={{
-            width: `${percentage}%`,
-            background: color,
-          }}
-        />
-      </div>
-
-      <span>{percentage.toFixed(1)}%</span>
     </div>
   );
 }

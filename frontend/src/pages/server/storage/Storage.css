@@ -1,142 +1,240 @@
-.storagePage {
-    display: flex;
-    flex-direction: column;
-    gap: 28px;
+/* ==========================================================================
+   Server Storage Page Styles (Super Admin)
+   EchoHub Theme: Warm Obsidian & Amber Palette
+   ========================================================================== */
+
+.server-storage-page {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 8px 4px 48px;
+  box-sizing: border-box;
+  animation: storageFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.storageHeader h1 {
-    font-size: 2rem;
-    margin-bottom: 6px;
+@keyframes storageFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.storageHeader p {
-    color: var(--text-secondary);
+/* ==========================================================================
+   Header Section
+   ========================================================================== */
+
+.storage-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding: 24px 28px;
+  background: linear-gradient(135deg, rgba(33, 23, 16, 0.85) 0%, rgba(24, 18, 13, 0.95) 100%);
+  border: 1px solid rgba(255, 138, 0, 0.18);
+  border-radius: 18px;
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.45),
+              0 0 20px -5px rgba(255, 138, 0, 0.05);
 }
 
-.storageLayout {
-    display: grid;
-    grid-template-columns: 230px 1fr;
-    gap: 28px;
-    align-items: start;
-} 
-
-.storageSidebar {
-    background: var(--surface-primary);
-    border: 1px solid var(--border-primary);
-    border-radius: 20px;
-    padding: 14px;
-
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-
-    position: sticky;
-    top: 20px;
+.storage-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.storageTab {
-    border: none;
-    background: transparent;
-
-    border-radius: 12px;
-
-    padding: 14px 18px;
-
-    text-align: left;
-
-    color: var(--text-secondary);
-
-    cursor: pointer;
-
-    transition: .2s;
+.storage-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary, #c9b8aa);
+  font-size: 0.84rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 4px 0;
+  width: fit-content;
+  transition: color 0.18s ease, transform 0.18s ease;
 }
 
-.storageTab:hover {
-    background: var(--surface-secondary);
-    color: var(--text-primary);
+.storage-back-btn:hover {
+  color: var(--accent, #ff8a00);
+  transform: translateX(-2px);
 }
 
-.storageTab--active {
-    background: var(--accent-primary);
-    color: white;
+.storage-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
-.storageContent {
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
+.storage-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
-@media (max-width:900px) {
-
-    .storageLayout {
-        grid-template-columns: 1fr;
-    }
-
-    .storageSidebar {
-        position: static;
-
-        flex-direction: row;
-
-        overflow-x: auto;
-    }
-
-    .storageTab {
-        white-space: nowrap;
-    }
-
+.storage-title {
+  margin: 0;
+  font-size: 1.65rem;
+  font-weight: 800;
+  color: var(--text-primary, #fff8f2);
+  letter-spacing: -0.5px;
 }
 
-.storageTabs {
-    display: flex;
-    gap: 10px;
-
-    border-bottom: 1px solid var(--border-primary);
-
-    margin-bottom: 8px;
+.super-admin-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: rgba(255, 138, 0, 0.15);
+  color: var(--accent, #ff8a00);
+  border: 1px solid rgba(255, 138, 0, 0.35);
 }
 
-.storageTab {
-
-    background: none;
-    border: none;
-
-    padding: 14px 20px;
-
-    cursor: pointer;
-
-    color: var(--text-secondary);
-
-    font-size: .95rem;
-    font-weight: 500;
-
-    position: relative;
-
-    transition: .2s;
+.storage-subtitle {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--text-secondary, #c9b8aa);
+  max-width: 680px;
+  line-height: 1.45;
 }
 
-.storageTab:hover {
-    color: var(--text-primary);
+.storage-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  align-self: center;
 }
 
-.storageTab--active {
-
-    color: var(--accent-primary);
+.storage-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  border: none;
 }
 
-.storageTab--active::after {
+.storage-btn--secondary {
+  background: rgba(42, 29, 20, 0.85);
+  color: var(--text-primary, #fff8f2);
+  border: 1px solid rgba(255, 138, 0, 0.2);
+}
 
-    content: "";
+.storage-btn--secondary:hover:not(:disabled) {
+  background: rgba(55, 38, 26, 0.95);
+  border-color: rgba(255, 138, 0, 0.45);
+  transform: translateY(-1px);
+}
 
-    position: absolute;
+.storage-btn.refreshing svg {
+  animation: storageSpin 0.8s linear infinite;
+}
 
-    left: 0;
-    right: 0;
-    bottom: -1px;
+@keyframes storageSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
 
-    height: 3px;
+/* ==========================================================================
+   Navigation Tabs
+   ========================================================================== */
 
-    border-radius: 999px;
+.storage-nav-tabs {
+  display: flex;
+  gap: 10px;
+  border-bottom: 1px solid rgba(255, 138, 0, 0.12);
+  padding-bottom: 12px;
+}
 
-    background: var(--accent-primary);
+.storage-nav-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 12px;
+  background: rgba(33, 23, 16, 0.7);
+  border: 1px solid rgba(255, 138, 0, 0.12);
+  color: var(--text-secondary, #c9b8aa);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.storage-nav-tab:hover {
+  background: rgba(42, 29, 20, 0.85);
+  color: var(--text-primary, #fff8f2);
+  border-color: rgba(255, 138, 0, 0.28);
+}
+
+.storage-nav-tab.active {
+  background: rgba(255, 138, 0, 0.16);
+  color: var(--accent, #ff8a00);
+  border-color: rgba(255, 138, 0, 0.45);
+  box-shadow: 0 0 16px rgba(255, 138, 0, 0.12);
+}
+
+/* Content Area */
+.storage-content-area {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Unauthorized state */
+.storage-unauthorized {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 480px;
+  padding: 24px;
+}
+
+.storage-unauthorized-card {
+  max-width: 440px;
+  text-align: center;
+  padding: 36px 32px;
+  border-radius: 20px;
+  background: rgba(33, 23, 16, 0.95);
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.storage-btn--primary {
+  background: var(--accent, #ff8a00);
+  color: #18120d;
+  font-weight: 700;
+  padding: 10px 22px;
+}
+
+.storage-btn--primary:hover {
+  background: #ff9a24;
+  box-shadow: 0 4px 14px rgba(255, 138, 0, 0.35);
 }
