@@ -1,0 +1,117 @@
+.quick-actions-card {
+  background: linear-gradient(180deg, rgba(42, 29, 20, 0.95), rgba(27, 20, 15, 0.95));
+  border: 1px solid rgba(255, 145, 60, 0.14);
+  border-radius: var(--radius-large, 18px);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(12px);
+}
+
+.quick-actions-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.quick-actions-icon-accent {
+  color: var(--accent, #ff8a00);
+}
+
+.quick-actions-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary, #fff8f2);
+  letter-spacing: -0.2px;
+}
+
+.quick-actions-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.quick-action-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border-radius: var(--radius, 12px);
+  background: rgba(33, 23, 16, 0.5);
+  border: 1px solid rgba(255, 145, 60, 0.08);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+}
+
+.quick-action-item:hover {
+  background: rgba(42, 29, 20, 0.95);
+  border-color: rgba(255, 145, 60, 0.3);
+  transform: translateX(3px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+}
+
+.quick-action-icon-box {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: rgba(255, 145, 60, 0.1);
+  color: var(--accent, #ff8a00);
+  border: 1px solid rgba(255, 145, 60, 0.2);
+}
+
+.quick-action--cyan .quick-action-icon-box {
+  background: rgba(56, 189, 248, 0.1);
+  color: #38bdf8;
+  border-color: rgba(56, 189, 248, 0.25);
+}
+
+.quick-action--emerald .quick-action-icon-box {
+  background: rgba(46, 204, 113, 0.1);
+  color: #2ecc71;
+  border-color: rgba(46, 204, 113, 0.25);
+}
+
+.quick-action--amber .quick-action-icon-box {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+  border-color: rgba(245, 158, 11, 0.25);
+}
+
+.quick-action-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.quick-action-item-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-primary, #fff8f2);
+}
+
+.quick-action-item-desc {
+  font-size: 0.76rem;
+  color: var(--text-muted, #8b7b68);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.quick-action-arrow {
+  color: var(--text-muted, #8b7b68);
+  transition: all 0.2s ease;
+}
+
+.quick-action-item:hover .quick-action-arrow {
+  color: var(--accent, #ff8a00);
+  transform: translateX(2px);
+}
