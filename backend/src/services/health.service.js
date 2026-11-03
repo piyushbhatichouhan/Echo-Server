@@ -51,6 +51,79 @@ const getContainerListeningPorts = async (projectId) => {
 };
 
 /**
+ * Probes a single HTTP URL. Any HTTP response (2xx, 3xx, 4xx, 5xx) confirms the HTTP service is listening.
+ */
+const probeUrl = async (url) => {
+  try {
+    const res = await axios.get(url, {
+      timeout: 1000,
+      validateStatus: () => true,
+      maxRedirects: 0,
+    });
+    return { success: true, status: res.status, url };
+  } catch {
+    return { success: false, url };
+  }
+};
+
+/**
+ * Probes multiple URLs in parallel and returns the first responding endpoint.
+ */
+const probeAny = async (urls) => {
+  if (!urls || urls.length === 0) return null;
+  return new Promise((resolve) => {
+    let pending = urls.length;
+    let resolved = false;
+
+    urls.forEach((url) => {
+      probeUrl(url).then((res) => {
+        if (res.success && !resolved) {
+          resolved = true;
+          resolve(res);
+        } else {
+          pending--;
+          if (pending === 0 && !resolved) {
+            resolve(null);
+          }
+        }
+      });
+    });
+  });
+};
+
+/**
+ * Builds candidate probe URLs across host port, container name DNS, and internal network IPs.
+ */
+const buildProbeUrls = (portToTest, connInfo, hostPort, targetPort) => {
+  const urls = [];
+
+  // 1. Mapped host port (for host processes on Windows, macOS, or Linux)
+  const mappedHostPort =
+    portToTest === targetPort && hostPort
+      ? hostPort
+      : connInfo.hostPortsByContainerPort?.[portToTest];
+
+  if (mappedHostPort) {
+    urls.push(`http://127.0.0.1:${mappedHostPort}`);
+    urls.push(`http://localhost:${mappedHostPort}`);
+  }
+
+  // 2. Container name DNS on Docker network
+  if (connInfo.containerName) {
+    urls.push(`http://${connInfo.containerName}:${portToTest}`);
+  }
+
+  // 3. Network IPs (DOCKER_NETWORK IP first, bridge IP fallback)
+  if (Array.isArray(connInfo.ips)) {
+    for (const ip of connInfo.ips) {
+      urls.push(`http://${ip}:${portToTest}`);
+    }
+  }
+
+  return Array.from(new Set(urls));
+};
+
+/**
  * Verifies application health and automatically detects/corrects port if mismatched
  */
 const verifyAndDetectPort = async (
@@ -59,95 +132,128 @@ const verifyAndDetectPort = async (
   {
     deploymentId = null,
     logger = null,
+    hostPort = null,
     maxWaitMs = 25000,
     checkIntervalMs = 1000,
   } = {},
 ) => {
   const targetPort = Number(expectedPort) || 3000;
-  let ip;
-
-  try {
-    ip = await containerService.getContainerIPAddress(projectId);
-  } catch (err) {
-    console.warn(
-      `[AutoPort] Could not get IP for project ${projectId}:`,
-      err.message,
-    );
-    return { success: false, port: targetPort };
-  }
-
   const startTime = Date.now();
   let attempt = 0;
 
   console.log(
-    `[AutoPort] Starting verification for project ${projectId} on IP ${ip}, expected port ${targetPort}`,
+    `[AutoPort] Starting verification for project ${projectId}, expected port ${targetPort}, host port ${hostPort || "auto"}`,
   );
 
   while (Date.now() - startTime < maxWaitMs) {
     attempt++;
 
-    // 1. First probe the expected port
+    let connInfo;
     try {
-      const res = await axios.get(`http://${ip}:${targetPort}`, {
-        timeout: 1200,
-        validateStatus: () => true, // Any HTTP response (200, 301, 404, 500, etc.) means HTTP server is live!
-      });
-
-      console.log(
-        `[AutoPort] Confirmed live on expected port ${targetPort} (status ${res.status}) on attempt ${attempt}`,
-      );
-      return { success: true, port: targetPort, autoDetected: false };
+      connInfo = await containerService.getContainerConnectionInfo(projectId);
     } catch (err) {
-      // If expected port failed, check if the app is already listening on another port
-      // We check kernel ports after attempt 2 to give container process a moment to initialize
-      if (attempt >= 2) {
-        const kernelPorts = await getContainerListeningPorts(projectId);
+      console.warn(
+        `[AutoPort] Attempt ${attempt}: Container inspect failed for project ${projectId}:`,
+        err.message,
+      );
+      await sleep(checkIntervalMs);
+      continue;
+    }
 
-        // Build list of candidates to probe: kernel listening ports first, then common web ports
-        const candidates = Array.from(
-          new Set([...kernelPorts, ...COMMON_WEB_PORTS]),
-        ).filter((p) => p !== targetPort);
+    // Fast-fail: If container exited prematurely, abort immediately and surface logs
+    if (!connInfo.state.running && connInfo.state.status !== "created") {
+      let recentLogs = "";
+      try {
+        const rawLogs = await connInfo.container.logs({
+          stdout: true,
+          stderr: true,
+          tail: 20,
+        });
+        recentLogs = rawLogs
+          .toString("utf8")
+          .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "")
+          .trim();
+      } catch {}
 
-        for (const candidate of candidates) {
-          try {
-            const probeRes = await axios.get(`http://${ip}:${candidate}`, {
-              timeout: 1000,
-              validateStatus: () => true,
-            });
+      const exitMsg = `Container exited prematurely with exit code ${connInfo.state.exitCode} (${connInfo.state.status}).${recentLogs ? ` Recent logs: ${recentLogs.slice(-300)}` : ""}`;
+      console.warn(`[AutoPort] ${exitMsg}`);
 
-            console.log(
-              `[AutoPort] 🎯 Detected application listening on port ${candidate} (expected: ${targetPort}, HTTP status: ${probeRes.status})`,
-            );
-
-            // Found active HTTP server on candidate port!
-            // Automatically update deployment record in database
-            if (deploymentId) {
-              await pool.query(
-                `UPDATE deployments SET container_port = $2, updated_at = NOW() WHERE id = $1`,
-                [deploymentId, candidate],
-              );
-            }
-
-            if (logger && deploymentId) {
-              await logger.info(
-                deploymentId,
-                `🔍 Auto-detected application listening on port ${candidate} (configured: ${targetPort}). Updated routing automatically.`,
-              );
-            }
-
-            return {
-              success: true,
-              port: candidate,
-              autoDetected: true,
-            };
-          } catch {
-            // Not responding on this candidate yet
-          }
-        }
+      if (logger && deploymentId) {
+        await logger.error(deploymentId, exitMsg);
       }
 
-      await sleep(checkIntervalMs);
+      return {
+        success: false,
+        port: targetPort,
+        exited: true,
+        exitCode: connInfo.state.exitCode,
+        logs: recentLogs,
+      };
     }
+
+    // 1. Probe the expected target port across all reachable endpoints
+    const expectedUrls = buildProbeUrls(
+      targetPort,
+      connInfo,
+      hostPort,
+      targetPort,
+    );
+
+    const probeRes = await probeAny(expectedUrls);
+    if (probeRes && probeRes.success) {
+      console.log(
+        `[AutoPort] Confirmed live on expected port ${targetPort} via ${probeRes.url} (status ${probeRes.status}) on attempt ${attempt}`,
+      );
+      return { success: true, port: targetPort, autoDetected: false };
+    }
+
+    // 2. If expected port did not respond, check if the app is listening on another port
+    // We check kernel ports after attempt 2 to give container process a moment to initialize
+    if (attempt >= 2) {
+      const kernelPorts = await getContainerListeningPorts(projectId);
+
+      const candidates = Array.from(
+        new Set([...kernelPorts, ...COMMON_WEB_PORTS]),
+      ).filter((p) => p !== targetPort);
+
+      for (const candidate of candidates) {
+        const candidateUrls = buildProbeUrls(
+          candidate,
+          connInfo,
+          hostPort,
+          targetPort,
+        );
+        const candidateRes = await probeAny(candidateUrls);
+
+        if (candidateRes && candidateRes.success) {
+          console.log(
+            `[AutoPort] 🎯 Detected application listening on port ${candidate} via ${candidateRes.url} (expected: ${targetPort}, HTTP status: ${candidateRes.status})`,
+          );
+
+          if (deploymentId) {
+            await pool.query(
+              `UPDATE deployments SET container_port = $2, updated_at = NOW() WHERE id = $1`,
+              [deploymentId, candidate],
+            );
+          }
+
+          if (logger && deploymentId) {
+            await logger.info(
+              deploymentId,
+              `🔍 Auto-detected application listening on port ${candidate} (configured: ${targetPort}). Updated routing automatically.`,
+            );
+          }
+
+          return {
+            success: true,
+            port: candidate,
+            autoDetected: true,
+          };
+        }
+      }
+    }
+
+    await sleep(checkIntervalMs);
   }
 
   console.warn(
@@ -159,9 +265,18 @@ const verifyAndDetectPort = async (
 const checkApplication = async (
   projectId,
   port,
-  { retries = 20, delay = 1000, timeout = 3000 } = {},
+  {
+    deploymentId = null,
+    logger = null,
+    hostPort = null,
+    retries = 25,
+    delay = 1000,
+  } = {},
 ) => {
   const result = await verifyAndDetectPort(projectId, port, {
+    deploymentId,
+    logger,
+    hostPort,
     maxWaitMs: retries * delay,
     checkIntervalMs: delay,
   });

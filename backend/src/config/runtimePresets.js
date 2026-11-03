@@ -44,10 +44,10 @@ const PRESETS = {
     description: "HTML, CSS, JS, Vite, React build output.",
     icon: "globe",
     working_directory: ".",
-    install_command: "npm install",
-    build_command: "npm run build",
+    install_command: "",
+    build_command: "",
     start_command: "",
-    output_directory: "dist",
+    output_directory: ".",
     port: 80,
   },
 
