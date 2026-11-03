@@ -20,6 +20,7 @@ import RecentProjects from "../../components/dashboard/RecentProjects/RecentProj
 import DeploymentActivity from "../../components/dashboard/DeploymentActivity/DeploymentActivity";
 import CreateProjectModal from "../../components/projects/createprojectmodal/createprojectmodal";
 import Button from "../../components/common/button/button";
+import ThemeSwitcher from "../../components/common/ThemeSwitcher/ThemeSwitcher";
 import "./dashboard.css";
 
 function getGreeting() {
@@ -141,6 +142,8 @@ export default function Dashboard() {
         </div>
 
         <div className="dashboard-hero-actions">
+          <ThemeSwitcher compact />
+
           <button
             type="button"
             className="dashboard-action-btn dashboard-action-btn--primary"

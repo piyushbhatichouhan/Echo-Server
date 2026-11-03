@@ -1,163 +1,116 @@
 .eh-btn {
-
-    height: 42px;
-
-    min-width: 130px;
-
-    padding: 0 18px;
-
-    border-radius: 10px;
-
-    border: 1px solid rgba(255, 255, 255, .08);
- 
-    background:
-        linear-gradient(180deg,
-            #3a2417,
-            #26160f);
- 
-    color: #ECECEC;
-
-    font-size: .92rem;
-
-    font-weight: 600;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    gap: 8px;
-
-    cursor: pointer;
-
-    transition:
-        all .18s ease;
-
-    user-select: none;
+  height: 42px;
+  min-width: 130px;
+  padding: 0 18px;
+  border-radius: var(--radius, 10px);
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 0.92rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
 }
 
 .eh-btn:hover:not(:disabled) {
-
-    transform: translateY(-1px);
-
-    box-shadow:
-        0 0 16px rgba(255, 140, 30, .18);
-
-    background:
-        linear-gradient(180deg,
-            #51301d,
-            #311b10);
-
+  transform: translateY(-1px);
+  box-shadow: var(--glow);
+  border-color: var(--accent);
+  background: var(--bg-card-hover, var(--bg-hover));
 }
 
 .eh-btn:active {
-
-    transform: translateY(1px);
-
+  transform: translateY(1px);
 }
 
 .eh-btn:disabled {
-
-    opacity: .45;
-
-    cursor: not-allowed;
-
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .eh-btn-spin {
-
-    animation: spin .8s linear infinite;
-
+  animation: spin 0.8s linear infinite;
 }
 
 @keyframes spin {
-
-    from {
-
-        transform: rotate(0deg);
-
-    }
-
-    to {
-
-        transform: rotate(360deg);
-
-    }
-
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
+/* Primary Button */
 .eh-btn-primary {
-
-    border-color: #b96c24;
-
+  background: var(--btn-primary-bg);
+  border: 1px solid transparent;
+  color: var(--btn-primary-text);
+  box-shadow: var(--glow);
 }
 
+.eh-btn-primary:hover:not(:disabled) {
+  background: var(--btn-primary-hover, var(--accent-hover));
+  color: var(--btn-primary-text);
+  box-shadow: var(--shadow-hover), var(--glow);
+}
+
+/* Secondary Button */
+.eh-btn-secondary {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+}
+
+.eh-btn-secondary:hover:not(:disabled) {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border-color: var(--border-glow);
+}
+
+/* Danger Button */
+.eh-btn-danger {
+  background: rgba(239, 68, 68, 0.14);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #f87171;
+}
+
+.eh-btn-danger:hover:not(:disabled) {
+  background: #ef4444;
+  border-color: #ef4444;
+  color: #ffffff;
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.35);
+}
+
+/* Specific deployment actions */
 .eh-btn-deploy {
-
-    border-color: #e58d33;
-
+  border-color: var(--accent);
 }
 
 .eh-btn-redeploy {
-
-    border-color: #55A5FF;
-
+  border-color: #38bdf8;
 }
 
 .eh-btn-start {
-
-    border-color: #4CAF50;
-
+  border-color: #10b981;
 }
 
 .eh-btn-restart {
-
-    border-color: #E4B32F;
-
+  border-color: #f59e0b;
 }
 
 .eh-btn-stop {
-
-    border-color: #D05050;
-
+  border-color: #ef4444;
 }
-
-
-.eh-btn-secondary {
-    background: #252525;
-    border: 1px solid rgba(255, 255, 255, .08);
-    color: #fff;
-}
-
-.eh-btn-secondary:hover {
-    background: #323232;
-}
-
-.eh-btn-danger {
-    background: #4b1d1d;
-    border: 1px solid #8c2f2f;
-    color: #fff;
-}
-
-.eh-btn-danger:hover {
-    background: #612525;
-}
-
-.eh-btn-primary {
-    background: #d97706;
-    border: 1px solid #d97706;
-    color: white;
-}
-
-.eh-btn-primary:hover {
-    background: #ea8c18;
-}
-
 
 .eh-btn-small {
-    height: 34px;
-    min-width: 90px;
-    padding: 0 14px;
-    font-size: .82rem;
+  height: 34px;
+  min-width: 90px;
+  padding: 0 14px;
+  font-size: 0.82rem;
 }

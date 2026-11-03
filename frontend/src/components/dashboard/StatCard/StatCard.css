@@ -1,6 +1,6 @@
 .statCard {
-  background: linear-gradient(180deg, rgba(42, 29, 20, 0.95), rgba(27, 20, 15, 0.95));
-  border: 1px solid rgba(255, 145, 60, 0.14);
+  background: var(--bg-card-gradient, var(--bg-card));
+  border: 1px solid var(--border-subtle, var(--border));
   border-radius: var(--radius-large, 18px);
   padding: 22px 24px;
   display: flex;
@@ -10,7 +10,7 @@
   position: relative;
   overflow: hidden;
   backdrop-filter: blur(12px);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--shadow);
 }
 
 .statCard::before {
@@ -20,7 +20,7 @@
   left: 0;
   right: 0;
   height: 2px;
-  background: linear-gradient(90deg, transparent, rgba(255, 138, 0, 0.4), transparent);
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
   opacity: 0;
   transition: opacity 0.25s ease;
 }
@@ -35,12 +35,12 @@
 
 .statCard--clickable:hover {
   transform: translateY(-3px);
-  border-color: rgba(255, 145, 60, 0.35);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45), 0 0 20px rgba(255, 138, 0, 0.12);
+  border-color: var(--border-glow);
+  box-shadow: var(--shadow-hover), var(--glow);
 }
 
 .statCard:focus-visible {
-  outline: 2px solid var(--accent, #ff8a00);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
@@ -55,13 +55,13 @@
   width: 48px;
   height: 48px;
   border-radius: 12px;
-  background: rgba(255, 145, 60, 0.1);
-  border: 1px solid rgba(255, 145, 60, 0.2);
+  background: var(--nav-active-bg);
+  border: 1px solid var(--border-glow);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 24px;
-  color: var(--accent, #ff9d45);
+  color: var(--accent);
   flex-shrink: 0;
   transition: transform 0.2s ease;
 }
@@ -71,9 +71,9 @@
 }
 
 .statCard--success .statCard__icon {
-  background: rgba(46, 204, 113, 0.12);
-  border-color: rgba(46, 204, 113, 0.25);
-  color: #2ecc71;
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.25);
+  color: #10b981;
 }
 
 .statCard--info .statCard__icon {
@@ -95,21 +95,21 @@
   border-radius: 999px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--text-secondary, #c9b8aa);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
 }
 
 .statCard__badge--success {
-  background: rgba(46, 204, 113, 0.15);
-  color: #4ade80;
-  border-color: rgba(46, 204, 113, 0.3);
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border-color: rgba(16, 185, 129, 0.3);
 }
 
 .statCard__badge--accent {
-  background: rgba(255, 138, 0, 0.15);
-  color: #ff9d45;
-  border-color: rgba(255, 138, 0, 0.3);
+  background: var(--nav-active-bg);
+  color: var(--accent);
+  border-color: var(--border-glow);
 }
 
 .statCard__badge--warning {
@@ -125,7 +125,7 @@
 }
 
 .statCard__title {
-  color: var(--text-secondary, #b6a896);
+  color: var(--text-secondary);
   font-size: 0.8rem;
   letter-spacing: 0.6px;
   text-transform: uppercase;
@@ -133,7 +133,7 @@
 }
 
 .statCard__value {
-  color: var(--text-primary, #fff8f2);
+  color: var(--text-primary);
   font-size: 1.85rem;
   font-weight: 700;
   margin: 2px 0 0 0;
@@ -143,7 +143,7 @@
 
 .statCard__subtitle {
   margin: 4px 0 0 0;
-  color: var(--text-muted, #8b7b68);
+  color: var(--text-muted);
   font-size: 0.82rem;
   line-height: 1.4;
 }
@@ -158,20 +158,22 @@
 .statCard__progress-bar {
   width: 100%;
   height: 6px;
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--bg-input);
   border-radius: 999px;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-subtle);
 }
 
 .statCard__progress-fill {
   height: 100%;
   border-radius: 999px;
+  background: var(--accent-gradient, var(--accent));
+  box-shadow: var(--glow);
   transition: width 0.4s ease;
 }
 
 .statCard__progress-text {
   font-size: 0.75rem;
-  color: var(--text-muted, #8b7b68);
+  color: var(--text-muted);
   font-weight: 500;
 }
