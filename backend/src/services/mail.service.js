@@ -50,57 +50,66 @@ const sendVerificationEmail = async ({ email, username, token }) => {
 };
 
 const sendPasswordResetEmail = async (email, token) => {
-  const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
+  const baseUrl = (process.env.FRONTEND_URL || "http://localhost:5173").trim().replace(/\/+$/, "");
+  const resetLink = `${baseUrl}/reset-password?token=${encodeURIComponent(token.trim())}`;
 
   await transporter.sendMail({
     from: `"EchoHub" <${process.env.MAIL_USER}>`,
-
     to: email,
-
     subject: "Reset your EchoHub password",
-
+    text: `Password Reset Request\n\nWe received a request to reset your EchoHub password. Click the link below to choose a new password:\n\n${resetLink}\n\nThis single-use link expires in 30 minutes.\nIf you did not request this, you can safely ignore this email.`,
     html: `
       <div style="
-          font-family:Arial,sans-serif;
-          max-width:600px;
-          margin:auto;
-          padding:30px;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+          max-width: 560px;
+          margin: 0 auto;
+          padding: 36px 24px;
+          background: #0d1117;
+          color: #f0f6fc;
+          border-radius: 16px;
+          border: 1px solid #283042;
       ">
+        <h2 style="color: #38bdf8; margin: 0 0 16px; font-size: 24px; font-weight: 700;">Password Reset</h2>
 
-        <h2>Password Reset</h2>
-
-        <p>
-          We received a request to reset your password.
+        <p style="color: #8b949e; font-size: 15px; line-height: 1.5; margin: 0 0 16px;">
+          We received a request to reset the password for your EchoHub account. Click the button below to choose a new password:
         </p>
 
-        <p>
-          Click the button below to choose a new password.
-        </p>
-
-        <p style="margin:40px 0;">
+        <div style="margin: 32px 0; text-align: left;">
           <a
             href="${resetLink}"
             style="
-              background:#ff8c32;
-              color:white;
-              padding:14px 28px;
-              text-decoration:none;
-              border-radius:8px;
-              display:inline-block;
+              background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
+              color: #ffffff;
+              padding: 14px 28px;
+              text-decoration: none;
+              border-radius: 10px;
+              display: inline-block;
+              font-weight: 600;
+              font-size: 15px;
+              box-shadow: 0 4px 16px rgba(56, 189, 248, 0.3);
             "
           >
             Reset Password
           </a>
+        </div>
+
+        <p style="color: #6e7681; font-size: 13px; margin: 24px 0 8px;">
+          If the button above does not work, copy and paste this link into your browser:
         </p>
 
-        <p>
-          This link expires in <strong>30 minutes</strong>.
+        <p style="margin: 0 0 24px; word-break: break-all;">
+          <a href="${resetLink}" style="color: #38bdf8; font-size: 13px; text-decoration: underline;">
+            ${resetLink}
+          </a>
         </p>
 
-        <p>
-          If you didn't request this, simply ignore this email.
-        </p>
+        <hr style="border: none; border-top: 1px solid #283042; margin: 24px 0;" />
 
+        <p style="color: #6e7681; font-size: 12px; line-height: 1.5; margin: 0;">
+          This link is <strong>single-use</strong> and will automatically expire in <strong>30 minutes</strong>.<br />
+          If you did not request a password reset, you can safely ignore this email. Your password will remain unchanged.
+        </p>
       </div>
     `,
   });

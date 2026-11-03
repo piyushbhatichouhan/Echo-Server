@@ -113,6 +113,14 @@ const validateResetToken = async (req, res, next) => {
   try {
     const { token } = req.query;
 
+    if (!token || typeof token !== "string" || !token.trim()) {
+      return res.status(400).json({
+        success: false,
+        valid: false,
+        message: "Reset token is required.",
+      });
+    }
+
     await validateResetPasswordToken(token);
 
     res.json({

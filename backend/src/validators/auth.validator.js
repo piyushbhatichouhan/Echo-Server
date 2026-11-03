@@ -22,6 +22,32 @@ const registerValidation = [
     .withMessage("Password must be at least 8 characters long"),
 ];
 
+const forgotPasswordValidation = [
+  body("email")
+    .trim()
+    .notEmpty()
+    .withMessage("Email is required")
+    .isEmail()
+    .withMessage("Invalid email address"),
+];
+
+const resetPasswordValidation = [
+  body("token")
+    .trim()
+    .notEmpty()
+    .withMessage("Reset token is required")
+    .isLength({ min: 64, max: 64 })
+    .withMessage("Invalid reset token format"),
+
+  body("password")
+    .notEmpty()
+    .withMessage("Password is required")
+    .isLength({ min: 8 })
+    .withMessage("Password must be at least 8 characters long"),
+];
+
 module.exports = {
   registerValidation,
+  forgotPasswordValidation,
+  resetPasswordValidation,
 };
