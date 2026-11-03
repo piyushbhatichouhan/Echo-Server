@@ -16,7 +16,7 @@ import LogsCard from "../components/project/logscard/logscard";
 import ManageUsers from "../pages/server/manageUsers/manageUsers";
 import Storage from "../pages/server/storage/Storage";
 import Health from "../pages/server/health/Health";
-import ServerLogs from "../pages/server/logs/Logs";
+import ServerLogs from "../pages/server/serverLogs/ServerLogs";
 import CloudStorage from "../pages/CloudStorage/CloudStorage";
 import VerifyEmailFailed from "../pages/auth/verify-email/VerifyEmailFailed";
 import VerifyEmailSuccess from "../pages/auth/verify-email/VerifyEmailSuccess";
