@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import "./CloudStorage.css";
 
 import StorageStats from "../../components/cloud/StorageStats/StorageStats";
 import FileBrowser from "../../components/files/FileBrowser/FileBrowser";
@@ -23,8 +24,8 @@ export default function CloudStorage() {
   }, []);
 
   return (
-    <div>
-      <StorageStats stats={stats} />
+    <div className="eh-cloud-storage-page">
+      <StorageStats stats={stats} title="Cloud & User Storage Quota" />
 
       <FileBrowser
         adapter={cloudWorkspace}
@@ -34,3 +35,4 @@ export default function CloudStorage() {
     </div>
   );
 }
+

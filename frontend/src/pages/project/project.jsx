@@ -29,12 +29,30 @@ import PublicationStatus from "../../components/project/publication/PublicationS
 import usePublication from "../../hooks/usePublication";
 import * as publicationApi from "../../services/publication.api";
 import ProjectTerminal from "../../components/project/terminal/ProjectTerminal";
+import StorageStats from "../../components/cloud/StorageStats/StorageStats";
+import { getMyStorageStats } from "../../services/storage.api";
 
 export default function Project() {
   const { id } = useParams();
   const [actionLoading, setActionLoading] = useState(null);
   const { project, loading: projectLoading, refresh } = useProject(id);
   const [activeTab, setActiveTab] = useState("overview");
+  const [storageStats, setStorageStats] = useState(null);
+
+  const loadStorageStats = async () => {
+    try {
+      const data = await getMyStorageStats();
+      setStorageStats(data);
+    } catch (err) {
+      console.error("Failed to load user storage stats:", err);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "files") {
+      loadStorageStats();
+    }
+  }, [activeTab]);
 
   const {
     status,
@@ -167,11 +185,17 @@ export default function Project() {
           </>
         )}
         {activeTab === "files" && (
-          <FileBrowser
-            adapter={projectWorkspace}
-            workspaceId={id}
-            onStorageChange={() => refresh?.()}
-          />
+          <div className="eh-project-files-view" style={{ width: "100%", display: "flex", flexDirection: "column" }}>
+            <StorageStats stats={storageStats} title="Project Workspace Storage Quota" />
+            <FileBrowser
+              adapter={projectWorkspace}
+              workspaceId={id}
+              onStorageChange={() => {
+                refresh?.();
+                loadStorageStats();
+              }}
+            />
+          </div>
         )}
         {activeTab === "deployments" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
