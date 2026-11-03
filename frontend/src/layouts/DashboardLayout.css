@@ -1,50 +1,104 @@
+/* =========================================================
+   EchoHub Main Dashboard Layout
+   ========================================================= */
+
 .eh-layout {
-    display: flex;
-    height: 100vh;
-    background: var(--bg-primary);
+  display: flex;
+  height: 100vh;
+  background: var(--bg-primary);
+  overflow: hidden;
+}
+
+.eh-mobile-topbar {
+  display: none;
 }
 
 .eh-main {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .eh-content {
-    flex: 1;
-    overflow-y: auto;
-    padding: 32px;
+  flex: 1;
+  overflow-y: auto;
+  padding: 32px;
 }
 
 /* Tablet */
-
 @media (max-width: 992px) {
-    .eh-content {
-        padding: 24px;
-    }
+  .eh-content {
+    padding: 24px;
+  }
 }
 
 /* Mobile */
-
 @media (max-width: 768px) {
+  .eh-layout {
+    flex-direction: column;
+  }
 
-    .eh-layout {
-        flex-direction: column;
-    }
+  .eh-mobile-topbar {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    height: 56px;
+    padding: 0 16px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    z-index: 40;
+  }
 
-    .eh-content {
-        padding: 16px;
-    }
+  .eh-mobile-menu-trigger {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-small, 8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all var(--transition);
+  }
 
-}
+  .eh-mobile-menu-trigger:hover {
+    background: var(--bg-hover);
+    border-color: var(--border-glow);
+    color: var(--accent);
+  }
 
-.dashboard-layout {
-    height: 100vh;
-    overflow: hidden;
-}
+  .eh-mobile-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
 
-.dashboard-content {
-    flex: 1;
-    overflow-y: auto;
+  .eh-mobile-emblem {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: var(--btn-primary-bg, linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    box-shadow: 0 2px 8px var(--border-glow);
+  }
+
+  .eh-mobile-title {
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+  }
+
+  .eh-content {
+    padding: 16px;
+  }
 }

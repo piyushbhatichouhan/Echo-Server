@@ -1,18 +1,45 @@
 import "./navigationItem.css";
 import { NavLink } from "react-router-dom";
 
-export default function NavigationItem({ to, icon: Icon, children }) {
+export default function NavigationItem({
+  to,
+  icon: Icon,
+  children,
+  badge,
+  badgeVariant = "accent",
+  collapsed = false,
+  onClick,
+}) {
   return (
     <NavLink
       to={to}
+      onClick={onClick}
+      title={collapsed && typeof children === "string" ? children : undefined}
       className={({ isActive }) =>
-        isActive ? "eh-nav-item active" : "eh-nav-item"
+        `eh-nav-item ${isActive ? "active" : ""} ${collapsed ? "collapsed" : ""}`
       }
     >
-      <Icon size={20} />
+      <span className="eh-nav-icon-wrap">
+        <Icon size={19} className="eh-nav-icon" />
+      </span>
 
-      <span>{children}</span>
+      {!collapsed && (
+        <span className="eh-nav-label">
+          {children}
+        </span>
+      )}
+
+      {!collapsed && badge && (
+        <span className={`eh-nav-badge eh-nav-badge-${badgeVariant}`}>
+          {badge}
+        </span>
+      )}
+
+      {collapsed && (
+        <span className="eh-nav-tooltip" role="tooltip">
+          {children}
+        </span>
+      )}
     </NavLink>
   );
 }
- 
