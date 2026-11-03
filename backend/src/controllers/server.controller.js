@@ -56,9 +56,24 @@ const cleanupPorts = async (req, res, next) => {
   }
 };
 
+const serverHealthService = require("../services/serverHealth.service");
+
+const getServerHealth = async (req, res, next) => {
+  try {
+    const health = await serverHealthService.getServerHealth();
+    res.json({
+      success: true,
+      data: health,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getPendingUsers,
   approveUser,
   rejectUser,
   cleanupPorts,
+  getServerHealth,
 };

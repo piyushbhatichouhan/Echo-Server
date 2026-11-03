@@ -17,7 +17,6 @@ import useAuth from "../../hooks/useAuth";
 import cloudWorkspace from "../../services/cloudWorkspace";
 import StatCard from "../../components/dashboard/StatCard/StatCard";
 import RecentProjects from "../../components/dashboard/RecentProjects/RecentProjects";
-import ServerHealth from "../../components/dashboard/ServerHealth/ServerHealth";
 import DeploymentActivity from "../../components/dashboard/DeploymentActivity/DeploymentActivity";
 import CreateProjectModal from "../../components/projects/createprojectmodal/createprojectmodal";
 import Button from "../../components/common/button/button";
@@ -84,7 +83,7 @@ export default function Dashboard() {
     ? `${formatBytes(usedBytes)} / ${formatBytes(limitBytes)}`
     : `${formatBytes(usedBytes)} used`;
 
-  const isDockerActive = dashboard?.server?.docker ?? true;
+  const isPlatformOnline = !loading;
 
   if (loading && !dashboard) {
     return (
@@ -123,11 +122,9 @@ export default function Dashboard() {
               <span>EchoHub Cloud Engine</span>
             </span>
 
-            <div
-              className={`system-status-indicator ${isDockerActive ? "status--healthy" : "status--warning"}`}
-            >
+            <div className="system-status-indicator status--healthy">
               <span className="status-ping-dot" />
-              <span>{isDockerActive ? "System Operational" : "Docker Node Offline"}</span>
+              <span>Platform Operational</span>
             </div>
           </div>
 
@@ -226,21 +223,19 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Main Content Layout: Left (Projects & Activity) + Right (Server Health & Shortcuts) */}
+      {/* Main Content Layout: Left (Projects) + Right (Live Deployment Activity) */}
       <div className="dashboard-content-layout">
         <div className="dashboard-main-col">
           <RecentProjects
             projects={dashboard?.projects?.recent ?? []}
             onNewProject={() => setIsCreateOpen(true)}
           />
-
-          <DeploymentActivity
-            activities={dashboard?.activity?.recent ?? []}
-          />
         </div>
 
         <div className="dashboard-side-col">
-          <ServerHealth server={dashboard?.server} />
+          <DeploymentActivity
+            activities={dashboard?.activity?.recent ?? []}
+          />
         </div>
       </div>
 

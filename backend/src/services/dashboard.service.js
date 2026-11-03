@@ -1,7 +1,4 @@
-const os = require("os");
 const { pool } = require("../config/database");
-const dockerService = require("../docker/docker.service");
-const diskService = require("./disk.service");
 const storageService = require("./storage.service");
 
 const getDashboard = async (userId) => {
@@ -84,13 +81,7 @@ const getDashboard = async (userId) => {
       [userId],
     ),
     storageService.getUserStorageStats(userId).catch(() => null),
-    dockerService.ping().catch(() => false),
-    diskService.getDiskInfo().catch(() => null),
   ]);
-
-  const totalMem = os.totalmem();
-  const freeMem = os.freemem();
-  const usedMem = Math.max(0, totalMem - freeMem);
 
   return {
     overview: {
@@ -104,33 +95,6 @@ const getDashboard = async (userId) => {
     },
     activity: {
       recent: recentDeploymentsResult.rows,
-    },
-    server: {
-      docker: !!dockerAlive,
-      disk: diskInfo
-        ? {
-            size: diskInfo.size || 0,
-            free: diskInfo.free || 0,
-            used: Math.max(0, (diskInfo.size || 0) - (diskInfo.free || 0)),
-            percentage: diskInfo.size
-              ? Math.round((((diskInfo.size - diskInfo.free) / diskInfo.size) * 100))
-              : 0,
-          }
-        : null,
-      ram: {
-        total: totalMem,
-        used: usedMem,
-        free: freeMem,
-        percentage: totalMem ? Math.round((usedMem / totalMem) * 100) : 0,
-      },
-      cpu: {
-        cores: os.cpus().length,
-        model: os.cpus()[0]?.model || "Multi-Core CPU",
-        load: os.loadavg(),
-      },
-      uptime: os.uptime(),
-      platform: os.platform(),
-      hostname: os.hostname(),
     },
   };
 };

@@ -18,4 +18,6 @@ router.post("/users/:id/reject", controller.rejectUser);
 
 router.post("/cleanup-ports", controller.cleanupPorts);
 
+router.get("/health", controller.getServerHealth);
+
 module.exports = router;
