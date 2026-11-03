@@ -1,54 +1,68 @@
+/* =========================================================
+   EchoHub Elevated Breadcrumb Path Navigator
+   ========================================================= */
+
 .eh-breadcrumbs {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-
-    gap: 4px;
-
-    margin-bottom: 16px;
-
-    padding: 10px 14px;
-
-    background: var(--surface-2);
-
-    border: 1px solid var(--border);
-
-    border-radius: 10px;
-} 
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 14px;
+  padding: 8px 12px;
+  background: rgba(28, 19, 13, 0.6);
+  border: 1px solid rgba(255, 155, 48, 0.16);
+  border-radius: 10px;
+  box-shadow: 
+    0 4px 14px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
 
 .eh-breadcrumb-root,
 .eh-breadcrumb-button {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-
-    border: none;
-    background: none;
-
-    color: var(--text-primary);
-
-    cursor: pointer;
-
-    padding: 5px 8px;
-
-    border-radius: 6px;
-
-    transition: .15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: transparent;
+  color: rgba(240, 230, 220, 0.85);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.84rem;
+  font-weight: 500;
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.eh-breadcrumb-item {
-    display: flex;
-    align-items: center;
-    gap: 4px;
+.eh-breadcrumb-root svg {
+  color: #ffaa40;
 }
 
 .eh-breadcrumb-root:hover,
 .eh-breadcrumb-button:hover {
-    background: rgba(255, 155, 48, .12);
-    color: var(--accent);
+  background: rgba(255, 155, 48, 0.14);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.eh-breadcrumb-root:active,
+.eh-breadcrumb-button:active {
+  transform: translateY(0);
+}
+
+.eh-breadcrumb-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .eh-breadcrumb-item svg {
-    color: var(--text-secondary);
-    opacity: .7;
+  color: rgba(240, 230, 220, 0.35);
+  flex-shrink: 0;
+}
+
+.eh-breadcrumb-item:last-child .eh-breadcrumb-button {
+  color: #ffaa40;
+  font-weight: 600;
 }
