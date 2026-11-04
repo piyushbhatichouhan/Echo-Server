@@ -1148,3 +1148,40 @@
     width: 100%;
   }
 }
+
+@media (max-width: 480px) {
+  .settings-page {
+    padding: 16px 12px 36px;
+    gap: 20px;
+  }
+
+  .settings-header h1 {
+    font-size: 1.55rem;
+  }
+
+  .settings-hero-card {
+    padding: 16px 14px;
+    border-radius: 16px;
+  }
+
+  .settings-hero-avatar {
+    width: 58px;
+    height: 58px;
+    font-size: 1.5rem;
+    border-radius: 14px;
+  }
+
+  .settings-hero-username {
+    font-size: 1.25rem;
+  }
+
+  .settings-card {
+    padding: 16px 14px;
+    border-radius: 16px;
+  }
+
+  .settings-modal {
+    padding: 20px 16px;
+    border-radius: 16px;
+  }
+}

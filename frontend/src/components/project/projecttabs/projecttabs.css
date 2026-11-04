@@ -1,45 +1,58 @@
 .eh-project-tabs {
-    display: flex;
+  display: flex;
+  gap: 8px;
+  margin: 16px 0 24px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  flex-wrap: nowrap;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
 
-    gap: 10px;
-
-    margin: 20px 0 24px;
-
-    border-bottom: 1px solid rgba(255, 255, 255, .08);
-
-    padding-bottom: 12px;
+.eh-project-tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .eh-project-tab {
- 
-    background: transparent;
-
-    border: none;
-
-    color: #888;
-
-    font-size: .95rem;
-
-    font-weight: 600;
-
-    cursor: pointer;
-
-    padding: 8px 14px;
-
-    border-radius: 8px;
-
-    transition: .2s;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: var(--radius-small, 10px);
+  transition: all var(--transition);
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  user-select: none;
 }
 
 .eh-project-tab:hover {
-    color: white;
-
-    background: rgba(255, 255, 255, .05);
+  color: var(--text-primary);
+  background: var(--nav-hover-bg);
 }
 
 .eh-project-tab.active {
+  color: var(--accent);
+  background: var(--nav-active-bg);
+  border-color: var(--border-glow);
+  box-shadow: var(--glow);
+}
 
-    color: #ff8b2b;
+@media (max-width: 600px) {
+  .eh-project-tabs {
+    margin: 12px -12px 20px;
+    padding: 0 12px 8px;
+    gap: 6px;
+  }
 
-    background: rgba(255, 139, 43, .12);
+  .eh-project-tab {
+    padding: 7px 12px;
+    font-size: 0.86rem;
+  }
 }

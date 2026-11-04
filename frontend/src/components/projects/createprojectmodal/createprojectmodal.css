@@ -540,3 +540,37 @@
     width: 100%;
   }
 }
+
+@media (max-width: 480px) {
+  .createProjectOverlay {
+    padding: 10px 8px;
+  }
+
+  .createProjectDialog {
+    width: 100%;
+    max-height: calc(100vh - 20px);
+    max-height: calc(100dvh - 20px);
+    border-radius: 16px;
+  }
+
+  .createProjectHeader {
+    padding: 16px 14px;
+  }
+
+  .createProjectHeader h1 {
+    font-size: 1.25rem;
+  }
+
+  .createProjectBody {
+    padding: 16px 14px;
+    gap: 16px;
+  }
+
+  .runtimeCard {
+    padding: 14px 12px;
+  }
+
+  .runtimePreview {
+    padding: 14px 12px;
+  }
+}

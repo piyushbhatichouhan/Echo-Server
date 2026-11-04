@@ -52,3 +52,13 @@
 
     user-select: none;
 }
+
+@media (max-width: 600px) {
+    .eh-image-viewer {
+        padding: 12px 8px;
+    }
+
+    .eh-image-container {
+        border-radius: 12px;
+    }
+}

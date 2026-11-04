@@ -178,3 +178,36 @@
   border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
+@media (max-width: 600px) {
+  .trash-modal-top {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .trash-row {
+    flex-wrap: wrap;
+    padding: 10px 12px;
+  }
+
+  .trash-row-meta {
+    display: none;
+  }
+
+  .trash-list-scroll {
+    max-height: 280px;
+  }
+}
+
+@media (max-width: 480px) {
+  .trash-item-name {
+    font-size: 0.85rem;
+  }
+
+  .trash-restore-btn {
+    padding: 5px 10px;
+    font-size: 0.76rem;
+  }
+}
+
+

@@ -332,3 +332,46 @@
     font-size: 1.5rem;
   }
 }
+
+@media (max-width: 600px) {
+  .eh-dashboard {
+    gap: 20px;
+    padding-bottom: 32px;
+  }
+
+  .dashboard-hero {
+    padding: 20px 16px;
+    border-radius: 16px;
+  }
+
+  .dashboard-stats-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .dashboard-hero-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .dashboard-action-btn {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .dashboard-refresh-btn {
+    width: 100%;
+    height: 42px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-greeting {
+    font-size: 1.35rem;
+  }
+
+  .dashboard-lead {
+    font-size: 0.85rem;
+  }
+}

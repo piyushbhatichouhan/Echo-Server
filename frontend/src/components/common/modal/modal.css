@@ -116,3 +116,52 @@
 .eh-modal-body::-webkit-scrollbar-thumb:hover {
   background: var(--accent);
 }
+
+@media (max-width: 600px) {
+  .eh-modal-overlay {
+    padding: 14px 12px;
+  }
+
+  .eh-modal {
+    width: 100%;
+    max-height: 92vh;
+    max-height: 92dvh;
+    border-radius: 16px;
+  }
+
+  .eh-modal-header {
+    padding: 16px 18px;
+  }
+
+  .eh-modal-header h2 {
+    font-size: 1.15rem;
+  }
+
+  .eh-modal-body {
+    padding: 18px 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .eh-modal-overlay {
+    padding: 10px 8px;
+  }
+
+  .eh-modal {
+    border-radius: 14px;
+    max-height: 94vh;
+    max-height: 94dvh;
+  }
+
+  .eh-modal-header {
+    padding: 14px 14px;
+  }
+
+  .eh-modal-header h2 {
+    font-size: 1.05rem;
+  }
+
+  .eh-modal-body {
+    padding: 16px 14px;
+  }
+}

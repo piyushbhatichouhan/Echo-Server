@@ -144,3 +144,21 @@
   border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
+@media (max-width: 480px) {
+  .name-prompt-actions {
+    flex-direction: column-reverse;
+    gap: 8px;
+  }
+
+  .name-prompt-actions button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .name-prompt-input {
+    padding: 0.65rem 0.85rem;
+    font-size: 0.9rem;
+  }
+}
+
+

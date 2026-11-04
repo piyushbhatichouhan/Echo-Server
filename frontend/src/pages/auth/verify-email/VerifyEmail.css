@@ -1,20 +1,25 @@
 .verify-page {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   justify-content: center;
   align-items: center;
   background: var(--bg-primary);
   color: var(--text-primary);
+  padding: 24px 16px;
+  box-sizing: border-box;
 }
 
 .verify-card {
-  width: 430px;
+  width: 100%;
+  max-width: 430px;
   padding: 40px;
   border-radius: var(--radius-large, 18px);
   background: var(--bg-card);
   border: 1px solid var(--border);
   box-shadow: var(--shadow);
   text-align: center;
+  box-sizing: border-box;
 }
 
 .verify-card h1 {
@@ -45,4 +50,21 @@
 .verify-button:hover {
   background: var(--btn-primary-hover);
   box-shadow: 0 4px 14px var(--border-glow);
+}
+
+@media (max-width: 480px) {
+  .verify-card {
+    padding: 24px 20px;
+    border-radius: 16px;
+  }
+
+  .verify-card h1 {
+    font-size: 1.4rem;
+    margin-bottom: 16px;
+  }
+
+  .verify-button {
+    width: 100%;
+    box-sizing: border-box;
+  }
 }

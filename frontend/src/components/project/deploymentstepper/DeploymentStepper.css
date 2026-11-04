@@ -82,8 +82,16 @@
   justify-content: space-between;
   position: relative;
   overflow-x: auto;
+  flex-wrap: nowrap;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
   padding: 6px 0;
 }
+
+.eh-stepper-track::-webkit-scrollbar {
+  display: none;
+}
+
 
 .eh-step-node {
   display: flex;
@@ -186,3 +194,20 @@
   0%, 100% { opacity: 1; }
   50% { opacity: 0.6; }
 }
+
+@media (max-width: 480px) {
+  .eh-deployment-stepper {
+    padding: 14px 14px;
+    border-radius: 14px;
+  }
+
+  .eh-stepper-header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .eh-step-node {
+    min-width: 120px;
+  }
+}
+

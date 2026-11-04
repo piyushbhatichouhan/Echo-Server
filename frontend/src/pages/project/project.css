@@ -70,3 +70,19 @@
     }
 
 }
+
+@media (max-width: 600px) {
+    .eh-project-grid {
+        gap: 16px;
+        margin-top: 14px;
+    }
+
+    .eh-project-top {
+        gap: 16px;
+    }
+
+    .eh-workspace {
+        gap: 16px;
+        margin-top: 14px;
+    }
+}

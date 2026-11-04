@@ -27,7 +27,15 @@
 }
 
 .eh-card-body {
-
     padding: 20px;
-
 }
+
+@media (max-width: 480px) {
+    .eh-card-header {
+        padding: 14px 16px;
+    }
+
+    .eh-card-body {
+        padding: 14px 16px;
+    }
+}

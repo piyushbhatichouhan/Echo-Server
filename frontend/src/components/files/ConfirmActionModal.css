@@ -48,3 +48,25 @@
   z-index: 5200 !important;
 }
 
+@media (max-width: 480px) {
+  .confirm-modal-actions {
+    flex-direction: column-reverse;
+    gap: 8px;
+  }
+
+  .confirm-modal-actions button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .confirm-modal-icon-wrapper {
+    width: 48px;
+    height: 48px;
+  }
+
+  .confirm-modal-msg {
+    font-size: 0.88rem;
+  }
+}
+
+

@@ -225,7 +225,36 @@ h2 {
 }
 
 .eh-logs-title {
-
     gap: 20px;
-    column-gap: 20;
+    column-gap: 20px;
 }
+
+@media (max-width: 600px) {
+  .eh-logs-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 14px;
+  }
+
+  .eh-log-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .eh-log-container {
+    height: 320px;
+    padding: 12px;
+  }
+
+  .eh-log-line {
+    flex-direction: column;
+    gap: 2px;
+    font-size: 0.8rem;
+  }
+
+  .eh-log-time {
+    min-width: auto;
+    font-size: 0.72rem;
+  }
+}

@@ -169,3 +169,14 @@
         width: 100%;
     }
 }
+
+@media (max-width: 480px) {
+    .publication-card {
+        padding: 16px 14px;
+        border-radius: 14px;
+    }
+
+    .publication-header h3 {
+        font-size: 1.15rem;
+    }
+}
