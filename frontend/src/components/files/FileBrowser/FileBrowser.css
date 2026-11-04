@@ -426,3 +426,15 @@
     transform: translateX(100%);
   }
 }
+
+@media (max-width: 768px) {
+  .file-browser-split-container {
+    min-height: 440px;
+    position: relative;
+    border-radius: 12px;
+  }
+
+  .file-browser-main-area {
+    padding: 12px 10px;
+  }
+}

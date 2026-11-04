@@ -5,6 +5,7 @@
 .eh-sidebar {
   width: 260px;
   height: 100vh;
+  height: 100dvh;
   background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
   border-right: 1px solid var(--border);
   display: flex;
@@ -459,7 +460,10 @@
     top: 0;
     left: 0;
     bottom: 0;
+    height: 100vh;
+    height: 100dvh;
     width: 280px !important;
+    max-width: 85vw;
     transform: translateX(-100%);
     z-index: 999;
     box-shadow: 0 0 32px rgba(0, 0, 0, 0.6);

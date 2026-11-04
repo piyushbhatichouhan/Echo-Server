@@ -994,9 +994,77 @@
   .health-header {
     flex-direction: column;
     align-items: stretch;
+    padding: 20px;
+    gap: 16px;
   }
 
   .health-header-actions {
     justify-content: flex-start;
   }
 }
+
+@media (max-width: 600px) {
+  .server-health-page {
+    padding: 4px 0 36px;
+    gap: 16px;
+  }
+
+  .health-header {
+    padding: 16px 14px;
+    border-radius: var(--radius, 14px);
+  }
+
+  .health-title {
+    font-size: 1.35rem;
+  }
+
+  .health-subtitle {
+    font-size: 0.82rem;
+  }
+
+  .health-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+  }
+
+  .health-gauges-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .health-card {
+    padding: 18px 16px;
+  }
+
+  .checks-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .health-unauthorized-card {
+    padding: 24px 16px;
+    width: 100%;
+    border-radius: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .health-title {
+    font-size: 1.25rem;
+  }
+
+  .docker-summary-counts {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+
+  .gauge-meta-value.truncate {
+    max-width: 120px;
+  }
+
+  .load-avg-strip {
+    flex-wrap: wrap;
+  }
+}
+

@@ -177,3 +177,21 @@
   color: var(--text-muted);
   font-weight: 500;
 }
+
+@media (max-width: 480px) {
+  .statCard {
+    padding: 16px 16px;
+    border-radius: 14px;
+    gap: 12px;
+  }
+
+  .statCard__icon {
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+  }
+
+  .statCard__value {
+    font-size: 1.55rem;
+  }
+}

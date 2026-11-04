@@ -256,3 +256,23 @@
   color: var(--text-muted);
   transition: all 0.2s ease;
 }
+
+@media (max-width: 600px) {
+  .deploy-activity-card {
+    padding: 16px 14px;
+    border-radius: 14px;
+  }
+
+  .deploy-activity-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .deploy-activity-item-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+

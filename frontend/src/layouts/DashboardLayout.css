@@ -5,8 +5,10 @@
 .eh-layout {
   display: flex;
   height: 100vh;
+  height: 100dvh;
   background: var(--bg-primary);
   overflow: hidden;
+  position: relative;
 }
 
 .eh-mobile-topbar {
@@ -18,20 +20,24 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
-  height: 100vh;
+  min-height: 0;
+  height: 100%;
   overflow: hidden;
 }
 
 .eh-content {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 32px;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Tablet */
 @media (max-width: 992px) {
   .eh-content {
-    padding: 24px;
+    padding: 24px 20px;
   }
 }
 
@@ -39,6 +45,8 @@
 @media (max-width: 768px) {
   .eh-layout {
     flex-direction: column;
+    height: 100vh;
+    height: 100dvh;
   }
 
   .eh-mobile-topbar {
@@ -98,7 +106,11 @@
     letter-spacing: -0.02em;
   }
 
+  .eh-main {
+    height: calc(100% - 56px);
+  }
+
   .eh-content {
-    padding: 16px;
+    padding: 16px 12px;
   }
 }

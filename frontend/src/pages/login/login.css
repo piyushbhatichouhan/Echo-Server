@@ -1,11 +1,14 @@
 .login {
     min-height: 100vh;
+    min-height: 100dvh;
     display: flex;
     justify-content: center;
     align-items: center;
     position: relative;
     overflow: hidden;
     background: radial-gradient(circle at top, var(--bg-card-hover), var(--bg-primary) 60%);
+    padding: 24px 16px;
+    box-sizing: border-box;
 }
 
 .login__background {
@@ -149,25 +152,15 @@
 }
 
 .login__card {
-
-    width: 430px;
-
-    background: rgba(23, 17, 13, .94);
-
+    width: 100%;
+    max-width: 430px;
+    background: var(--bg-card);
     backdrop-filter: blur(16px);
-
     border-radius: 22px;
-
     border: 1px solid var(--border);
-
     padding: 42px;
-
-    box-shadow:
-
-        var(--shadow),
-
-        0 0 35px rgba(255, 140, 50, .08);
-
+    box-shadow: var(--shadow);
+    box-sizing: border-box;
 }
 
 .login__header {
@@ -530,3 +523,23 @@
 .login__verify-button:disabled {
     opacity: .7;
 }
+
+@media (max-width: 480px) {
+  .login__card {
+    padding: 26px 20px;
+    border-radius: 18px;
+  }
+
+  .login__brand h1 {
+    font-size: 32px;
+  }
+
+  .login__header h2 {
+    font-size: 24px;
+  }
+
+  .login__glow {
+    width: 260px;
+    height: 260px;
+  }
+}

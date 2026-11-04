@@ -1,89 +1,94 @@
 .eh-project-header {
-
-    display: flex;
-
-    justify-content: space-between;
-
-    align-items: flex-start;
-
-    gap: 32px;
-
-    margin-bottom: 36px;
-
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 32px;
+  margin-bottom: 36px;
 }
- 
+
 .eh-project-header-left {
-
-    display: flex;
-
-    flex-direction: column;
-
-    gap: 20px;
-
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+  flex: 1;
 }
 
 .eh-project-title {
-
-    display: flex;
-
-    gap: 18px;
-
-    align-items: center;
-
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  min-width: 0;
 }
 
 .eh-project-title svg {
-
-    color: var(--accent);
-
+  color: var(--accent);
+  flex-shrink: 0;
 }
 
 .eh-project-title h1 {
-
-    font-size: 34px;
-
-    color: var(--text-primary);
-
+  font-size: 34px;
+  color: var(--text-primary);
+  margin: 0;
+  word-break: break-word;
 }
 
 .eh-project-title p {
-
-    color: var(--text-secondary);
-
-    margin-top: 6px;
-
+  color: var(--text-secondary);
+  margin-top: 6px;
+  margin-bottom: 0;
 }
 
 .eh-project-meta {
-
-    display: flex;
-
-    gap: 18px;
-
-    flex-wrap: wrap;
-
-    align-items: center;
-
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  align-items: center;
 }
 
 .eh-project-meta span {
-
-    display: flex;
-
-    align-items: center;
-
-    gap: 6px;
-
-    color: var(--text-secondary);
-
-    font-size: 14px;
-
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: 14px;
 }
 
 .eh-project-actions {
+  display: flex;
+  gap: 12px;
+  flex-shrink: 0;
+}
 
-    display: flex;
+@media (max-width: 768px) {
+  .eh-project-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
 
+  .eh-project-title {
     gap: 12px;
+  }
 
+  .eh-project-title h1 {
+    font-size: 24px;
+    line-height: 1.25;
+  }
+
+  .eh-project-meta {
+    gap: 10px;
+  }
+
+  .eh-project-actions {
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .eh-project-actions button {
+    flex: 1;
+    min-width: 120px;
+  }
 }

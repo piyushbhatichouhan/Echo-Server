@@ -388,4 +388,54 @@
   .storage-row-actions {
     justify-content: flex-end;
   }
+
+  .storage-row-identity {
+    min-width: 0;
+  }
+
+  .storage-row-metrics {
+    min-width: 0;
+  }
+}
+
+@media (max-width: 600px) {
+  .storage-metrics-row {
+    grid-template-columns: 1fr;
+  }
+
+  .users-storage-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 12px 14px;
+  }
+
+  .storage-search-box {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .user-storage-row-card {
+    padding: 16px 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .tile-value {
+    font-size: 1.35rem;
+  }
+
+  .metric-header-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .quota-action-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .storage-empty-state {
+    padding: 40px 16px;
+  }
 }

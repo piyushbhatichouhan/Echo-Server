@@ -458,4 +458,50 @@
 
 .eh-commit-hash-btn svg.copied {
     color: #2ecc71;
-}
+}
+
+@media (max-width: 600px) {
+    .eh-repository-card {
+        padding: 16px 14px;
+    }
+
+    .eh-repository-actions {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .eh-repository-actions button {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .eh-commits-card {
+        padding: 16px 14px;
+    }
+
+    .eh-commit-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 12px;
+    }
+
+    .eh-commit-hash-btn {
+        align-self: flex-start;
+    }
+
+    .eh-commit-meta {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .eh-status-summary {
+        flex-wrap: wrap;
+    }
+
+    .eh-summary {
+        flex: 1;
+        min-width: 80px;
+    }
+}
+

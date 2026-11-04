@@ -214,3 +214,27 @@
   opacity: 0.3;
   cursor: not-allowed;
 }
+
+@media (max-width: 600px) {
+  .eh-terminal-window {
+    height: 380px;
+    border-radius: 12px;
+  }
+
+  .eh-terminal-titlebar {
+    padding: 10px 12px;
+  }
+
+  .eh-terminal-dots {
+    display: none;
+  }
+
+  .eh-terminal-body {
+    padding: 12px;
+  }
+
+  .eh-terminal-input-bar {
+    padding: 8px 10px;
+  }
+}
+

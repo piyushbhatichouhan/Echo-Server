@@ -7,6 +7,7 @@
   max-width: 1440px;
   margin: 0 auto;
   width: 100%;
+  box-sizing: border-box;
   animation: fadeInServer 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
@@ -41,7 +42,7 @@
 
 .server__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
   gap: 20px;
 }
 
@@ -112,4 +113,37 @@
 
 .serverCard--disabled:hover span {
   transform: none;
+}
+
+@media (max-width: 768px) {
+  .server {
+    padding: 24px 16px 48px;
+  }
+
+  .server__header h1 {
+    font-size: 1.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .server {
+    padding: 16px 12px 36px;
+  }
+
+  .server__header {
+    margin-bottom: 20px;
+  }
+
+  .server__header h1 {
+    font-size: 1.5rem;
+  }
+
+  .server__grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .serverCard {
+    padding: 18px 16px;
+  }
 }

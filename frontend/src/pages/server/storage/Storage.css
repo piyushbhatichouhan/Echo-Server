@@ -166,6 +166,14 @@
   gap: 10px;
   border-bottom: 1px solid var(--border);
   padding-bottom: 12px;
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.storage-nav-tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .storage-nav-tab {
@@ -180,6 +188,8 @@
   font-size: 0.88rem;
   font-weight: 600;
   cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
   transition: all var(--transition);
 }
 
@@ -235,4 +245,58 @@
 .storage-btn--primary:hover {
   background: var(--btn-primary-hover);
   box-shadow: 0 4px 14px var(--border-glow);
+}
+
+@media (max-width: 768px) {
+  .storage-header {
+    padding: 18px 20px;
+    gap: 16px;
+  }
+
+  .storage-title {
+    font-size: 1.45rem;
+  }
+
+  .storage-header-actions {
+    align-self: flex-start;
+    width: 100%;
+  }
+
+  .storage-nav-tabs {
+    margin-left: -4px;
+    margin-right: -4px;
+    padding-left: 4px;
+    padding-right: 4px;
+  }
+}
+
+@media (max-width: 480px) {
+  .storage-page {
+    padding: 4px 0 36px;
+    gap: 16px;
+  }
+
+  .storage-header {
+    padding: 16px 14px;
+    border-radius: var(--radius, 14px);
+  }
+
+  .storage-title {
+    font-size: 1.3rem;
+  }
+
+  .storage-subtitle {
+    font-size: 0.82rem;
+  }
+
+  .storage-nav-tab {
+    padding: 8px 14px;
+    font-size: 0.82rem;
+  }
+
+  .storage-unauthorized-card {
+    padding: 24px 16px;
+    width: 100%;
+    border-radius: 16px;
+  }
 }

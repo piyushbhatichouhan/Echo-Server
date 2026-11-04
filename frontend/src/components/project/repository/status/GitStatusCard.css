@@ -438,4 +438,36 @@
     background: rgba(59, 130, 246, 0.12);
     color: #60a5fa;
     font-weight: 600;
-}
+}
+
+@media (max-width: 768px) {
+  .eh-summary {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .eh-git-actions {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .eh-git-actions button {
+    flex: 1;
+    min-width: 130px;
+  }
+
+  .eh-diff-modal {
+    width: 95vw;
+    max-height: 90vh;
+    max-height: 90dvh;
+  }
+
+  .eh-diff-modal-header {
+    padding: 12px 14px;
+  }
+
+  .eh-diff-modal-title {
+    font-size: 0.85rem;
+  }
+}
+

@@ -137,11 +137,24 @@
     }
 
     to {
-
         opacity: 1;
-
         transform: translateX(0);
+    }
+}
 
+@media (max-width: 600px) {
+    .eh-toast-container {
+        top: 14px;
+        right: 12px;
+        left: 12px;
+        align-items: stretch;
     }
 
-}
+    .eh-toast {
+        min-width: 0;
+        width: 100%;
+        max-width: 100%;
+        padding: 12px 14px;
+        box-sizing: border-box;
+    }
+}

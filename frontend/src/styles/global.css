@@ -20,6 +20,8 @@ body {
   overflow-x: hidden;
   overflow-y: auto;
   transition: background-color 0.25s ease, color 0.25s ease;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 a {
@@ -32,6 +34,22 @@ input,
 textarea,
 select {
   font: inherit;
+  touch-action: manipulation;
+}
+
+img,
+video,
+svg {
+  max-width: 100%;
+}
+
+/* Prevent iOS input auto-zoom on focus by ensuring at least 16px */
+@media (max-width: 600px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
 }
 
 /* Custom Scrollbar */
