@@ -244,7 +244,7 @@ const streamContainerLogs = async (container, deploymentId) => {
 
       if (!message) return;
 
-      await deploymentLogService.addLog(deploymentId, message);
+      await deploymentLogService.addLog(deploymentId, message, null, "runtime");
     } catch (err) {
       console.error(err);
     }

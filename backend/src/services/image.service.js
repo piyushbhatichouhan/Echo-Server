@@ -28,18 +28,11 @@ const buildImage = async (projectId, settings, log) => {
 
   console.log("Building image:", imageName);
 
-  await log(`Building image: ${imageName}`);
-  const fs = require("fs/promises");
-
-  await log(`Build files: ${JSON.stringify(await fs.readdir(buildPath))}`);
-  await log("Build files:", await fs.readdir(buildPath));
+  await log(`Building Docker container: ${imageName}`);
 
   const stream = await docker.buildImage(tarStream, {
     t: imageName,
   });
-
-  console.log("Docker build started");
-  await log("Docker build started");
 
   await new Promise((resolve, reject) => {
     docker.modem.followProgress(
@@ -60,17 +53,14 @@ const buildImage = async (projectId, settings, log) => {
       },
 
       async (event) => {
-        console.log(JSON.stringify(event));
-
         if (log && event.stream) {
-          await log(event.stream.trim());
+          const trimmed = event.stream.trim();
+          if (trimmed) {
+            await log(trimmed);
+          }
         }
 
         if (log && event.error) {
-          await log(`ERROR: ${event.error}`);
-        }
-
-        if (event.error) {
           await log(`ERROR: ${event.error}`);
         }
       },

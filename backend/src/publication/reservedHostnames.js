@@ -115,7 +115,8 @@ const SUPERADMIN_RESERVED = new Set([
   "zinkopiyush",
   "echopiyush",
   "chouhan",
-
+"palak",
+"palakmishra",
   // Flagship & Identity Namespaces
   "me",
   "root",
@@ -154,7 +155,7 @@ function validateSubdomainReservation(subdomain, isOwner = false) {
   if (SYSTEM_RESERVED.has(normalized)) {
     return {
       valid: false,
-      error: `"${normalized}" is reserved for system infrastructure.`,
+      error: `"${normalized}" is reserved..`,
       reason: "SYSTEM_RESERVED",
     };
   }
@@ -164,7 +165,7 @@ function validateSubdomainReservation(subdomain, isOwner = false) {
     if (!isOwner) {
       return {
         valid: false,
-        error: `"${normalized}" is reserved exclusively for the Super Admin.`,
+        error: `"${normalized}" is reserved.`,
         reason: "SUPERADMIN_RESERVED",
       };
     }

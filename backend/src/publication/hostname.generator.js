@@ -86,7 +86,7 @@ const validateCustomSubdomain = async (rawSubdomain, isOwner = false, excludePro
     }
     return {
       valid: false,
-      message: `The subdomain "${clean}.${BASE_DOMAIN}" is already in use by another project.`,
+      message: `The subdomain "${clean}.${BASE_DOMAIN}" is not available.`,
       reason: "ALREADY_EXISTS",
     };
   }
