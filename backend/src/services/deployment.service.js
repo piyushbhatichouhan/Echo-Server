@@ -151,7 +151,19 @@ const startProject = async (projectId, ownerId) => {
 
   const runtime = runtimeResolver.getRuntimeHandler(settings.runtime);
 
-  return await runtime.start(context);
+  const result = await runtime.start(context);
+
+  // Refresh routing only if this project is already published
+  try {
+    await publicationService.republishProject(projectId, ownerId);
+  } catch (err) {
+    console.warn(
+      `[DeploymentService] Warning republishing project ${projectId} on start:`,
+      err.message,
+    );
+  }
+
+  return result;
 };
 
 const restartProject = async (projectId, ownerId) => {
@@ -173,7 +185,19 @@ const restartProject = async (projectId, ownerId) => {
 
   const runtime = runtimeResolver.getRuntimeHandler(settings.runtime);
 
-  return await runtime.restart(context);
+  const result = await runtime.restart(context);
+
+  // Refresh routing only if this project is already published
+  try {
+    await publicationService.republishProject(projectId, ownerId);
+  } catch (err) {
+    console.warn(
+      `[DeploymentService] Warning republishing project ${projectId} on restart:`,
+      err.message,
+    );
+  }
+
+  return result;
 };
 
 const getProjectDeployments = async (projectId, ownerId) => {
@@ -355,11 +379,19 @@ const rollbackDeployment = async (projectId, ownerId, targetDeploymentId) => {
     Number(settings?.port) ||
     3000;
 
+  let hostPort = targetDeployment.port;
+  if (!hostPort || isNaN(Number(hostPort)) || Number(hostPort) <= 0) {
+    const portService = require("./port.service");
+    hostPort = await portService.getAvailablePort(projectId);
+    await deploymentRepository.updatePort(targetDeployment.id, hostPort);
+    targetDeployment.port = hostPort;
+  }
+
   const newContainer = await container.create(
     projectId,
     targetDeployment.image_name,
     userEnvironment,
-    targetDeployment.port,
+    hostPort,
     containerPort,
   );
 

@@ -7,11 +7,19 @@ const { pool } = require("../config/database");
 
 const getProjectListeningPort = async (projectId) => {
   const deploymentRes = await pool.query(
-    `SELECT container_port FROM deployments WHERE project_id = $1 AND status = 'running' ORDER BY created_at DESC LIMIT 1`,
+    `SELECT container_port, port FROM deployments WHERE project_id = $1 AND status = 'running' ORDER BY created_at DESC LIMIT 1`,
     [projectId],
   );
-  return Number(deploymentRes.rows[0]?.container_port) || 3000;
+  if (process.env.NPM_FORWARD_MODE === "docker") {
+    return Number(deploymentRes.rows[0]?.container_port) || 3000;
+  }
+  return (
+    Number(deploymentRes.rows[0]?.port) ||
+    Number(deploymentRes.rows[0]?.container_port) ||
+    3000
+  );
 };
+
 
 /**
  * Checks if a requested custom subdomain is available for the given user.

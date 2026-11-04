@@ -211,6 +211,21 @@ const updateDeploymentContainer = async (
   return result.rows[0];
 };
 
+const updateDeploymentPort = async (deploymentId, port) => {
+  const result = await pool.query(
+    `
+    UPDATE deployments
+    SET port = $2,
+        updated_at = NOW()
+    WHERE id = $1
+    RETURNING *
+    `,
+    [deploymentId, port],
+  );
+
+  return result.rows[0];
+};
+
 module.exports = {
   createDeployment,
   updateDeploymentStatus,
@@ -222,4 +237,6 @@ module.exports = {
   getRunningDeployments,
   markStoppedByUser,
   updateDeploymentContainer,
+  updateDeploymentPort,
 };
+

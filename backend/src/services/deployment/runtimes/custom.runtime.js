@@ -205,6 +205,16 @@ async function start(context) {
     throw new Error("No deployment found.");
   }
 
+  // Ensure deployment has an allocated, valid host port
+  let hostPort = deployment.port;
+  if (!hostPort || isNaN(Number(hostPort)) || Number(hostPort) <= 0) {
+    const portService = require("../../port.service");
+    hostPort = await portService.getAvailablePort(project.id);
+    await context.infrastructure.deployment.updatePort(deployment.id, hostPort);
+    deployment.port = hostPort;
+  }
+  context.deployment = deployment;
+
   const containerPort =
     context.containerPort ||
     deployment.container_port ||
@@ -234,7 +244,7 @@ async function start(context) {
     project.id,
     imageName,
     environment,
-    deployment.port, // host port
+    hostPort, // host port
     containerPort, // runtime internal port
   );
 
@@ -262,6 +272,8 @@ async function start(context) {
     deployment.id,
     "Application is now online.",
   );
+
+  return { success: true, deployment, port: hostPort };
 }
 
 async function healthCheck(context) {
@@ -348,6 +360,12 @@ async function restart(context) {
     throw new Error("No deployment found.");
   }
 
+  // If container doesn't exist or is not running or has no port, start freshly
+  const status = await context.infrastructure.container.getStatus(project.id);
+  if (!status.exists || !status.running || !deployment.port) {
+    return await start(context);
+  }
+
   await context.infrastructure.logger.stage(
     deployment.id,
     "Restarting Deployment",
@@ -366,6 +384,8 @@ async function restart(context) {
     deployment.id,
     "Application restarted successfully.",
   );
+
+  return { success: true, deployment, port: deployment.port };
 }
 
 async function getStatus(context) {

@@ -16,40 +16,56 @@ const deployProject = async (req, res, next) => {
   }
 };
 
-const startProject = async (req, res) => {
-  const result = await deploymentService.startProject(
-    req.params.projectId,
-    req.user.id,
-  );
+const startProject = async (req, res, next) => {
+  try {
+    const result = await deploymentService.startProject(
+      req.params.projectId,
+      req.user.id,
+    );
 
-  res.json(result);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
 };
 
-const stopProject = async (req, res) => {
-  const result = await deploymentService.stopProject(
-    req.params.projectId,
-    req.user.id,
-  );
+const stopProject = async (req, res, next) => {
+  try {
+    const result = await deploymentService.stopProject(
+      req.params.projectId,
+      req.user.id,
+    );
 
-  res.json(result);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
 };
 
-const restartProject = async (req, res) => {
-  const result = await deploymentService.restartProject(
-    req.params.projectId,
-    req.user.id,
-  );
+const restartProject = async (req, res, next) => {
+  try {
+    const result = await deploymentService.restartProject(
+      req.params.projectId,
+      req.user.id,
+    );
 
-  res.json(result);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
 };
 
-const redeployProject = async (req, res) => {
-  const deployment = await deploymentService.redeployProject(
-    req.params.projectId,
-    req.user.id,
-  );
+const redeployProject = async (req, res, next) => {
+  try {
+    const deployment = await deploymentService.redeployProject(
+      req.params.projectId,
+      req.user.id,
+    );
 
-  res.json(deployment);
+    res.json(deployment);
+  } catch (error) {
+    next(error);
+  }
 };
 
 module.exports = {

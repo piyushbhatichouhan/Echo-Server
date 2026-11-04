@@ -5,7 +5,7 @@ const getContainerName = (projectId) => {
 };
 
 const removeContainerByHostPort = async (hostPort) => {
-  if (!hostPort) return;
+  if (!hostPort || isNaN(Number(hostPort)) || Number(hostPort) <= 0) return;
   try {
     const containers = await docker.listContainers({ all: true });
     for (const c of containers) {
@@ -62,7 +62,20 @@ const createContainer = async (
     ([key, value]) => `${key}=${value}`,
   );
 
-  const projectPort = String(hostPort);
+  let resolvedHostPort = hostPort;
+  if (
+    !resolvedHostPort ||
+    isNaN(Number(resolvedHostPort)) ||
+    Number(resolvedHostPort) <= 0
+  ) {
+    const portService = require("./port.service");
+    resolvedHostPort = await portService.getAvailablePort(projectId);
+    console.warn(
+      `[ContainerService] Host port was invalid (${hostPort}), allocated free port ${resolvedHostPort} for project ${projectId}`,
+    );
+  }
+
+  const projectPort = String(resolvedHostPort);
 
   // Guarantee no container name or port collision exists in Docker
   await removeContainerByProject(projectId);
