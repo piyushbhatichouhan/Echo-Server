@@ -190,10 +190,7 @@ export default function LogsCard({
 
           <div className="eh-log-actions">
             {/* Live SSE status indicator */}
-            <div className={`eh-connected-badge ${isConnected ? "live" : "offline"}`}>
-              <span className="eh-live-dot" />
-              <span>{isConnected ? "LIVE" : "RECONNECTING"}</span>
-            </div>
+          
 
             {/* Auto scroll toggle button */}
             <button
