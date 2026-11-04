@@ -70,10 +70,25 @@ const restoreUser = async (userId) => {
   };
 };
 
+const setCustomSubdomainAccess = async (userId, enabled) => {
+  const user = await userRepository.getUserById(userId);
+
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  if (user.is_owner) {
+    throw new Error("Super Admin already has custom subdomain privileges.");
+  }
+
+  return await userRepository.updateCustomSubdomainAccess(userId, enabled);
+};
+
 module.exports = {
   getUsers,
   disableUser,
   enableUser,
   deleteUser,
   restoreUser,
+  setCustomSubdomainAccess,
 };

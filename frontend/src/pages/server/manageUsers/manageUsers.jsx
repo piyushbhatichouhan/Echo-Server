@@ -18,6 +18,7 @@ import {
   Lock,
   Unlock,
   Key,
+  Globe,
 } from "lucide-react";
 import { useUsers } from "../../../hooks/useUsers";
 import useAuth from "../../../hooks/useAuth";
@@ -45,6 +46,7 @@ export default function ManageUsers() {
     deleteUser,
     refresh,
     restoreUser,
+    toggleCustomSubdomain,
   } = useUsers();
 
   const [search, setSearch] = useState("");
@@ -157,9 +159,15 @@ export default function ManageUsers() {
       if (type === "disable") {
         await disableUser(targetUser.id);
         toast.success("User Disabled", `Account for "${targetUser.username}" is now disabled.`);
-      } else {
+      } else if (type === "enable") {
         await enableUser(targetUser.id);
         toast.success("User Enabled", `Account for "${targetUser.username}" is now active.`);
+      } else if (type === "grant_subdomain") {
+        await toggleCustomSubdomain(targetUser.id, true);
+        toast.success("Privilege Granted", `"${targetUser.username}" can now choose custom subdomains on devpiyush.in.`);
+      } else if (type === "revoke_subdomain") {
+        await toggleCustomSubdomain(targetUser.id, false);
+        toast.success("Privilege Revoked", `Custom subdomain privilege revoked from "${targetUser.username}".`);
       }
       await refresh();
     } catch (err) {
@@ -363,6 +371,12 @@ export default function ManageUsers() {
                         <span className="status-ping-dot" />
                         {statusLabel}
                       </span>
+                      {u.can_custom_subdomain && (
+                        <span className="user-subdomain-badge" title="Allowed to configure custom subdomains on devpiyush.in">
+                          <Globe size={11} />
+                          <span>Custom Subdomain</span>
+                        </span>
+                      )}
                     </div>
 
                     <div className="user-meta-strip">
@@ -418,6 +432,37 @@ export default function ManageUsers() {
                         </button>
                       )}
 
+                      {/* Custom Subdomain Permission Toggle Button */}
+                      <button
+                        type="button"
+                        className={`user-action-btn ${
+                          u.can_custom_subdomain
+                            ? "btn--subdomain-revoke"
+                            : "btn--subdomain-grant"
+                        }`}
+                        onClick={() =>
+                          handleToggleState(
+                            u,
+                            u.can_custom_subdomain
+                              ? "revoke_subdomain"
+                              : "grant_subdomain",
+                          )
+                        }
+                        disabled={isWorking}
+                        title={
+                          u.can_custom_subdomain
+                            ? "Revoke custom subdomain privilege"
+                            : "Grant exclusive custom subdomain privilege on devpiyush.in"
+                        }
+                      >
+                        <Globe size={14} />
+                        <span>
+                          {u.can_custom_subdomain
+                            ? "Revoke Subdomain"
+                            : "Allow Subdomain"}
+                        </span>
+                      </button>
+
                       {/* Delete Button */}
                       <button
                         type="button"
@@ -457,20 +502,32 @@ export default function ManageUsers() {
             <div className="action-confirm-header">
               {actionModal.type === "disable" ? (
                 <Lock size={32} className="modal-icon-warn" />
-              ) : (
+              ) : actionModal.type === "enable" ? (
                 <Unlock size={32} className="modal-icon-success" />
+              ) : actionModal.type === "grant_subdomain" ? (
+                <Globe size={32} className="modal-icon-success" />
+              ) : (
+                <Globe size={32} className="modal-icon-warn" />
               )}
               <h3>
                 {actionModal.type === "disable"
                   ? `Disable "${actionModal.targetUser.username}"?`
-                  : `Enable "${actionModal.targetUser.username}"?`}
+                  : actionModal.type === "enable"
+                  ? `Enable "${actionModal.targetUser.username}"?`
+                  : actionModal.type === "grant_subdomain"
+                  ? `Grant Custom Subdomain Access to "${actionModal.targetUser.username}"?`
+                  : `Revoke Custom Subdomain Access from "${actionModal.targetUser.username}"?`}
               </h3>
             </div>
 
             <p className="action-confirm-desc">
               {actionModal.type === "disable"
                 ? `Disabling this account will immediately revoke access and prevent the developer from logging in or deploying workloads.`
-                : `Enabling this account will restore access and allow the developer to log in and manage their workspaces.`}
+                : actionModal.type === "enable"
+                ? `Enabling this account will restore access and allow the developer to log in and manage their workspaces.`
+                : actionModal.type === "grant_subdomain"
+                ? `Granting custom subdomain privilege will allow "${actionModal.targetUser.username}" to choose their own custom subdomain on devpiyush.in when publishing hosted projects.`
+                : `Revoking this privilege will prevent "${actionModal.targetUser.username}" from choosing custom subdomains on devpiyush.in. Existing published projects will remain active until modified.`}
             </p>
 
             <div className="action-confirm-buttons">
@@ -484,13 +541,19 @@ export default function ManageUsers() {
               <button
                 type="button"
                 className={`confirm-btn ${
-                  actionModal.type === "disable"
+                  actionModal.type === "disable" || actionModal.type === "revoke_subdomain"
                     ? "confirm-btn--warning"
                     : "confirm-btn--primary"
                 }`}
                 onClick={confirmToggleState}
               >
-                {actionModal.type === "disable" ? "Yes, Disable Account" : "Yes, Enable Account"}
+                {actionModal.type === "disable"
+                  ? "Yes, Disable Account"
+                  : actionModal.type === "enable"
+                  ? "Yes, Enable Account"
+                  : actionModal.type === "grant_subdomain"
+                  ? "Yes, Grant Privilege"
+                  : "Yes, Revoke Privilege"}
               </button>
             </div>
           </div>

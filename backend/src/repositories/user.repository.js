@@ -9,6 +9,7 @@ const getUsers = async () => {
       email,
       is_owner,
       disabled,
+      can_custom_subdomain,
       created_at,
       updated_at,
       pending_deletion,
@@ -206,6 +207,28 @@ const getById = async (id) => {
   return result.rows[0] || null;
 };
 
+const updateCustomSubdomainAccess = async (userId, enabled) => {
+  const result = await pool.query(
+    `
+    UPDATE users
+    SET
+      can_custom_subdomain = $2,
+      updated_at = NOW()
+    WHERE id = $1
+    RETURNING
+      id,
+      username,
+      email,
+      is_owner,
+      can_custom_subdomain,
+      disabled
+    `,
+    [userId, Boolean(enabled)],
+  );
+
+  return result.rows[0];
+};
+
 module.exports = {
   getUsers,
   getUserById,
@@ -222,4 +245,5 @@ module.exports = {
   decrementUsedBytes,
 
   getById,
+  updateCustomSubdomainAccess,
 };

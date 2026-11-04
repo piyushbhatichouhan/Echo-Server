@@ -7,6 +7,7 @@ const generateToken1 = (user) => {
       username: user.username,
       email: user.email,
       is_owner: user.is_owner,
+      can_custom_subdomain: Boolean(user.is_owner || user.can_custom_subdomain),
     },
     process.env.JWT_SECRET,
     {

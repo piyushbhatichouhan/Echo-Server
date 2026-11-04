@@ -25,3 +25,12 @@ export const restoreUser = async (id) => {
 
   return data;
 };
+
+export const toggleCustomSubdomain = async (id, enabled) => {
+  const { data } = await api.patch(`/admin/users/${id}/subdomain-access`, {
+    enabled,
+  });
+
+  return data;
+};
+

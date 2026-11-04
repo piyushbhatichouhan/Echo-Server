@@ -208,7 +208,8 @@ verified,
 disabled,
 password_hash,
 status,
-is_owner
+is_owner,
+can_custom_subdomain
 FROM users
         WHERE email = $1
         `,
@@ -279,6 +280,8 @@ FROM users
       email: user.email,
 
       isOwner: user.is_owner,
+
+      canCustomSubdomain: Boolean(user.is_owner || user.can_custom_subdomain),
     },
   };
 };
@@ -292,6 +295,7 @@ username,
 email,
 status,
 is_owner,
+can_custom_subdomain,
 created_at  
         FROM users
         WHERE id = $1
@@ -308,6 +312,7 @@ created_at
   return {
     ...result.rows[0],
     isOwner: result.rows[0].is_owner,
+    canCustomSubdomain: Boolean(result.rows[0].is_owner || result.rows[0].can_custom_subdomain),
   };
 };
 

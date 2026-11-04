@@ -93,6 +93,7 @@ async function checkDatabase() {
           ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_token_expires TIMESTAMPTZ;
           ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_token_hash TEXT;
           ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_token_expires TIMESTAMPTZ;
+          ALTER TABLE users ADD COLUMN IF NOT EXISTS can_custom_subdomain BOOLEAN NOT NULL DEFAULT FALSE;
         END IF;
 
         CREATE TABLE IF NOT EXISTS password_reset_tokens (
