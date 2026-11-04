@@ -40,7 +40,7 @@ export default function ThemeSwitcher({ compact = false, showLabels = false }) {
               className="theme-switcher__dot"
               style={{ backgroundColor: t.accentColor }}
             />
-            <IconComponent size={14} className="theme-switcher__icon" />
+            <IconComponent size={compact ? 12 : 14} className="theme-switcher__icon" />
             {showLabels && (
               <span className="theme-switcher__label">{t.name}</span>
             )}

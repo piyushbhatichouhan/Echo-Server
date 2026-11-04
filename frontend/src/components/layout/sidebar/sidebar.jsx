@@ -235,7 +235,8 @@ export default function Sidebar({ mobileOpen = false, onCloseMobile = () => {} }
           {/* User Profile Card */}
           <div
             className={`eh-user-card ${collapsed ? "collapsed" : ""}`}
-            title={`${user?.username || "User"} (${user?.email || ""})`}
+            title={collapsed ? `Log out (${user?.username || "User"})` : `${user?.username || "User"} (${user?.email || ""})`}
+            onClick={collapsed ? logout : undefined}
           >
             <div className="eh-avatar-wrap">
               <div className="eh-avatar">
@@ -247,7 +248,9 @@ export default function Sidebar({ mobileOpen = false, onCloseMobile = () => {} }
             {!collapsed && (
               <div className="eh-user-details">
                 <div className="eh-user-name-row">
-                  <span className="eh-user-name">{user?.username || "User"}</span>
+                  <span className="eh-user-name" title={user?.username || "User"}>
+                    {user?.username || "User"}
+                  </span>
                   {user?.isOwner && (
                     <span className="eh-owner-badge" title="Platform Owner">
                       <Crown size={11} />
@@ -255,7 +258,9 @@ export default function Sidebar({ mobileOpen = false, onCloseMobile = () => {} }
                     </span>
                   )}
                 </div>
-                <div className="eh-user-email">{user?.email || ""}</div>
+                <div className="eh-user-email" title={user?.email || ""}>
+                  {user?.email || ""}
+                </div>
               </div>
             )}
 
