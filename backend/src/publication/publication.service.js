@@ -16,7 +16,7 @@ const getProjectListeningPort = async (projectId) => {
 /**
  * Checks if a requested custom subdomain is available for the given user.
  */
-const checkCustomSubdomainAvailability = async (subdomain, userId) => {
+const checkCustomSubdomainAvailability = async (subdomain, userId, projectId = null) => {
   const user = await userRepository.getUserById(userId);
 
   if (!user) {
@@ -39,6 +39,7 @@ const checkCustomSubdomainAvailability = async (subdomain, userId) => {
   const validation = await hostnameGenerator.validateCustomSubdomain(
     subdomain,
     isOwner,
+    projectId,
   );
 
   return {
@@ -47,6 +48,7 @@ const checkCustomSubdomainAvailability = async (subdomain, userId) => {
     hostname: validation.hostname,
     message: validation.message,
     reason: validation.reason,
+    isCurrent: Boolean(validation.isCurrent),
   };
 };
 
@@ -189,10 +191,112 @@ const republishProject = async (projectId, ownerId) => {
   return publication;
 };
 
+const updateSubdomain = async (projectId, ownerId, options = {}) => {
+  await projectService.verifyProjectOwnership(projectId, ownerId);
+
+  const publication = await publicationRepository.getProjectDomain(projectId);
+  if (!publication) {
+    const err = new Error("Project is not published. Please publish it first.");
+    err.status = 404;
+    throw err;
+  }
+
+  const user = await userRepository.getUserById(ownerId);
+  const isOwner = Boolean(user?.is_owner);
+  const canCustom = Boolean(user?.is_owner || user?.can_custom_subdomain);
+
+  const { customSubdomain, subdomainType = "custom" } = options;
+
+  let targetHostname;
+  let isCustom = false;
+  let customDomain = null;
+
+  if (subdomainType === "custom" || (customSubdomain && customSubdomain.trim())) {
+    if (!canCustom) {
+      const err = new Error(
+        "Custom subdomain privilege is restricted to authorized accounts. Please contact the Super Admin.",
+      );
+      err.status = 403;
+      throw err;
+    }
+
+    const validation = await hostnameGenerator.validateCustomSubdomain(
+      customSubdomain,
+      isOwner,
+      projectId,
+    );
+
+    if (!validation.valid) {
+      const err = new Error(validation.message);
+      err.status = 400;
+      throw err;
+    }
+
+    targetHostname = validation.hostname;
+    isCustom = true;
+    customDomain = validation.subdomain;
+  } else {
+    // Revert to standard default subdomain (username-project.devpiyush.in)
+    const project = await projectService.getProjectById(projectId, ownerId);
+    targetHostname = await hostnameGenerator.generateHostname(
+      project.username,
+      project.name,
+    );
+  }
+
+  // If the target hostname is identical to the current hostname, simply return existing
+  if (targetHostname === publication.hostname) {
+    return publication;
+  }
+
+  const oldHostname = publication.hostname;
+  const port = await getProjectListeningPort(projectId);
+
+  // 1. Remove old route from NPM reverse proxy
+  try {
+    const npmRepository = require("../routing/npm.repository");
+    await npmRepository.removeHost({ hostname: oldHostname });
+  } catch (err) {
+    console.warn(
+      `[Publication] Warning removing old proxy host ${oldHostname}:`,
+      err.message,
+    );
+  }
+
+  // 2. Publish new route in NPM reverse proxy
+  try {
+    await routingService.publish({
+      projectId,
+      hostname: targetHostname,
+      port,
+    });
+  } catch (err) {
+    console.warn(
+      `[Publication] Warning creating new proxy host ${targetHostname}:`,
+      err.message,
+    );
+  }
+
+  // 3. Update database record in project_domains
+  const updatedPublication = await publicationRepository.updateProjectDomain(
+    publication.id,
+    {
+      hostname: targetHostname,
+      is_custom: isCustom,
+      custom_domain: customDomain,
+      publication_status: "active",
+      verification_status: "verified",
+    },
+  );
+
+  return updatedPublication;
+};
+
 module.exports = {
   checkCustomSubdomainAvailability,
   publishProject,
   getPublication,
   unpublishProject,
   republishProject,
+  updateSubdomain,
 };

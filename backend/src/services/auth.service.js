@@ -279,9 +279,10 @@ FROM users
 
       email: user.email,
 
-      isOwner: user.is_owner,
-
+      isOwner: Boolean(user.is_owner),
+      is_owner: Boolean(user.is_owner),
       canCustomSubdomain: Boolean(user.is_owner || user.can_custom_subdomain),
+      can_custom_subdomain: Boolean(user.is_owner || user.can_custom_subdomain),
     },
   };
 };
@@ -309,10 +310,16 @@ created_at
     throw error;
   }
 
+  const row = result.rows[0];
+  const isOwner = Boolean(row.is_owner);
+  const canCustom = Boolean(row.is_owner || row.can_custom_subdomain);
+
   return {
-    ...result.rows[0],
-    isOwner: result.rows[0].is_owner,
-    canCustomSubdomain: Boolean(result.rows[0].is_owner || result.rows[0].can_custom_subdomain),
+    ...row,
+    isOwner,
+    is_owner: isOwner,
+    canCustomSubdomain: canCustom,
+    can_custom_subdomain: canCustom,
   };
 };
 

@@ -21,9 +21,10 @@ const SUBDOMAIN_REGEX = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
  * Validates a user-chosen custom subdomain.
  * @param {string} rawSubdomain - The requested prefix (e.g. "portfolio")
  * @param {boolean} isOwner - Whether the user is the Super Admin
- * @returns {Promise<{ valid: boolean, subdomain?: string, hostname?: string, message?: string, reason?: string }>}
+ * @param {string|number|null} excludeProjectId - Optional project ID to exclude when checking collisions
+ * @returns {Promise<{ valid: boolean, subdomain?: string, hostname?: string, message?: string, reason?: string, isCurrent?: boolean }>}
  */
-const validateCustomSubdomain = async (rawSubdomain, isOwner = false) => {
+const validateCustomSubdomain = async (rawSubdomain, isOwner = false, excludeProjectId = null) => {
   if (!rawSubdomain || typeof rawSubdomain !== "string") {
     return {
       valid: false,
@@ -74,6 +75,15 @@ const validateCustomSubdomain = async (rawSubdomain, isOwner = false) => {
   const fullHostname = `${clean}.${BASE_DOMAIN}`;
   const existing = await publicationRepository.getDomainByHostname(fullHostname);
   if (existing) {
+    if (excludeProjectId && String(existing.project_id) === String(excludeProjectId)) {
+      return {
+        valid: true,
+        subdomain: clean,
+        hostname: fullHostname,
+        isCurrent: true,
+        message: "Currently active subdomain for this project.",
+      };
+    }
     return {
       valid: false,
       message: `The subdomain "${clean}.${BASE_DOMAIN}" is already in use by another project.`,

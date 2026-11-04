@@ -6,9 +6,14 @@ export const getPublication = async (projectId) => {
   return data.data;
 };
 
-export const checkSubdomainAvailability = async (subdomain) => {
+export const checkSubdomainAvailability = async (subdomain, projectId = null) => {
+  const params = { subdomain };
+  if (projectId) {
+    params.projectId = projectId;
+  }
+
   const { data } = await api.get(`/projects/publication/check-subdomain`, {
-    params: { subdomain },
+    params,
   });
 
   return data.data;
@@ -17,6 +22,15 @@ export const checkSubdomainAvailability = async (subdomain) => {
 export const publishProject = async (projectId, options = {}) => {
   const { data } = await api.post(
     `/projects/publication/${projectId}/publish`,
+    options,
+  );
+
+  return data.data;
+};
+
+export const updateSubdomain = async (projectId, options = {}) => {
+  const { data } = await api.patch(
+    `/projects/publication/${projectId}/subdomain`,
     options,
   );
 
