@@ -342,6 +342,10 @@
     gap: 10px;
   }
 
+  .dashboard-hero-actions .theme-switcher {
+    align-self: flex-start;
+  }
+
   .dashboard-action-btn {
     justify-content: center;
     width: 100%;

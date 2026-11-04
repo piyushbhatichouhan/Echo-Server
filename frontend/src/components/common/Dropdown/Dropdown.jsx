@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import "./Dropdown.css";
 
-export default function Dropdown({ trigger, children }) {
+export default function Dropdown({ trigger, children, align = "left" }) {
   const [open, setOpen] = useState(false);
 
   const ref = useRef();
@@ -29,7 +29,15 @@ export default function Dropdown({ trigger, children }) {
         {trigger}
       </div>
 
-      {open && <div className="eh-dropdown-menu">{children}</div>}
+      {open && (
+        <div
+          className={`eh-dropdown-menu ${
+            align === "right" ? "eh-dropdown-menu--right" : ""
+          }`}
+        >
+          {children}
+        </div>
+      )}
     </div>
   );
 }

@@ -24,7 +24,10 @@ export default function NavigationItem({
       </span>
 
       {!collapsed && (
-        <span className="eh-nav-label">
+        <span
+          className="eh-nav-label"
+          title={typeof children === "string" ? children : undefined}
+        >
           {children}
         </span>
       )}

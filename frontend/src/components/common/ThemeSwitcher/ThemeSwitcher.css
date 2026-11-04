@@ -83,14 +83,36 @@
   transform: scale(1.08);
 }
 
-/* Compact mode (Dashboard header action) */
+/* Compact mode (Dashboard header action & Sidebar) */
+.theme-switcher--compact {
+  padding: 2px 3px;
+  gap: 2px;
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
 .theme-switcher--compact .theme-switcher__btn {
-  padding: 6px 8px;
-  gap: 5px;
+  padding: 4px 6px;
+  gap: 3.5px;
+  box-sizing: border-box;
+}
+
+.theme-switcher--compact .theme-switcher__dot {
+  width: 5.5px;
+  height: 5.5px;
 }
 
 .theme-switcher--compact .theme-switcher__label {
   display: none;
+}
+
+.theme-switcher--compact .theme-switcher__btn.active .theme-switcher__dot {
+  transform: scale(1.15);
+  box-shadow: 0 0 6px var(--theme-accent);
+}
+
+.theme-switcher--compact .theme-switcher__btn.active .theme-switcher__icon {
+  transform: scale(1.05);
 }
 
 /* Focus styles for keyboard accessibility */
