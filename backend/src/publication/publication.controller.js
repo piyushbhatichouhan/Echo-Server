@@ -2,12 +2,13 @@ const publicationService = require("./publication.service");
 
 const checkSubdomain = async (req, res, next) => {
   try {
-    const { subdomain } = req.query;
+    const { subdomain, projectId } = req.query;
     const userId = req.user.id;
 
     const result = await publicationService.checkCustomSubdomainAvailability(
       subdomain,
       userId,
+      projectId,
     );
 
     res.json({
@@ -74,9 +75,32 @@ const unpublishProject = async (req, res, next) => {
   }
 };
 
+const updateSubdomain = async (req, res, next) => {
+  try {
+    const { projectId } = req.params;
+    const ownerId = req.user.id;
+    const { customSubdomain, subdomainType } = req.body || {};
+
+    const publication = await publicationService.updateSubdomain(
+      projectId,
+      ownerId,
+      { customSubdomain, subdomainType },
+    );
+
+    res.json({
+      success: true,
+      message: "Subdomain updated successfully.",
+      data: publication,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   checkSubdomain,
   publishProject,
   getPublication,
   unpublishProject,
+  updateSubdomain,
 };

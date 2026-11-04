@@ -12,6 +12,8 @@ router.get("/:projectId/publish", authenticate, controller.getPublication);
 
 router.post("/:projectId/publish", authenticate, controller.publishProject);
 
+router.patch("/:projectId/subdomain", authenticate, controller.updateSubdomain);
+
 router.delete("/:projectId/publish", authenticate, controller.unpublishProject);
 
 module.exports = router;

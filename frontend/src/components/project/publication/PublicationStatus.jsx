@@ -9,7 +9,9 @@ import {
   ExternalLink,
   Copy,
   Trash2,
-  ShieldAlert,
+  Pencil,
+  Check,
+  X,
 } from "lucide-react";
 import Button from "../../common/button/button";
 import useAuth from "../../../hooks/useAuth";
@@ -27,12 +29,20 @@ export default function PublicationStatus({
   loading,
   project,
   onPublish,
+  onUpdateSubdomain,
   onUnpublish,
 }) {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const hasSubdomainPrivilege = Boolean(
-    user?.isOwner || user?.canCustomSubdomain,
+    user?.isOwner || user?.is_owner || user?.canCustomSubdomain || user?.can_custom_subdomain,
   );
+
+  // Sync latest user privileges on mount so newly granted permissions appear immediately
+  useEffect(() => {
+    if (typeof refreshUser === "function") {
+      refreshUser();
+    }
+  }, [refreshUser]);
 
   // Subdomain selection state for unpublished projects
   const [subdomainType, setSubdomainType] = useState("default"); // 'default' | 'custom'
@@ -42,7 +52,15 @@ export default function PublicationStatus({
   const [isPublishing, setIsPublishing] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  // Debounced availability check
+  // Subdomain editing state for already-published projects
+  const [isEditing, setIsEditing] = useState(false);
+  const [editType, setEditType] = useState("custom"); // 'default' | 'custom'
+  const [editCustomSubdomain, setEditCustomSubdomain] = useState("");
+  const [editChecking, setEditChecking] = useState(false);
+  const [editCheckResult, setEditCheckResult] = useState(null);
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  // Debounced availability check for INITIAL publishing
   useEffect(() => {
     if (subdomainType !== "custom") {
       setCheckResult(null);
@@ -50,7 +68,6 @@ export default function PublicationStatus({
     }
 
     const trimmed = customSubdomain.trim().toLowerCase();
-
     if (!trimmed) {
       setCheckResult(null);
       return;
@@ -67,7 +84,7 @@ export default function PublicationStatus({
     const timer = setTimeout(async () => {
       try {
         setChecking(true);
-        const result = await publicationApi.checkSubdomainAvailability(trimmed);
+        const result = await publicationApi.checkSubdomainAvailability(trimmed, project?.id);
         setCheckResult(result);
       } catch (err) {
         setCheckResult({
@@ -81,7 +98,47 @@ export default function PublicationStatus({
     }, 400);
 
     return () => clearTimeout(timer);
-  }, [customSubdomain, subdomainType]);
+  }, [customSubdomain, subdomainType, project?.id]);
+
+  // Debounced availability check for EDITING published projects
+  useEffect(() => {
+    if (!isEditing || editType !== "custom") {
+      setEditCheckResult(null);
+      return;
+    }
+
+    const trimmed = editCustomSubdomain.trim().toLowerCase();
+    if (!trimmed) {
+      setEditCheckResult(null);
+      return;
+    }
+
+    if (trimmed.length < 3) {
+      setEditCheckResult({
+        available: false,
+        message: "Subdomain must be at least 3 characters long.",
+      });
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        setEditChecking(true);
+        const result = await publicationApi.checkSubdomainAvailability(trimmed, project?.id);
+        setEditCheckResult(result);
+      } catch (err) {
+        setEditCheckResult({
+          available: false,
+          message:
+            err.response?.data?.message || "Failed to verify subdomain availability.",
+        });
+      } finally {
+        setEditChecking(false);
+      }
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [editCustomSubdomain, editType, isEditing, project?.id]);
 
   const handleCopy = (url) => {
     navigator.clipboard.writeText(url);
@@ -107,6 +164,43 @@ export default function PublicationStatus({
     }
   };
 
+  const handleStartEdit = () => {
+    const isCustom = Boolean(publication?.is_custom);
+    setEditType(isCustom ? "custom" : "default");
+    const initialPrefix =
+      publication?.custom_domain ||
+      publication?.hostname?.replace(new RegExp(`\\.${BASE_DOMAIN}$`, "i"), "") ||
+      "";
+    setEditCustomSubdomain(initialPrefix);
+    setEditCheckResult(null);
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditCheckResult(null);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!onUpdateSubdomain) return;
+    try {
+      setIsUpdating(true);
+      if (editType === "custom") {
+        await onUpdateSubdomain({
+          subdomainType: "custom",
+          customSubdomain: editCustomSubdomain.trim().toLowerCase(),
+        });
+      } else {
+        await onUpdateSubdomain({
+          subdomainType: "default",
+        });
+      }
+      setIsEditing(false);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="publication-card">
@@ -116,14 +210,14 @@ export default function PublicationStatus({
     );
   }
 
+  const defaultHostnamePreview = `${(user?.username || project?.username || "user")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "")}-${(project?.name || "project")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "")}.${BASE_DOMAIN}`;
+
   // State A: Project is NOT yet published
   if (!publication) {
-    const defaultHostnamePreview = `${(user?.username || "user")
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, "")}-${(project?.name || "project")
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, "")}.${BASE_DOMAIN}`;
-
     return (
       <div className="publication-card">
         <div className="publication-header">
@@ -133,7 +227,7 @@ export default function PublicationStatus({
               <p>Host this containerized service on a public domain with automatic HTTPS routing.</p>
             </div>
             {hasSubdomainPrivilege && (
-              <span className="exclusive-feature-tag" title="Super Admin granted custom subdomain privilege">
+              <span className="exclusive-feature-tag" title="Custom subdomain privilege active">
                 <Crown size={13} />
                 <span>Custom Subdomain Eligible</span>
               </span>
@@ -272,23 +366,31 @@ export default function PublicationStatus({
             <h3>Public Deployment</h3>
             <p>Your service is routed through reverse proxy and accessible worldwide.</p>
           </div>
-          <span
-            className={`publication-mode-pill ${
-              isCustomSubdomain ? "custom" : "standard"
-            }`}
-          >
-            {isCustomSubdomain ? (
-              <>
+          <div className="header-badges-row">
+            {hasSubdomainPrivilege && (
+              <span className="exclusive-feature-tag" title="Custom subdomain privilege active">
                 <Crown size={12} />
-                <span>Custom Subdomain</span>
-              </>
-            ) : (
-              <>
-                <Globe size={12} />
-                <span>Standard Domain</span>
-              </>
+                <span>Custom Eligible</span>
+              </span>
             )}
-          </span>
+            <span
+              className={`publication-mode-pill ${
+                isCustomSubdomain ? "custom" : "standard"
+              }`}
+            >
+              {isCustomSubdomain ? (
+                <>
+                  <Crown size={12} />
+                  <span>Custom Subdomain</span>
+                </>
+              ) : (
+                <>
+                  <Globe size={12} />
+                  <span>Standard Domain</span>
+                </>
+              )}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -305,14 +407,142 @@ export default function PublicationStatus({
         />
       </div>
 
+      {/* Endpoint & Edit Section */}
       <div className="publication-info">
-        <span className="publication-label">Live Public Endpoint</span>
-
-        <div className="publication-box publication-link">
-          <a href={url} target="_blank" rel="noreferrer">
-            {url}
-          </a>
+        <div className="publication-info-header">
+          <span className="publication-label">Live Public Endpoint</span>
+          {hasSubdomainPrivilege && !isEditing && (
+            <button
+              type="button"
+              className="btn-edit-subdomain"
+              onClick={handleStartEdit}
+              title="Edit or change this project's subdomain"
+            >
+              <Pencil size={13} />
+              <span>Change Subdomain</span>
+            </button>
+          )}
         </div>
+
+        {isEditing ? (
+          <div className="publication-edit-box">
+            <div className="subdomain-selector-block" style={{ marginBottom: 0 }}>
+              <div className="subdomain-type-tabs" role="tablist">
+                <button
+                  type="button"
+                  className={`subdomain-tab ${editType === "default" ? "active" : ""}`}
+                  onClick={() => setEditType("default")}
+                >
+                  <Globe size={14} />
+                  <span>Standard Domain</span>
+                </button>
+
+                <button
+                  type="button"
+                  className={`subdomain-tab ${editType === "custom" ? "active" : ""}`}
+                  onClick={() => setEditType("custom")}
+                >
+                  <Crown size={14} />
+                  <span>Custom Subdomain</span>
+                  <span className="tab-pill-badge">Exclusive</span>
+                </button>
+              </div>
+
+              {editType === "default" ? (
+                <div className="default-subdomain-preview-box">
+                  <span className="preview-label">Revert to Standard Domain:</span>
+                  <div className="preview-value-box">
+                    <code>https://{defaultHostnamePreview}</code>
+                  </div>
+                  <span className="preview-hint">
+                    Reverts to the system standard username-project domain format.
+                  </span>
+                </div>
+              ) : (
+                <div className="custom-subdomain-input-box">
+                  <label className="custom-subdomain-label" htmlFor="edit-custom-subdomain-input">
+                    Choose Your New Exclusive Subdomain:
+                  </label>
+
+                  <div className="custom-subdomain-input-wrap">
+                    <span className="subdomain-prefix">https://</span>
+                    <input
+                      id="edit-custom-subdomain-input"
+                      type="text"
+                      value={editCustomSubdomain}
+                      onChange={(e) => setEditCustomSubdomain(e.target.value.toLowerCase().trim())}
+                      placeholder="my-cool-app"
+                      className="custom-subdomain-field"
+                      maxLength={63}
+                      autoComplete="off"
+                      autoFocus
+                    />
+                    <span className="subdomain-suffix">.{BASE_DOMAIN}</span>
+                  </div>
+
+                  <div className="subdomain-validation-row">
+                    {editChecking ? (
+                      <div className="subdomain-feedback checking">
+                        <Loader2 size={13} className="spin" />
+                        <span>Checking availability on {BASE_DOMAIN}...</span>
+                      </div>
+                    ) : editCheckResult ? (
+                      editCheckResult.available ? (
+                        <div className="subdomain-feedback available">
+                          <CheckCircle2 size={13} />
+                          <span>
+                            {editCheckResult.isCurrent
+                              ? "Currently assigned to this project."
+                              : `Available! Will route to `}
+                            {!editCheckResult.isCurrent && <strong>{editCheckResult.hostname}</strong>}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="subdomain-feedback unavailable">
+                          <AlertCircle size={13} />
+                          <span>{editCheckResult.message || "This subdomain cannot be used."}</span>
+                        </div>
+                      )
+                    ) : (
+                      <span className="subdomain-hint">
+                        3-63 characters, letters, numbers, and hyphens. Certain names are reserved for the Super Admin.
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div className="publication-edit-actions">
+                <Button
+                  onClick={handleSaveEdit}
+                  loading={isUpdating}
+                  disabled={
+                    isUpdating ||
+                    (editType === "custom" && (!editCheckResult?.available || editChecking))
+                  }
+                >
+                  <Check size={14} />
+                  <span>Apply New Subdomain</span>
+                </Button>
+
+                <Button
+                  variant="secondary"
+                  onClick={handleCancelEdit}
+                  disabled={isUpdating}
+                >
+                  <X size={14} />
+                  <span>Cancel</span>
+                </Button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="publication-box publication-link">
+            <a href={url} target="_blank" rel="noreferrer">
+              {url}
+            </a>
+          </div>
+        )}
       </div>
 
       <div className="publication-actions">
@@ -328,6 +558,16 @@ export default function PublicationStatus({
           <Copy size={15} />
           <span>{copied ? "Copied!" : "Copy URL"}</span>
         </Button>
+
+        {hasSubdomainPrivilege && !isEditing && (
+          <Button
+            variant="secondary"
+            onClick={handleStartEdit}
+          >
+            <Pencil size={14} />
+            <span>Change Subdomain</span>
+          </Button>
+        )}
 
         <Button variant="danger" onClick={onUnpublish}>
           <Trash2 size={15} />

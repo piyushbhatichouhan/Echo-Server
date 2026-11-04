@@ -130,6 +130,24 @@ export default function Project() {
     }
   };
 
+  const handleUpdateSubdomain = async (options) => {
+    try {
+      const updated = await publicationApi.updateSubdomain(id, options);
+
+      await pubrefresh();
+
+      toast.success(
+        "Subdomain Updated",
+        `Website is now live at https://${updated.hostname}`,
+      );
+      refresh();
+      return updated;
+    } catch (err) {
+      toast.error("Update Failed", err.response?.data?.message || err.message);
+      throw err;
+    }
+  };
+
   const handleUnpublish = async () => {
     try {
       await publicationApi.unpublishProject(id);
@@ -179,6 +197,7 @@ export default function Project() {
               loading={loading}
               project={project}
               onPublish={handlePublish}
+              onUpdateSubdomain={handleUpdateSubdomain}
               onUnpublish={handleUnpublish}
               refresh={pubrefresh}
             />
