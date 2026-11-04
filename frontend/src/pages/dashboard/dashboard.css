@@ -226,30 +226,16 @@
 /* Primary Metric Cards Grid */
 .dashboard-stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 20px;
 }
 
-/* Two-Column Layout */
+/* Main Content Sections */
 .dashboard-content-layout {
-  display: grid;
-  grid-template-columns: 1fr 380px;
-  gap: 28px;
-  align-items: start;
-}
-
-.dashboard-main-col {
   display: flex;
   flex-direction: column;
   gap: 32px;
-  min-width: 0;
-}
-
-.dashboard-side-col {
-  display: flex;
-  flex-direction: column;
-  gap: 32px;
-  min-width: 0;
+  width: 100%;
 }
 
 /* Loading Skeletons */
@@ -311,9 +297,10 @@
 }
 
 /* Responsive adjustments */
-@media (max-width: 1100px) {
-  .dashboard-content-layout {
-    grid-template-columns: 1fr;
+@media (max-width: 1200px) {
+  .dashboard-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
   }
 }
 

@@ -99,14 +99,8 @@ export default function Dashboard() {
           ))}
         </div>
         <div className="dashboard-content-layout">
-          <div className="dashboard-main-col">
-            <div className="section-skeleton" />
-            <div className="section-skeleton" />
-          </div>
-          <div className="dashboard-side-col">
-            <div className="section-skeleton small" />
-            <div className="section-skeleton small" />
-          </div>
+          <div className="section-skeleton" />
+          <div className="section-skeleton" />
         </div>
       </div>
     );
@@ -226,20 +220,16 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Main Content Layout: Left (Projects) + Right (Live Deployment Activity) */}
+      {/* Main Content Layout: Active Projects & Live Releases */}
       <div className="dashboard-content-layout">
-        <div className="dashboard-main-col">
-          <RecentProjects
-            projects={dashboard?.projects?.recent ?? []}
-            onNewProject={() => setIsCreateOpen(true)}
-          />
-        </div>
+        <RecentProjects
+          projects={dashboard?.projects?.recent ?? []}
+          onNewProject={() => setIsCreateOpen(true)}
+        />
 
-        <div className="dashboard-side-col">
-          <DeploymentActivity
-            activities={dashboard?.activity?.recent ?? []}
-          />
-        </div>
+        <DeploymentActivity
+          activities={dashboard?.activity?.recent ?? []}
+        />
       </div>
 
       {/* Project Creation Modal */}
