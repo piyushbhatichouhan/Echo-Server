@@ -2,6 +2,7 @@ const projectService = require("../services/project.service");
 const publicationRepository = require("./publication.repository");
 const hostnameGenerator = require("./hostname.generator");
 const routingService = require("../routing/routing.service");
+const userRepository = require("../repositories/user.repository");
 const { pool } = require("../config/database");
 
 const getProjectListeningPort = async (projectId) => {
@@ -12,7 +13,44 @@ const getProjectListeningPort = async (projectId) => {
   return Number(deploymentRes.rows[0]?.container_port) || 3000;
 };
 
-const publishProject = async (projectId, ownerId) => {
+/**
+ * Checks if a requested custom subdomain is available for the given user.
+ */
+const checkCustomSubdomainAvailability = async (subdomain, userId) => {
+  const user = await userRepository.getUserById(userId);
+
+  if (!user) {
+    const err = new Error("User not found.");
+    err.status = 404;
+    throw err;
+  }
+
+  const isOwner = Boolean(user.is_owner);
+  const canCustom = Boolean(user.is_owner || user.can_custom_subdomain);
+
+  if (!canCustom) {
+    return {
+      available: false,
+      reason: "NOT_PERMITTED",
+      message: "You do not have permission to claim custom subdomains. Contact the Super Admin for access.",
+    };
+  }
+
+  const validation = await hostnameGenerator.validateCustomSubdomain(
+    subdomain,
+    isOwner,
+  );
+
+  return {
+    available: validation.valid,
+    subdomain: validation.subdomain,
+    hostname: validation.hostname,
+    message: validation.message,
+    reason: validation.reason,
+  };
+};
+
+const publishProject = async (projectId, ownerId, options = {}) => {
   await projectService.verifyProjectOwnership(projectId, ownerId);
 
   let publication = await publicationRepository.getProjectDomain(projectId);
@@ -22,15 +60,55 @@ const publishProject = async (projectId, ownerId) => {
   }
 
   const project = await projectService.getProjectById(projectId, ownerId);
+  const user = await userRepository.getUserById(ownerId);
 
-  const hostname = await hostnameGenerator.generateHostname(
-    project.username,
-    project.name,
-  );
+  const { customSubdomain, subdomainType = "default" } = options;
+
+  let hostname;
+  let isCustom = false;
+  let customDomain = null;
+
+  if (subdomainType === "custom" || (customSubdomain && customSubdomain.trim())) {
+    const isOwner = Boolean(user?.is_owner);
+    const canCustom = Boolean(user?.is_owner || user?.can_custom_subdomain);
+
+    if (!canCustom) {
+      const err = new Error(
+        "Custom subdomain privilege is restricted to authorized accounts. Please contact the Super Admin.",
+      );
+      err.status = 403;
+      throw err;
+    }
+
+    const validation = await hostnameGenerator.validateCustomSubdomain(
+      customSubdomain,
+      isOwner,
+    );
+
+    if (!validation.valid) {
+      const err = new Error(validation.message);
+      err.status = 400;
+      throw err;
+    }
+
+    hostname = validation.hostname;
+    isCustom = true;
+    customDomain = validation.subdomain;
+  } else {
+    hostname = await hostnameGenerator.generateHostname(
+      project.username,
+      project.name,
+    );
+  }
 
   publication = await publicationRepository.createProjectDomain(
     projectId,
     hostname,
+    {
+      isCustom,
+      customDomain,
+      isPrimary: true,
+    },
   );
 
   const port = await getProjectListeningPort(projectId);
@@ -112,6 +190,7 @@ const republishProject = async (projectId, ownerId) => {
 };
 
 module.exports = {
+  checkCustomSubdomainAvailability,
   publishProject,
   getPublication,
   unpublishProject,

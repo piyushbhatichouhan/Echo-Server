@@ -90,12 +90,32 @@ const updateUserQuota = async (req, res, next) => {
   }
 };
 
+const toggleCustomSubdomainAccess = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { enabled } = req.body;
+
+    const updatedUser = await adminService.setCustomSubdomainAccess(
+      id,
+      enabled,
+    );
+
+    res.json({
+      success: true,
+      message: `Custom subdomain privilege ${enabled ? "granted" : "revoked"} successfully.`,
+      data: updatedUser,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getUsers,
   disableUser,
   enableUser,
   deleteUser,
   restoreUser,
-
   updateUserQuota,
+  toggleCustomSubdomainAccess,
 };

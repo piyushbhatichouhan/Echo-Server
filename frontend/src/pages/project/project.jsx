@@ -117,9 +117,9 @@ export default function Project() {
 
   const { publication, loading, pubrefresh } = usePublication(id);
 
-  const handlePublish = async () => {
+  const handlePublish = async (options) => {
     try {
-      await publicationApi.publishProject(id);
+      await publicationApi.publishProject(id, options);
 
       await pubrefresh();
 
@@ -177,6 +177,7 @@ export default function Project() {
             <PublicationStatus
               publication={publication}
               loading={loading}
+              project={project}
               onPublish={handlePublish}
               onUnpublish={handleUnpublish}
               refresh={pubrefresh}

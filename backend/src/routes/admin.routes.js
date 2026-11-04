@@ -29,4 +29,10 @@ router.put(
 
   controller.updateUserQuota,
 );
+
+router.patch(
+  "/users/:id/subdomain-access",
+  controller.toggleCustomSubdomainAccess,
+);
+
 module.exports = router;
