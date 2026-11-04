@@ -67,7 +67,7 @@ export default function Project() {
   const isRunning = status?.running;
   const hasDeployment = status?.exists;
 
-  useLogStream(id, (log) => {
+  const { isConnected } = useLogStream(id, (log) => {
     setLogs((previous) => [...previous, log]);
 
     refreshStatus();
@@ -201,7 +201,13 @@ export default function Project() {
               onUnpublish={handleUnpublish}
               refresh={pubrefresh}
             />
-            <LogsCard status={status} logs={logs} onClear={() => setLogs([])} />
+            <LogsCard
+              status={status}
+              logs={logs}
+              project={project}
+              isConnected={isConnected}
+              onClear={() => setLogs([])}
+            />
           </>
         )}
         {activeTab === "files" && (

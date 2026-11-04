@@ -96,6 +96,11 @@ async function checkDatabase() {
           ALTER TABLE users ADD COLUMN IF NOT EXISTS can_custom_subdomain BOOLEAN NOT NULL DEFAULT FALSE;
         END IF;
 
+        IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'deployment_logs') THEN
+          ALTER TABLE deployment_logs ADD COLUMN IF NOT EXISTS level VARCHAR(20) DEFAULT 'info';
+          ALTER TABLE deployment_logs ADD COLUMN IF NOT EXISTS category VARCHAR(30) DEFAULT 'system';
+        END IF;
+
         CREATE TABLE IF NOT EXISTS password_reset_tokens (
           id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
           user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,

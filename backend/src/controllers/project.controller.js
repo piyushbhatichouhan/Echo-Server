@@ -18,7 +18,7 @@ const getProjectLogs = async (req, res, next) => {
 
     await projectService.verifyProjectOwnership(projectId, ownerId);
 
-    const logs = await deploymentLogService.getLogs(projectId);
+    const logs = await deploymentLogService.getLogs(projectId, req.query);
 
     res.json(logs);
   } catch (error) {
