@@ -71,6 +71,9 @@ const updateContainer = async (
     containerPort,
   );
 
+const updatePort = async (deploymentId, port) =>
+  deploymentRepository.updateDeploymentPort(deploymentId, port);
+
 module.exports = {
   create,
   stopPreviousDeployments,
@@ -82,5 +85,7 @@ module.exports = {
   fail,
   running,
   updateContainer,
+  updatePort,
   getDeploymentById: deploymentRepository.getDeploymentById,
 };
+

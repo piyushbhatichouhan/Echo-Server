@@ -9,7 +9,7 @@ const getHostByHostname = async (hostname) => {
   return response.data.find((h) => h.domain_names.includes(hostname));
 };
 
-const updateHost = async ({ id, hostname, port }) => {
+const updateHost = async ({ id, projectId, hostname, port }) => {
   const forwardHost =
     process.env.NPM_FORWARD_MODE === "docker"
       ? `echohub-${projectId}`
@@ -56,6 +56,7 @@ const publishHost = async ({ projectId, hostname, port }) => {
 
     return updateHost({
       id: existing.id,
+      projectId,
       hostname,
       port,
     });

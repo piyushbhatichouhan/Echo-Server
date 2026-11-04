@@ -295,6 +295,16 @@ async function start(context) {
     throw new Error("No deployment found.");
   }
 
+  // Ensure deployment has an allocated, valid host port
+  let hostPort = deployment.port;
+  if (!hostPort || isNaN(Number(hostPort)) || Number(hostPort) <= 0) {
+    const portService = require("../../port.service");
+    hostPort = await portService.getAvailablePort(project.id);
+    await context.infrastructure.deployment.updatePort(deployment.id, hostPort);
+    deployment.port = hostPort;
+  }
+  context.deployment = deployment;
+
   await context.infrastructure.logger.stage(
     deployment.id,
     "Starting Deployment",
@@ -319,7 +329,7 @@ async function start(context) {
     project.id,
     imageName,
     environment,
-    deployment.port, // host port
+    hostPort, // host port
     containerPort, // runtime internal port
   );
 
@@ -345,6 +355,8 @@ async function start(context) {
     deployment.id,
     "Static site is now online.",
   );
+
+  return { success: true, deployment, port: hostPort };
 }
 async function healthCheck(context) {
   const { project, deployment, settings } = context;
@@ -446,12 +458,14 @@ async function restart(context) {
     false,
   );
 
-  await start(context);
+  const result = await start(context);
 
   await context.infrastructure.logger.info(
     deployment.id,
     "Static site restarted successfully.",
   );
+
+  return result;
 }
 
 async function getStatus(context) {
