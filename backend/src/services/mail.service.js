@@ -5,8 +5,9 @@ const nodemailer = require("nodemailer");
  * Priority: process.env.MAIL_FROM -> "EchoHub" <process.env.MAIL_USER> -> fallback
  */
 const getFromAddress = () => {
-  const mailFrom = process.env.MAIL_FROM?.trim();
+  let mailFrom = process.env.MAIL_FROM?.trim();
   if (mailFrom) {
+    mailFrom = mailFrom.replace(/^["']|["']$/g, "").trim();
     if (mailFrom.includes("<") && mailFrom.includes(">")) {
       return mailFrom;
     }
