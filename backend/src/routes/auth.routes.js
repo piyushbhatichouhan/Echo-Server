@@ -20,13 +20,19 @@ const {
   validateResetToken,
   deleteAccount,
 } = require("../controllers/auth.controller");
+const {
+  loginLimiter,
+  registerLimiter,
+  forgotPasswordLimiter,
+  resendVerificationLimiter,
+} = require("../middleware/rateLimit.middleware");
 
-router.post("/register", registerValidation, validate, register);
-router.post("/login", login);
+router.post("/register", registerLimiter, registerValidation, validate, register);
+router.post("/login", loginLimiter, login);
 router.get("/me", authenticate, me);
 router.get("/verify-email", verify);
-router.post("/resend-verification", resendVerification);
-router.post("/forgot-password", forgotPasswordValidation, validate, forgotPassword);
+router.post("/resend-verification", resendVerificationLimiter, resendVerification);
+router.post("/forgot-password", forgotPasswordLimiter, forgotPasswordValidation, validate, forgotPassword);
 router.put("/reset-password", resetPasswordValidation, validate, resetPassword);
 router.get("/reset-password/validate", validateResetToken);
 router.delete("/account", authenticate, deleteAccount);

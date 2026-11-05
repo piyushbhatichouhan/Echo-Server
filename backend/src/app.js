@@ -5,6 +5,7 @@ const helmet = require("helmet");
 const routes = require("./routes");
 const errorHandler = require("./middleware/error.middleware");
 const app = express();
+app.set("trust proxy", 1);
 const runtimeMonitor = require("./services/runtime-monitor.service");
 
 const { runUserDeletionJob } = require("./jobs/userDeletion.job");
