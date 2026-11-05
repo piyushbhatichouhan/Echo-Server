@@ -4,6 +4,22 @@ const getContainerName = (projectId) => {
   return `echohub-${projectId}`;
 };
 
+const getContainerResourceLimits = () => {
+  const maxMemMB = Number(process.env.CONTAINER_MAX_MEMORY_MB) || 256;
+  const reserveMemMB =
+    Number(process.env.CONTAINER_MEMORY_RESERVATION_MB) || 64;
+  const maxCpus = Number(process.env.CONTAINER_MAX_CPUS) || 1.5;
+  return {
+    maxMemoryMB: maxMemMB,
+    memoryReservationMB: reserveMemMB,
+    maxCpus: maxCpus,
+    memoryLimitBytes: maxMemMB * 1024 * 1024,
+    memoryReservationBytes: reserveMemMB * 1024 * 1024,
+    nanoCpus: Math.round(maxCpus * 1e9),
+  };
+};
+
+
 const removeContainerByHostPort = async (hostPort) => {
   if (!hostPort || isNaN(Number(hostPort)) || Number(hostPort) <= 0) return;
   try {
@@ -81,6 +97,8 @@ const createContainer = async (
   await removeContainerByProject(projectId);
   await removeContainerByHostPort(projectPort);
 
+  const limits = getContainerResourceLimits();
+
   const containerOptions = {
     Image: imageName,
 
@@ -104,10 +122,18 @@ const createContainer = async (
           },
         ],
       },
+
+      // Workload Protection & Resource Shields
+      Memory: limits.memoryLimitBytes,
+      MemoryReservation: limits.memoryReservationBytes,
+      MemorySwap: limits.memoryLimitBytes * 2,
+      NanoCpus: limits.nanoCpus,
+      OomScoreAdj: 500,
     },
   };
 
   const container = await docker.createContainer(containerOptions);
+
 
   //
   // Connect to Docker network AFTER creation
@@ -492,4 +518,6 @@ module.exports = {
   getContainerTelemetry,
   executeTerminalCommand,
   removeContainerByHostPort,
+  getContainerResourceLimits,
 };
+

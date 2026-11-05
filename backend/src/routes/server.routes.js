@@ -17,8 +17,10 @@ router.post("/users/:id/approve", controller.approveUser);
 router.post("/users/:id/reject", controller.rejectUser);
 
 router.post("/cleanup-ports", controller.cleanupPorts);
+router.post("/prune-docker", controller.pruneDocker);
 
 router.get("/health", controller.getServerHealth);
+
 
 router.get("/logs", controller.getServerLogs);
 router.get("/logs/containers", controller.getLogContainers);

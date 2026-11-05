@@ -22,10 +22,11 @@ import {
   Gauge,
   MemoryStick,
   Wifi,
+  Trash2,
 } from "lucide-react";
 import useServerHealth from "../../../hooks/useServerHealth";
 import useAuth from "../../../hooks/useAuth";
-import { cleanupPorts } from "../../../services/server.api";
+import { cleanupPorts, pruneDocker } from "../../../services/server.api";
 import { useToast } from "../../../context/ToastContext";
 import "./Health.css";
 
@@ -57,6 +58,7 @@ export default function Health() {
   } = useServerHealth(10000);
 
   const [cleaningPorts, setCleaningPorts] = useState(false);
+  const [pruningDocker, setPruningDocker] = useState(false);
 
   // Guard: Super admin only
   if (!user?.isOwner) {
@@ -94,6 +96,24 @@ export default function Health() {
       toast.error("Cleanup Failed", err.response?.data?.message || err.message);
     } finally {
       setCleaningPorts(false);
+    }
+  };
+
+  const handlePruneDocker = async () => {
+    if (pruningDocker) return;
+    try {
+      setPruningDocker(true);
+      const res = await pruneDocker();
+      toast.success(
+        "Docker Cache Purged",
+        res.message ||
+          `Pruned ${res.imagesDeleted || 0} images and reclaimed ${res.reclaimedMB || 0} MB.`,
+      );
+      refresh();
+    } catch (err) {
+      toast.error("Prune Failed", err.response?.data?.message || err.message);
+    } finally {
+      setPruningDocker(false);
     }
   };
 
@@ -585,13 +605,25 @@ export default function Health() {
                   </div>
                 </div>
 
-                <div
-                  className={`status-pill ${
-                    health.docker?.connected ? "pill--success" : "pill--danger"
-                  }`}
-                >
-                  <span className="status-ping" />
-                  <span>{health.docker?.connected ? "Engine Ready" : "Daemon Offline"}</span>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <button
+                    type="button"
+                    className="quick-clean-btn"
+                    onClick={handlePruneDocker}
+                    disabled={pruningDocker}
+                    title="Prune dangling image layers and build cache"
+                  >
+                    <Trash2 size={13} />
+                    <span>{pruningDocker ? "Pruning..." : "Prune Cache"}</span>
+                  </button>
+                  <div
+                    className={`status-pill ${
+                      health.docker?.connected ? "pill--success" : "pill--danger"
+                    }`}
+                  >
+                    <span className="status-ping" />
+                    <span>{health.docker?.connected ? "Engine Ready" : "Daemon Offline"}</span>
+                  </div>
                 </div>
               </div>
 
@@ -749,6 +781,68 @@ export default function Health() {
                   <span className="row-label">Host OS & Architecture:</span>
                   <span className="row-value">
                     {health.system?.type} ({health.system?.arch}) • {health.system?.hostname}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Workload Protection & Resource Shields */}
+            <div className="health-card detail-card">
+              <div className="section-card-header">
+                <div className="section-card-title-group">
+                  <ShieldCheck size={18} className="section-icon" style={{ color: "#38bdf8" }} />
+                  <div>
+                    <h3>Workload Protection & Shields</h3>
+                    <span className="card-sub">OOM Prevention • Build Governor • Circuit Breakers</span>
+                  </div>
+                </div>
+
+                <div className="status-pill pill--success">
+                  <span className="status-ping" />
+                  <span>Shields Armed</span>
+                </div>
+              </div>
+
+              <div className="telemetry-stat-list">
+                <div className="telemetry-row">
+                  <span className="row-label">Per-App Memory Ceiling:</span>
+                  <span className="row-value highlight">
+                    {health.safetyLimits?.maxMemoryMB ? `${health.safetyLimits.maxMemoryMB} MB / container` : "256 MB"}
+                  </span>
+                </div>
+
+                <div className="telemetry-row">
+                  <span className="row-label">Memory Soft Guarantee:</span>
+                  <span className="row-value">
+                    {health.safetyLimits?.memoryReservationMB ? `${health.safetyLimits.memoryReservationMB} MB reserved` : "64 MB"}
+                  </span>
+                </div>
+
+                <div className="telemetry-row">
+                  <span className="row-label">Container CPU Cap:</span>
+                  <span className="row-value">
+                    {health.safetyLimits?.maxCpus ? `${health.safetyLimits.maxCpus} Cores max` : "1.5 Cores"}
+                  </span>
+                </div>
+
+                <div className="telemetry-row">
+                  <span className="row-label">Build Concurrency Governor:</span>
+                  <span className="row-value code-pill">
+                    {health.buildQueue?.active ?? 0} compiling • {health.buildQueue?.queued ?? 0} queued (Limit: {health.buildQueue?.maxConcurrent ?? 1})
+                  </span>
+                </div>
+
+                <div className="telemetry-row">
+                  <span className="row-label">Lifetime Builds Processed:</span>
+                  <span className="row-value">
+                    {health.buildQueue?.totalProcessed ?? 0} completed
+                  </span>
+                </div>
+
+                <div className="telemetry-row">
+                  <span className="row-label">Pre-Flight Circuit Breaker:</span>
+                  <span className="row-value" style={{ color: "#4ade80", fontWeight: 600 }}>
+                    Active (Requires &gt;250MB RAM &amp; &gt;2.5GB Disk)
                   </span>
                 </div>
               </div>

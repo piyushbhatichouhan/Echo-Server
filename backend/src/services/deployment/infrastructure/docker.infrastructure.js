@@ -1,7 +1,10 @@
 const imageService = require("../../image.service");
+const buildQueue = require("../../buildQueue.service");
 
 const build = async (projectId, settings, callback) =>
-  imageService.buildImage(projectId, settings, callback);
+  buildQueue.run(projectId, callback, async () => {
+    return imageService.buildImage(projectId, settings, callback);
+  });
 
 const remove = async (projectId) => {
   try {
@@ -14,4 +17,5 @@ module.exports = {
   remove,
   getImageName: imageService.getImageName,
 };
+
  

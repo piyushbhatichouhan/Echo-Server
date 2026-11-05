@@ -56,6 +56,18 @@ const cleanupPorts = async (req, res, next) => {
   }
 };
 
+const { runDockerPruneJob } = require("../jobs/dockerPrune.job");
+
+const pruneDocker = async (req, res, next) => {
+  try {
+    const result = await runDockerPruneJob();
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+
 const serverHealthService = require("../services/serverHealth.service");
 const serverLogService = require("../services/serverLog.service");
 
@@ -120,7 +132,9 @@ module.exports = {
   approveUser,
   rejectUser,
   cleanupPorts,
+  pruneDocker,
   getServerHealth,
+
   getServerLogs,
   getLogContainers,
   clearServerLogs,
