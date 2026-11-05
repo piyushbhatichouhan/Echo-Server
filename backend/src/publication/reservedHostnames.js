@@ -140,6 +140,7 @@ const SUPERADMIN_RESERVED = new Set([
   "node",
   "server1",
   "control",
+  "echoserver",
 ]);
 
 /**
