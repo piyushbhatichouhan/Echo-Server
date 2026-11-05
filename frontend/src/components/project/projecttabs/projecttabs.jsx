@@ -3,6 +3,7 @@ import "./projecttabs.css";
 export default function ProjectTabs({ activeTab, onTabChange }) {
   const tabs = [
     "overview",
+    "analytics",
     "files",
     "environment",
     "terminal",
