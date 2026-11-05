@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Activity,
@@ -23,10 +23,13 @@ import {
   MemoryStick,
   Wifi,
   Trash2,
+  Users,
+  Search,
 } from "lucide-react";
 import useServerHealth from "../../../hooks/useServerHealth";
 import useAuth from "../../../hooks/useAuth";
 import { cleanupPorts, pruneDocker } from "../../../services/server.api";
+import { getSuperAdminUserAnalytics } from "../../../services/analytics.api";
 import { useToast } from "../../../context/ToastContext";
 import "./Health.css";
 
@@ -116,6 +119,39 @@ export default function Health() {
       setPruningDocker(false);
     }
   };
+
+  const [userAnalytics, setUserAnalytics] = useState(null);
+  const [userAnalyticsLoading, setUserAnalyticsLoading] = useState(false);
+  const [userSearchTerm, setUserSearchTerm] = useState("");
+
+  const fetchUserAnalytics = useCallback(async () => {
+    try {
+      setUserAnalyticsLoading(true);
+      const data = await getSuperAdminUserAnalytics();
+      setUserAnalytics(data);
+    } catch (err) {
+      console.warn("Failed to fetch superadmin user analytics:", err.message);
+    } finally {
+      setUserAnalyticsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (user?.isOwner) {
+      fetchUserAnalytics();
+    }
+  }, [user?.isOwner, fetchUserAnalytics]);
+
+  const filteredUsers = useMemo(() => {
+    const list = userAnalytics?.users || [];
+    if (!userSearchTerm.trim()) return list;
+    const term = userSearchTerm.toLowerCase();
+    return list.filter(
+      (u) =>
+        u.username?.toLowerCase().includes(term) ||
+        u.email?.toLowerCase().includes(term),
+    );
+  }, [userAnalytics?.users, userSearchTerm]);
 
   const overallStatus = health?.overallStatus || "healthy";
 
@@ -215,13 +251,16 @@ export default function Health() {
           {/* Manual Refresh Button */}
           <button
             type="button"
-            className={`health-btn health-btn--secondary ${isRefreshing ? "refreshing" : ""}`}
-            onClick={refresh}
-            disabled={isRefreshing}
+            className={`health-btn health-btn--secondary ${isRefreshing || userAnalyticsLoading ? "refreshing" : ""}`}
+            onClick={() => {
+              refresh();
+              fetchUserAnalytics();
+            }}
+            disabled={isRefreshing || userAnalyticsLoading}
             title="Refresh metrics immediately"
           >
             <RefreshCw size={15} />
-            <span>{isRefreshing ? "Fetching..." : "Refresh"}</span>
+            <span>{isRefreshing || userAnalyticsLoading ? "Fetching..." : "Refresh"}</span>
           </button>
         </div>
       </div>
@@ -846,6 +885,202 @@ export default function Health() {
                   </span>
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* =========================================================
+              Per-User HTTP Traffic & Analytics (Super Admin)
+              ========================================================= */}
+          <div className="health-card user-analytics-card">
+            <div className="section-card-header">
+              <div className="section-card-title-group">
+                <Users size={18} className="section-icon" style={{ color: "#38bdf8" }} />
+                <div>
+                  <h3>Per-User Traffic &amp; Analytics</h3>
+                  <span className="card-sub">
+                    Tenant HTTP traffic telemetry, request distribution, response times, and active containers
+                  </span>
+                </div>
+              </div>
+
+              <div className="user-analytics-actions">
+                <div className="user-search-wrap">
+                  <Search size={14} className="user-search-icon" />
+                  <input
+                    type="text"
+                    placeholder="Search user or email..."
+                    value={userSearchTerm}
+                    onChange={(e) => setUserSearchTerm(e.target.value)}
+                    className="user-search-input"
+                  />
+                  {userSearchTerm && (
+                    <button
+                      type="button"
+                      className="user-search-clear"
+                      onClick={() => setUserSearchTerm("")}
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  className="health-btn health-btn--secondary user-refresh-btn"
+                  onClick={fetchUserAnalytics}
+                  disabled={userAnalyticsLoading}
+                  title="Refresh user traffic telemetry"
+                >
+                  <RefreshCw size={13} className={userAnalyticsLoading ? "spin" : ""} />
+                  <span>{userAnalyticsLoading ? "Updating..." : "Refresh"}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Platform Quick Summary Stats */}
+            {userAnalytics?.platform && (
+              <div className="platform-traffic-summary-strip">
+                <div className="summary-stat-item">
+                  <span className="stat-label">30-Day Platform Requests:</span>
+                  <span className="stat-val highlight">{userAnalytics.platform.totalRequests30d?.toLocaleString() ?? 0}</span>
+                </div>
+                <div className="summary-stat-divider" />
+                <div className="summary-stat-item">
+                  <span className="stat-label">Past 24h Queries:</span>
+                  <span className="stat-val">{userAnalytics.platform.totalRequests24h?.toLocaleString() ?? 0}</span>
+                </div>
+                <div className="summary-stat-divider" />
+                <div className="summary-stat-item">
+                  <span className="stat-label">Unique Visitors:</span>
+                  <span className="stat-val">{userAnalytics.platform.uniqueVisitors30d?.toLocaleString() ?? 0}</span>
+                </div>
+                <div className="summary-stat-divider" />
+                <div className="summary-stat-item">
+                  <span className="stat-label">Platform Avg Latency:</span>
+                  <span className="stat-val">{userAnalytics.platform.avgLatencyMs ?? 0} ms</span>
+                </div>
+                <div className="summary-stat-divider" />
+                <div className="summary-stat-item">
+                  <span className="stat-label">Total Bandwidth:</span>
+                  <span className="stat-val">{formatBytes(userAnalytics.platform.totalBytesSent)}</span>
+                </div>
+              </div>
+            )}
+
+            {/* User Breakdown Table */}
+            <div className="user-analytics-table-wrap">
+              <table className="user-analytics-table">
+                <thead>
+                  <tr>
+                    <th>User Account</th>
+                    <th>Hosted Projects</th>
+                    <th>30d Requests</th>
+                    <th>Unique Visitors</th>
+                    <th>Avg Latency</th>
+                    <th>Bandwidth</th>
+                    <th>Status / Health</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredUsers.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="user-table-empty">
+                        {userAnalyticsLoading
+                          ? "Loading tenant traffic telemetry..."
+                          : `No user accounts found matching "${userSearchTerm}"`}
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredUsers.map((u) => {
+                      const hasActivity = u.totalRequests30d > 0;
+                      return (
+                        <tr key={u.userId} className="user-table-row">
+                          <td className="user-identity-cell">
+                            <div className="user-avatar-badge">
+                              {u.username?.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="user-info-text">
+                              <div className="user-name-row">
+                                <strong className="user-username">{u.username}</strong>
+                                {u.isOwner && (
+                                  <span className="user-badge-owner">SuperAdmin</span>
+                                )}
+                                {u.canCustomSubdomain && (
+                                  <span className="user-badge-subdomain" title="Has permission to assign custom subdomains">
+                                    Custom Domain
+                                  </span>
+                                )}
+                              </div>
+                              <span className="user-email">{u.email}</span>
+                            </div>
+                          </td>
+
+                          <td>
+                            <span className="user-projects-pill">
+                              <strong>{u.runningProjectCount}</strong> running / {u.projectCount} total
+                            </span>
+                          </td>
+
+                          <td>
+                            <div className="requests-cell">
+                              <strong>{u.totalRequests30d.toLocaleString()}</strong>
+                              <span className="requests-sub">
+                                +{u.totalRequests24h.toLocaleString()} in 24h
+                              </span>
+                            </div>
+                          </td>
+
+                          <td>
+                            <span className="visitors-pill">
+                              <Users size={12} /> {u.uniqueVisitors30d.toLocaleString()}
+                            </span>
+                          </td>
+
+                          <td>
+                            <span className={`latency-pill ${
+                              u.avgLatencyMs < 80 ? "pill--success" : u.avgLatencyMs < 200 ? "pill--warning" : "pill--slow"
+                            }`}>
+                              {u.avgLatencyMs > 0 ? `${u.avgLatencyMs} ms` : "—"}
+                            </span>
+                          </td>
+
+                          <td>
+                            <span className="bandwidth-text">
+                              {formatBytes(u.totalBytesSent)}
+                            </span>
+                          </td>
+
+                          <td>
+                            {hasActivity ? (
+                              <div className="status-mini-stack">
+                                <div className="status-mini-bar">
+                                  <span
+                                    className="mini-seg mini-seg--2xx"
+                                    style={{
+                                      width: `${Math.round(((u.statusBreakdown["2xx"] || 0) / u.totalRequests30d) * 100)}%`,
+                                    }}
+                                  />
+                                  <span
+                                    className="mini-seg mini-seg--err"
+                                    style={{
+                                      width: `${Math.min(100, Math.round(((u.statusBreakdown["4xx"] + u.statusBreakdown["5xx"]) / u.totalRequests30d) * 100))}%`,
+                                    }}
+                                  />
+                                </div>
+                                <span className="status-mini-label">
+                                  {u.errorRate > 0 ? `${u.errorRate}% errors` : "100% OK"}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="user-idle-badge">Idle / No Traffic</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>

@@ -31,6 +31,7 @@ import * as publicationApi from "../../services/publication.api";
 import ProjectTerminal from "../../components/project/terminal/ProjectTerminal";
 import StorageStats from "../../components/cloud/StorageStats/StorageStats";
 import { getMyStorageStats } from "../../services/storage.api";
+import ProjectAnalytics from "../../components/project/analytics/ProjectAnalytics";
 
 export default function Project() {
   const { id } = useParams();
@@ -209,6 +210,9 @@ export default function Project() {
               onClear={() => setLogs([])}
             />
           </>
+        )}
+        {activeTab === "analytics" && (
+          <ProjectAnalytics projectId={id} projectName={project?.name} />
         )}
         {activeTab === "files" && (
           <div className="eh-project-files-view" style={{ width: "100%", display: "flex", flexDirection: "column" }}>

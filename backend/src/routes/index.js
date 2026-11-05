@@ -17,6 +17,7 @@ const cloudRoutes = require("./cloud.routes");
 const runtimeRoutes = require("./runtime.routes");
 const domainRoutes = require("../domain/domain.routes");
 const publicationRoutes = require("../publication/publication.routes");
+const analyticsRoutes = require("./analytics.routes");
 
 router.use("/webhooks", webhookRoutes);
 router.use("/auth", authRoutes);
@@ -35,5 +36,7 @@ router.use("/cloud", cloudRoutes);
 router.use(runtimeRoutes);
 router.use("/domains", domainRoutes);
 router.use("/projects/publication", publicationRoutes);
+router.use(analyticsRoutes);
 
 module.exports = router;
+
