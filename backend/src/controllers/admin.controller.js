@@ -12,7 +12,7 @@ const getUsers = async (req, res, next) => {
   } catch (err) {
     next(err);
   }
-};
+}; 
 
 const disableUser = async (req, res, next) => {
   try {
