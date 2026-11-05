@@ -20,7 +20,13 @@ export const cleanupPorts = async () => {
   return response.data;
 };
 
+export const pruneDocker = async () => {
+  const response = await api.post("/server/prune-docker");
+  return response.data;
+};
+
 export const getServerHealth = async () => {
+
   const response = await api.get("/server/health");
   return response.data.data;
 };

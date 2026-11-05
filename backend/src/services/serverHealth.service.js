@@ -258,6 +258,17 @@ const getServerHealth = async () => {
     });
   }
 
+  const buildQueue = require("./buildQueue.service");
+  const { getContainerResourceLimits } = require("./container.service");
+  const safetyLimits = getContainerResourceLimits();
+  const buildQueueData = buildQueue.getStatus();
+
+  checks.push({
+    component: "Workload Shield",
+    status: "pass",
+    message: `Protections armed: ${safetyLimits.maxMemoryMB}MB RAM/app, ${safetyLimits.maxCpus} CPU ceiling, Build Queue (${buildQueueData.active} active, ${buildQueueData.queued} queued)`,
+  });
+
   const hasFailures = checks.some((c) => c.status === "fail");
   const hasWarnings = checks.some((c) => c.status === "warn");
   const overallStatus = hasFailures
@@ -308,9 +319,12 @@ const getServerHealth = async () => {
     database: dbData,
     docker: dockerData,
     network: networkData,
+    safetyLimits,
+    buildQueue: buildQueueData,
     checks,
   };
 };
+
 
 module.exports = {
   getServerHealth,

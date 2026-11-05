@@ -1,8 +1,10 @@
+const projectService = require("../services/project.service");
 const domainService = require("./domain.service");
 
 const assign = async (req, res, next) => {
   try {
     const { projectId } = req.body;
+    await projectService.verifyProjectOwnership(projectId, req.user.id);
 
     const domain = await domainService.assign(projectId);
 
@@ -17,7 +19,10 @@ const assign = async (req, res, next) => {
 
 const getDomains = async (req, res, next) => {
   try {
-    const domains = await domainService.getDomains(req.params.projectId);
+    const projectId = req.params.projectId;
+    await projectService.verifyProjectOwnership(projectId, req.user.id);
+
+    const domains = await domainService.getDomains(projectId);
 
     return res.json({
       success: true,
@@ -32,3 +37,4 @@ module.exports = {
   assign,
   getDomains,
 };
+

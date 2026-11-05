@@ -33,6 +33,15 @@ const githubWebhook = async (req, res) => {
         message: "Invalid signature",
       });
     }
+  } else if (process.env.NODE_ENV === "production") {
+    return res.status(500).json({
+      success: false,
+      message: "Webhook secret is not configured on the server",
+    });
+  } else {
+    console.warn(
+      "[Security Warning] GITHUB_WEBHOOK_SECRET is not configured. Webhook signature verification bypassed in non-production mode.",
+    );
   }
 
   let payload;

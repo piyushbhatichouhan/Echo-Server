@@ -73,10 +73,53 @@ const buildExecutionContext = (project, settings, userEnvironment = []) => {
   };
 };
 
+const os = require("os");
+const { addServerLog } = require("./serverLog.service");
+
+const assertHostCapacity = async () => {
+  const freeMemMB = Math.round(os.freemem() / (1024 * 1024));
+  const minMemMB = Number(process.env.MIN_FREE_MEMORY_MB) || 250;
+  if (freeMemMB < minMemMB) {
+    const errorMsg = `Deployment blocked: Host physical memory is critically low (${freeMemMB}MB free, minimum safe threshold: ${minMemMB}MB). Circuit breaker armed to prevent server crash.`;
+    addServerLog({
+      level: "warn",
+      source: "deployment",
+      message: errorMsg,
+    });
+    const err = new Error(errorMsg);
+    err.status = 503;
+    throw err;
+  }
+
+  try {
+    const checkDiskSpace = require("check-disk-space").default;
+    const disk = await checkDiskSpace(process.cwd());
+    const freeDiskGB = Number((disk.free / (1024 * 1024 * 1024)).toFixed(2));
+    const minDiskGB = Number(process.env.MIN_FREE_DISK_GB) || 2.5;
+    if (freeDiskGB < minDiskGB) {
+      const errorMsg = `Deployment blocked: Host storage drive has critically low free space (${freeDiskGB}GB free, minimum safe threshold: ${minDiskGB}GB). Circuit breaker armed to prevent filesystem freeze.`;
+      addServerLog({
+        level: "warn",
+        source: "deployment",
+        message: errorMsg,
+      });
+      const err = new Error(errorMsg);
+      err.status = 507;
+      throw err;
+    }
+  } catch (err) {
+    if (err.status) throw err;
+  }
+};
+
 const deployProject = async (projectId, ownerId) => {
   await projectService.verifyProjectOwnership(projectId, ownerId);
 
+  // Pre-flight circuit breaker: verify host RAM and disk before building
+  await assertHostCapacity();
+
   const repository = await git.getRepository(projectId, ownerId);
+
 
   if (repository) {
     await git.updateRepository(projectId, ownerId);
