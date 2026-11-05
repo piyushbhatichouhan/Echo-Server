@@ -139,11 +139,22 @@ async function checkDatabase() {
 }
 
 const portService = require("../services/port.service");
+const { verifyMailConnection, getFromAddress } = require("../services/mail.service");
 
 async function checkPorts() {
   console.log("Checking and cleaning pseudo ports...");
   await portService.cleanupPseudoPorts();
   console.log("✓ Ports OK");
+}
+
+async function checkMail() {
+  console.log("Checking Mail SMTP...");
+  const status = await verifyMailConnection();
+  if (status.ok) {
+    console.log(`✓ Mail SMTP OK (sender: ${getFromAddress()})`);
+  } else {
+    console.log(`ℹ Mail SMTP notice: ${status.message}`);
+  }
 }
 
 async function validateStartup() {
@@ -159,6 +170,8 @@ async function validateStartup() {
   await checkDatabase();
 
   await checkPorts();
+
+  await checkMail();
 
   console.log("");
   console.log("✓ Startup validation completed");
