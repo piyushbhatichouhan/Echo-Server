@@ -1,5 +1,6 @@
 import "./Settings.css";
 import { useEffect, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { forgotPassword, getCurrentUser, deleteAccount } from "../../services/auth.api";
 import cloudWorkspace from "../../services/cloudWorkspace";
 import ConfirmationModal from "../../components/common/modal/ConfirmationModal";
@@ -95,6 +96,16 @@ export default function Settings() {
     };
     loadUser();
   }, []);
+
+  // Prevent background scrolling when reset modal is open
+  useEffect(() => {
+    if (!resetModalOpen) return;
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [resetModalOpen]);
 
   // Handle escape key for reset modal
   useEffect(() => {
@@ -567,101 +578,103 @@ export default function Settings() {
       </div>
 
       {/* Password Reset Modal */}
-      {resetModalOpen && (
-        <div
-          className="settings-modal-overlay"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setResetModalOpen(false);
-          }}
-          role="dialog"
-          aria-modal="true"
-        >
-          <div className="settings-modal">
-            {!resetSent ? (
-              <>
-                <div className="settings-modal-header">
-                  <div className="settings-modal-icon-badge">
-                    <Mail size={22} />
+      {resetModalOpen &&
+        createPortal(
+          <div
+            className="settings-modal-overlay"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setResetModalOpen(false);
+            }}
+            role="dialog"
+            aria-modal="true"
+          >
+            <div className="settings-modal">
+              {!resetSent ? (
+                <>
+                  <div className="settings-modal-header">
+                    <div className="settings-modal-icon-badge">
+                      <Mail size={22} />
+                    </div>
+                    <button
+                      type="button"
+                      className="settings-modal-close"
+                      onClick={() => setResetModalOpen(false)}
+                      aria-label="Close"
+                    >
+                      <X size={18} />
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    className="settings-modal-close"
-                    onClick={() => setResetModalOpen(false)}
-                    aria-label="Close"
-                  >
-                    <X size={18} />
-                  </button>
-                </div>
 
-                <h2>Reset Password</h2>
-                <p>Send a secure password reset link to your verified account address:</p>
+                  <h2>Reset Password</h2>
+                  <p>Send a secure password reset link to your verified account address:</p>
 
-                <strong>{user.email}</strong>
+                  <strong>{user.email}</strong>
 
-                <div className="settings-modal-actions">
-                  <button
-                    type="button"
-                    className="settings-secondary-btn"
-                    onClick={() => setResetModalOpen(false)}
-                    disabled={sendingReset}
-                  >
-                    Cancel
-                  </button>
+                  <div className="settings-modal-actions">
+                    <button
+                      type="button"
+                      className="settings-secondary-btn"
+                      onClick={() => setResetModalOpen(false)}
+                      disabled={sendingReset}
+                    >
+                      Cancel
+                    </button>
 
-                  <button
-                    type="button"
-                    className="settings-primary-btn"
-                    onClick={sendResetEmail}
-                    disabled={sendingReset}
-                  >
-                    {sendingReset ? (
-                      <span className="settings-btn-spinner-wrap">
-                        <span className="settings-btn-spinner" />
-                        Sending...
-                      </span>
-                    ) : (
-                      <>
-                        <Send size={16} />
-                        <span>Send Email</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="settings-modal-header settings-modal-header--centered">
-                  <div className="settings-modal-icon-badge settings-modal-icon-badge--success">
-                    <CheckCircle2 size={24} />
+                    <button
+                      type="button"
+                      className="settings-primary-btn"
+                      onClick={sendResetEmail}
+                      disabled={sendingReset}
+                    >
+                      {sendingReset ? (
+                        <span className="settings-btn-spinner-wrap">
+                          <span className="settings-btn-spinner" />
+                          Sending...
+                        </span>
+                      ) : (
+                        <>
+                          <Send size={16} />
+                          <span>Send Email</span>
+                        </>
+                      )}
+                    </button>
                   </div>
-                </div>
+                </>
+              ) : (
+                <>
+                  <div className="settings-modal-header settings-modal-header--centered">
+                    <div className="settings-modal-icon-badge settings-modal-icon-badge--success">
+                      <CheckCircle2 size={24} />
+                    </div>
+                  </div>
 
-                <h2>Email Sent Successfully</h2>
-                <p>A password reset link with instructions has been dispatched to:</p>
+                  <h2>Email Sent Successfully</h2>
+                  <p>A password reset link with instructions has been dispatched to:</p>
 
-                <strong>{user.email}</strong>
+                  <strong>{user.email}</strong>
 
-                <p className="settings-modal-subtext">
-                  Please check your inbox and spam folder. The link will expire in 1 hour.
-                </p>
+                  <p className="settings-modal-subtext">
+                    Please check your inbox and spam folder. The link will expire in 1 hour.
+                  </p>
 
-                <div className="settings-modal-actions settings-modal-actions--centered">
-                  <button
-                    type="button"
-                    className="settings-primary-btn"
-                    onClick={() => {
-                      setResetSent(false);
-                      setResetModalOpen(false);
-                    }}
-                  >
-                    Done
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
+                  <div className="settings-modal-actions settings-modal-actions--centered">
+                    <button
+                      type="button"
+                      className="settings-primary-btn"
+                      onClick={() => {
+                        setResetSent(false);
+                        setResetModalOpen(false);
+                      }}
+                    >
+                      Done
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>,
+          document.body
+        )}
 
       {/* Account Deletion Confirmation Modal */}
       <ConfirmationModal

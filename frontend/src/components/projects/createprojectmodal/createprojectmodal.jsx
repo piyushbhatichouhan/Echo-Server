@@ -1,6 +1,7 @@
 import "./createprojectmodal.css";
 
 import { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { createProject } from "../../../services/project.api";
 
 import {
@@ -96,6 +97,16 @@ export default function CreateProjectModal({ open, onClose, onCreated }) {
     onClose?.();
   }, [loading, onClose]);
 
+  // Prevent background scrolling while modal is open
+  useEffect(() => {
+    if (!open) return;
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [open]);
+
   // Handle escape key
   useEffect(() => {
     if (!open) return;
@@ -137,7 +148,7 @@ export default function CreateProjectModal({ open, onClose, onCreated }) {
     }
   };
 
-  return (
+  return createPortal(
     <div
       className="createProjectOverlay"
       onClick={(e) => {
@@ -314,7 +325,8 @@ export default function CreateProjectModal({ open, onClose, onCreated }) {
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

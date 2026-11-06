@@ -1,5 +1,6 @@
 import "./ContextMenu.css";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 export default function ContextMenu({ x, y, visible, items, onClose }) {
   if (!visible) return null;
@@ -37,7 +38,7 @@ export default function ContextMenu({ x, y, visible, items, onClose }) {
     });
   }, [visible, x, y]);
 
-  return (
+  return createPortal(
     <>
       <div className="eh-context-backdrop" onClick={onClose} />
 
@@ -60,6 +61,7 @@ export default function ContextMenu({ x, y, visible, items, onClose }) {
           </button>
         ))}
       </div>
-    </>
+    </>,
+    document.body
   );
 }

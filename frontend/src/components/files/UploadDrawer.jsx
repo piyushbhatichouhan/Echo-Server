@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { UploadCloud, CheckCircle2, XCircle, ChevronUp, ChevronDown, X, AlertCircle } from "lucide-react";
 import "./UploadDrawer.css";
 
@@ -25,7 +26,7 @@ export default function UploadDrawer({
 
   const allFinished = inProgressCount === 0;
 
-  return (
+  return createPortal(
     <div className={`upload-drawer-container ${minimized ? "minimized" : ""}`}>
       <div className="upload-drawer-header" onClick={() => setMinimized((m) => !m)}>
         <div className="upload-drawer-title">
@@ -105,6 +106,7 @@ export default function UploadDrawer({
           ))}
         </div>
       )}
-    </div>
+    </div>,
+    document.body
   );
 }
