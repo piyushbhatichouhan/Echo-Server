@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import "./modal.css";
 
@@ -14,6 +15,18 @@ export default function Modal({
   width,
 }) {
   const isVisible = open ?? isOpen;
+
+  // Prevent background scrolling while modal is open
+  useEffect(() => {
+    if (!isVisible) return;
+
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [isVisible]);
 
   // Close on Escape key press
   useEffect(() => {
@@ -31,7 +44,7 @@ export default function Modal({
 
   if (!isVisible) return null;
 
-  return (
+  return createPortal(
     <div
       className={`eh-modal-overlay ${overlayClassName}`.trim()}
       style={zIndex ? { zIndex } : undefined}
@@ -62,6 +75,7 @@ export default function Modal({
 
         <div className="eh-modal-body">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

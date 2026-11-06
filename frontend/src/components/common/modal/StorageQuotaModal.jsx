@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import "./StorageQuotaModal.css";
 import { HardDrive, X, Check, Save } from "lucide-react";
 
@@ -42,6 +43,16 @@ export default function StorageQuotaModal({
     }
   }, [user]);
 
+  // Prevent background scrolling while modal is open
+  useEffect(() => {
+    if (!open) return;
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [open]);
+
   // Handle escape key
   useEffect(() => {
     if (!open) return;
@@ -67,7 +78,7 @@ export default function StorageQuotaModal({
 
   const isValid = storageValue > 0 && !Number.isNaN(storageValue);
 
-  return (
+  return createPortal(
     <div
       className="storageQuotaOverlay"
       onClick={(e) => {
@@ -198,7 +209,8 @@ export default function StorageQuotaModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

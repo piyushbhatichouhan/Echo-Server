@@ -1,5 +1,6 @@
 import "./ConfirmationModal.css";
 import { useEffect, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { AlertTriangle, Trash2, X, CheckCircle2, ShieldAlert } from "lucide-react";
 
 export default function ConfirmationModal({
@@ -26,6 +27,16 @@ export default function ConfirmationModal({
     if (open) {
       setConfirmation("");
     }
+  }, [open]);
+
+  // Prevent background scrolling while modal is open
+  useEffect(() => {
+    if (!open) return;
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
   }, [open]);
 
   // Handle escape key
@@ -72,7 +83,7 @@ export default function ConfirmationModal({
     }
   };
 
-  return (
+  return createPortal(
     <div
       className="confirmationOverlay"
       onClick={(e) => {
@@ -227,7 +238,8 @@ export default function ConfirmationModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

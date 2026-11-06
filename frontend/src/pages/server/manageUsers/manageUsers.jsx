@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -64,6 +65,16 @@ export default function ManageUsers() {
     type: null, // 'disable' | 'enable'
     targetUser: null,
   });
+
+  // Prevent background scrolling while action modal is open
+  useEffect(() => {
+    if (!actionModal.open) return;
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [actionModal.open]);
 
   // Guard: Super Admin only
   if (!currentUser?.isOwner) {
@@ -496,69 +507,72 @@ export default function ManageUsers() {
       />
 
       {/* In-App Confirmation Dialog for Enable / Disable (Replaces window.confirm) */}
-      {actionModal.open && actionModal.targetUser && (
-        <div className="modal-backdrop-custom">
-          <div className="action-confirm-card">
-            <div className="action-confirm-header">
-              {actionModal.type === "disable" ? (
-                <Lock size={32} className="modal-icon-warn" />
-              ) : actionModal.type === "enable" ? (
-                <Unlock size={32} className="modal-icon-success" />
-              ) : actionModal.type === "grant_subdomain" ? (
-                <Globe size={32} className="modal-icon-success" />
-              ) : (
-                <Globe size={32} className="modal-icon-warn" />
-              )}
-              <h3>
-                {actionModal.type === "disable"
-                  ? `Disable "${actionModal.targetUser.username}"?`
-                  : actionModal.type === "enable"
-                  ? `Enable "${actionModal.targetUser.username}"?`
-                  : actionModal.type === "grant_subdomain"
-                  ? `Grant Custom Subdomain Access to "${actionModal.targetUser.username}"?`
-                  : `Revoke Custom Subdomain Access from "${actionModal.targetUser.username}"?`}
-              </h3>
-            </div>
+      {actionModal.open &&
+        actionModal.targetUser &&
+        createPortal(
+          <div className="modal-backdrop-custom">
+            <div className="action-confirm-card">
+              <div className="action-confirm-header">
+                {actionModal.type === "disable" ? (
+                  <Lock size={32} className="modal-icon-warn" />
+                ) : actionModal.type === "enable" ? (
+                  <Unlock size={32} className="modal-icon-success" />
+                ) : actionModal.type === "grant_subdomain" ? (
+                  <Globe size={32} className="modal-icon-success" />
+                ) : (
+                  <Globe size={32} className="modal-icon-warn" />
+                )}
+                <h3>
+                  {actionModal.type === "disable"
+                    ? `Disable "${actionModal.targetUser.username}"?`
+                    : actionModal.type === "enable"
+                    ? `Enable "${actionModal.targetUser.username}"?`
+                    : actionModal.type === "grant_subdomain"
+                    ? `Grant Custom Subdomain Access to "${actionModal.targetUser.username}"?`
+                    : `Revoke Custom Subdomain Access from "${actionModal.targetUser.username}"?`}
+                </h3>
+              </div>
 
-            <p className="action-confirm-desc">
-              {actionModal.type === "disable"
-                ? `Disabling this account will immediately revoke access and prevent the developer from logging in or deploying workloads.`
-                : actionModal.type === "enable"
-                ? `Enabling this account will restore access and allow the developer to log in and manage their workspaces.`
-                : actionModal.type === "grant_subdomain"
-                ? `Granting custom subdomain privilege will allow "${actionModal.targetUser.username}" to choose their own custom subdomain on devpiyush.in when publishing hosted projects.`
-                : `Revoking this privilege will prevent "${actionModal.targetUser.username}" from choosing custom subdomains on devpiyush.in. Existing published projects will remain active until modified.`}
-            </p>
-
-            <div className="action-confirm-buttons">
-              <button
-                type="button"
-                className="confirm-btn confirm-btn--cancel"
-                onClick={() => setActionModal({ open: false, type: null, targetUser: null })}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className={`confirm-btn ${
-                  actionModal.type === "disable" || actionModal.type === "revoke_subdomain"
-                    ? "confirm-btn--warning"
-                    : "confirm-btn--primary"
-                }`}
-                onClick={confirmToggleState}
-              >
+              <p className="action-confirm-desc">
                 {actionModal.type === "disable"
-                  ? "Yes, Disable Account"
+                  ? `Disabling this account will immediately revoke access and prevent the developer from logging in or deploying workloads.`
                   : actionModal.type === "enable"
-                  ? "Yes, Enable Account"
+                  ? `Enabling this account will restore access and allow the developer to log in and manage their workspaces.`
                   : actionModal.type === "grant_subdomain"
-                  ? "Yes, Grant Privilege"
-                  : "Yes, Revoke Privilege"}
-              </button>
+                  ? `Granting custom subdomain privilege will allow "${actionModal.targetUser.username}" to choose their own custom subdomain on devpiyush.in when publishing hosted projects.`
+                  : `Revoking this privilege will prevent "${actionModal.targetUser.username}" from choosing custom subdomains on devpiyush.in. Existing published projects will remain active until modified.`}
+              </p>
+
+              <div className="action-confirm-buttons">
+                <button
+                  type="button"
+                  className="confirm-btn confirm-btn--cancel"
+                  onClick={() => setActionModal({ open: false, type: null, targetUser: null })}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className={`confirm-btn ${
+                    actionModal.type === "disable" || actionModal.type === "revoke_subdomain"
+                      ? "confirm-btn--warning"
+                      : "confirm-btn--primary"
+                  }`}
+                  onClick={confirmToggleState}
+                >
+                  {actionModal.type === "disable"
+                    ? "Yes, Disable Account"
+                    : actionModal.type === "enable"
+                    ? "Yes, Enable Account"
+                    : actionModal.type === "grant_subdomain"
+                    ? "Yes, Grant Privilege"
+                    : "Yes, Revoke Privilege"}
+                </button>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
     </div>
   );
 }
