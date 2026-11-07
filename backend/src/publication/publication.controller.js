@@ -97,10 +97,73 @@ const updateSubdomain = async (req, res, next) => {
   }
 };
 
+const getSubdomainRequest = async (req, res, next) => {
+  try {
+    const { projectId } = req.params;
+    const ownerId = req.user.id;
+
+    const request = await publicationService.getSubdomainRequest(
+      projectId,
+      ownerId,
+    );
+
+    res.json({
+      success: true,
+      data: request,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const requestCustomSubdomain = async (req, res, next) => {
+  try {
+    const { projectId } = req.params;
+    const ownerId = req.user.id;
+    const { subdomain } = req.body || {};
+
+    const request = await publicationService.requestCustomSubdomain(
+      projectId,
+      ownerId,
+      subdomain,
+    );
+
+    res.status(201).json({
+      success: true,
+      message:
+        request.status === "approved"
+          ? "Custom subdomain approved successfully."
+          : "Custom subdomain request submitted to the Super Admin for approval.",
+      data: request,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const cancelSubdomainRequest = async (req, res, next) => {
+  try {
+    const { projectId } = req.params;
+    const ownerId = req.user.id;
+
+    await publicationService.cancelSubdomainRequest(projectId, ownerId);
+
+    res.json({
+      success: true,
+      message: "Custom subdomain request has been cancelled.",
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   checkSubdomain,
   publishProject,
   getPublication,
   unpublishProject,
   updateSubdomain,
+  getSubdomainRequest,
+  requestCustomSubdomain,
+  cancelSubdomainRequest,
 };

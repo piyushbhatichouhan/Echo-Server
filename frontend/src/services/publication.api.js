@@ -41,3 +41,20 @@ export const unpublishProject = async (projectId) => {
   await api.delete(`/projects/publication/${projectId}/publish`);
 };
 
+export const getSubdomainRequest = async (projectId) => {
+  const { data } = await api.get(`/projects/publication/${projectId}/subdomain-request`);
+  return data.data;
+};
+
+export const requestCustomSubdomain = async (projectId, subdomain) => {
+  const { data } = await api.post(`/projects/publication/${projectId}/subdomain-request`, {
+    subdomain,
+  });
+  return data;
+};
+
+export const cancelSubdomainRequest = async (projectId) => {
+  const { data } = await api.delete(`/projects/publication/${projectId}/subdomain-request`);
+  return data;
+};
+

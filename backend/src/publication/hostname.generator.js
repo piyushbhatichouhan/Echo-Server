@@ -91,6 +91,31 @@ const validateCustomSubdomain = async (rawSubdomain, isOwner = false, excludePro
     };
   }
 
+  // 5. Collision check against active or pending subdomain requests
+  const existingReq = await publicationRepository.getPendingOrApprovedRequestBySubdomain(
+    clean,
+    excludeProjectId,
+  );
+  if (existingReq) {
+    if (excludeProjectId && String(existingReq.project_id) === String(excludeProjectId)) {
+      return {
+        valid: true,
+        subdomain: clean,
+        hostname: fullHostname,
+        isCurrent: true,
+        message:
+          existingReq.status === "approved"
+            ? "Approved custom subdomain for this project."
+            : "Subdomain request pending approval for this project.",
+      };
+    }
+    return {
+      valid: false,
+      message: `The subdomain "${clean}.${BASE_DOMAIN}" is currently reserved or requested by another project.`,
+      reason: "ALREADY_REQUESTED",
+    };
+  }
+
   return {
     valid: true,
     subdomain: clean,

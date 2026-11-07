@@ -101,6 +101,21 @@ const publishProject = async (projectId, ownerId, options = {}) => {
       throw err;
     }
 
+    // Unless user is Super Admin or bypass requested, enforce approved request
+    if (!isOwner && !options.bypassApprovalCheck) {
+      const approvedReq = await publicationRepository.getApprovedSubdomainRequest(
+        projectId,
+        validation.subdomain,
+      );
+      if (!approvedReq) {
+        const err = new Error(
+          `The custom subdomain "${validation.subdomain}" has not been approved by the Super Admin for this project. Please submit a request first.`,
+        );
+        err.status = 403;
+        throw err;
+      }
+    }
+
     hostname = validation.hostname;
     isCustom = true;
     customDomain = validation.subdomain;
@@ -240,6 +255,21 @@ const updateSubdomain = async (projectId, ownerId, options = {}) => {
       throw err;
     }
 
+    // Unless user is Super Admin or bypass requested, enforce approved request
+    if (!isOwner && !options.bypassApprovalCheck) {
+      const approvedReq = await publicationRepository.getApprovedSubdomainRequest(
+        projectId,
+        validation.subdomain,
+      );
+      if (!approvedReq) {
+        const err = new Error(
+          `The custom subdomain "${validation.subdomain}" has not been approved by the Super Admin for this project. Please submit a request first.`,
+        );
+        err.status = 403;
+        throw err;
+      }
+    }
+
     targetHostname = validation.hostname;
     isCustom = true;
     customDomain = validation.subdomain;
@@ -300,6 +330,69 @@ const updateSubdomain = async (projectId, ownerId, options = {}) => {
   return updatedPublication;
 };
 
+const getSubdomainRequest = async (projectId, ownerId) => {
+  await projectService.verifyProjectOwnership(projectId, ownerId);
+  return await publicationRepository.getSubdomainRequestByProject(projectId);
+};
+
+const requestCustomSubdomain = async (projectId, ownerId, rawSubdomain) => {
+  await projectService.verifyProjectOwnership(projectId, ownerId);
+
+  const user = await userRepository.getUserById(ownerId);
+  const isOwner = Boolean(user?.is_owner);
+  const canCustom = Boolean(user?.is_owner || user?.can_custom_subdomain);
+
+  if (!canCustom) {
+    const err = new Error(
+      "You must have custom subdomain privilege granted by the Super Admin to request a custom subdomain.",
+    );
+    err.status = 403;
+    throw err;
+  }
+
+  const validation = await hostnameGenerator.validateCustomSubdomain(
+    rawSubdomain,
+    isOwner,
+    projectId,
+  );
+
+  if (!validation.valid) {
+    const err = new Error(validation.message);
+    err.status = 400;
+    throw err;
+  }
+
+  // Super Admin requests are immediately auto-approved; regular developer requests are 'pending'
+  const status = isOwner ? "approved" : "pending";
+  const reviewedBy = isOwner ? ownerId : null;
+  const reviewedAt = isOwner ? new Date() : null;
+
+  const request = await publicationRepository.createOrUpdateSubdomainRequest(
+    projectId,
+    ownerId,
+    validation.subdomain,
+    validation.hostname,
+    status,
+  );
+
+  if (isOwner) {
+    await publicationRepository.updateSubdomainRequestStatus(request.id, {
+      status: "approved",
+      reviewedBy,
+      reviewedAt,
+    });
+    request.status = "approved";
+  }
+
+  return request;
+};
+
+const cancelSubdomainRequest = async (projectId, ownerId) => {
+  await projectService.verifyProjectOwnership(projectId, ownerId);
+  await publicationRepository.deleteSubdomainRequestByProject(projectId);
+  return { success: true, message: "Subdomain request cancelled." };
+};
+
 module.exports = {
   checkCustomSubdomainAvailability,
   publishProject,
@@ -307,4 +400,7 @@ module.exports = {
   unpublishProject,
   republishProject,
   updateSubdomain,
+  getSubdomainRequest,
+  requestCustomSubdomain,
+  cancelSubdomainRequest,
 };

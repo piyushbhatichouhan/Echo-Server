@@ -127,6 +127,24 @@ async function checkDatabase() {
         CREATE INDEX IF NOT EXISTS idx_analytics_proj_time ON http_analytics(project_id, timestamp DESC);
         CREATE INDEX IF NOT EXISTS idx_analytics_user_time ON http_analytics(user_id, timestamp DESC);
         CREATE INDEX IF NOT EXISTS idx_analytics_timestamp ON http_analytics(timestamp DESC);
+
+        CREATE TABLE IF NOT EXISTS subdomain_requests (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+          user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          subdomain VARCHAR(63) NOT NULL,
+          hostname VARCHAR(255) NOT NULL,
+          status VARCHAR(20) NOT NULL DEFAULT 'pending',
+          admin_notes TEXT,
+          reviewed_by UUID REFERENCES users(id) ON DELETE SET NULL,
+          reviewed_at TIMESTAMPTZ,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+        CREATE INDEX IF NOT EXISTS idx_subdomain_req_proj ON subdomain_requests(project_id);
+        CREATE INDEX IF NOT EXISTS idx_subdomain_req_user ON subdomain_requests(user_id);
+        CREATE INDEX IF NOT EXISTS idx_subdomain_req_status ON subdomain_requests(status);
+        CREATE INDEX IF NOT EXISTS idx_subdomain_req_subdomain ON subdomain_requests(subdomain);
       END $$;
     `);
   } catch (err) {

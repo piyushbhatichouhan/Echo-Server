@@ -1,4 +1,6 @@
 const userRepository = require("../repositories/user.repository");
+const publicationRepository = require("../publication/publication.repository");
+const publicationService = require("../publication/publication.service");
 
 const SUPER_ADMIN_EMAIL = process.env.SUPER_ADMIN_EMAIL;
 
@@ -84,6 +86,84 @@ const setCustomSubdomainAccess = async (userId, enabled) => {
   return await userRepository.updateCustomSubdomainAccess(userId, enabled);
 };
 
+const getSubdomainRequests = async (filters = {}) => {
+  return await publicationRepository.listSubdomainRequests(filters);
+};
+
+const getSubdomainRequestStats = async () => {
+  return await publicationRepository.getSubdomainRequestStats();
+};
+
+const approveSubdomainRequest = async (requestId, adminId) => {
+  const req = await publicationRepository.getSubdomainRequestById(requestId);
+  if (!req) {
+    const err = new Error("Subdomain request not found.");
+    err.status = 404;
+    throw err;
+  }
+
+  // Check collision against active publications
+  const existingDomain = await publicationRepository.getDomainByHostname(req.hostname);
+  if (existingDomain && String(existingDomain.project_id) !== String(req.project_id)) {
+    const err = new Error(`Hostname "${req.hostname}" is already in use by another project.`);
+    err.status = 409;
+    throw err;
+  }
+
+  const updatedRequest = await publicationRepository.updateSubdomainRequestStatus(requestId, {
+    status: "approved",
+    adminNotes: null,
+    reviewedBy: adminId,
+    reviewedAt: new Date(),
+  });
+
+  // If the project is already published, seamlessly update its live routing to the approved custom subdomain
+  try {
+    const pub = await publicationRepository.getProjectDomain(req.project_id);
+    if (pub && pub.publication_status === "active") {
+      await publicationService.updateSubdomain(req.project_id, req.user_id, {
+        subdomainType: "custom",
+        customSubdomain: req.subdomain,
+        bypassApprovalCheck: true,
+      });
+    }
+  } catch (err) {
+    console.warn(`[AdminService] Auto-update published domain warning for project ${req.project_id}:`, err.message);
+  }
+
+  return updatedRequest;
+};
+
+const rejectSubdomainRequest = async (requestId, adminId, reason = null) => {
+  const req = await publicationRepository.getSubdomainRequestById(requestId);
+  if (!req) {
+    const err = new Error("Subdomain request not found.");
+    err.status = 404;
+    throw err;
+  }
+
+  const updatedRequest = await publicationRepository.updateSubdomainRequestStatus(requestId, {
+    status: "rejected",
+    adminNotes: reason || "Declined by administrator.",
+    reviewedBy: adminId,
+    reviewedAt: new Date(),
+  });
+
+  return updatedRequest;
+};
+
+const deleteSubdomainRequest = async (requestId) => {
+  const req = await publicationRepository.getSubdomainRequestById(requestId);
+  if (!req) {
+    const err = new Error("Subdomain request not found.");
+    err.status = 404;
+    throw err;
+  }
+
+  await publicationRepository.deleteSubdomainRequestById(requestId);
+  return { success: true, message: "Subdomain request removed." };
+};
+
 module.exports = {
   getUsers,
   disableUser,
@@ -91,4 +171,9 @@ module.exports = {
   deleteUser,
   restoreUser,
   setCustomSubdomainAccess,
+  getSubdomainRequests,
+  getSubdomainRequestStats,
+  approveSubdomainRequest,
+  rejectSubdomainRequest,
+  deleteSubdomainRequest,
 };
