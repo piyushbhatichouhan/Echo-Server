@@ -239,9 +239,32 @@ const sendPasswordResetEmail = async (email, token) => {
   }
 };
 
+/**
+ * Generic email dispatcher using configured SMTP transporter.
+ */
+const sendMail = async ({ to, subject, text, html }) => {
+  const from = getFromAddress();
+  try {
+    const transport = refreshTransporter();
+    const info = await transport.sendMail({
+      from,
+      to,
+      subject,
+      text,
+      html,
+    });
+    console.log(`[MailService] Email sent to ${to} (Subject: "${subject}", MessageId: ${info.messageId})`);
+    return info;
+  } catch (err) {
+    console.error(`[MailService] Failed to send email to ${to}:`, err.message);
+    throw err;
+  }
+};
+
 module.exports = {
   sendVerificationEmail,
   sendPasswordResetEmail,
+  sendMail,
   verifyMailConnection,
   getFromAddress,
   refreshTransporter,

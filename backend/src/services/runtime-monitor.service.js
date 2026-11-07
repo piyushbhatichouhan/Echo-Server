@@ -32,7 +32,16 @@ const start = () => {
         }
       }
     } catch (err) {
-      console.error(err);
+      console.error("[RuntimeMonitor] Inspection error:", err);
+      try {
+        const notificationService = require("./notification.service");
+        notificationService
+          .notifyCriticalError({
+            error: err,
+            source: "Runtime Container Monitor",
+          })
+          .catch(() => {});
+      } catch (_) {}
     }
   }, CHECK_INTERVAL);
 };

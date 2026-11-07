@@ -176,6 +176,28 @@ const deleteSubdomainRequest = async (req, res, next) => {
   }
 };
 
+const testNotification = async (req, res, next) => {
+  try {
+    const { type = "subdomain" } = req.body || {};
+    const notificationService = require("../services/notification.service");
+    const result = await notificationService.sendTestNotification(type);
+    if (!result.ok) {
+      return res.status(500).json({
+        success: false,
+        message: result.error || "Failed to deliver test notification.",
+        data: result,
+      });
+    }
+    res.json({
+      success: true,
+      message: `Test ${type} notification sent to ${result.recipient}`,
+      data: result,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getUsers,
   disableUser,
@@ -189,4 +211,5 @@ module.exports = {
   approveSubdomainRequest,
   rejectSubdomainRequest,
   deleteSubdomainRequest,
+  testNotification,
 };

@@ -158,6 +158,39 @@
   background: var(--bg-hover);
 }
 
+.subdomain-req-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.subdomain-req-test-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 18px;
+  border-radius: 12px;
+  background: rgba(255, 170, 0, 0.12);
+  border: 1px solid rgba(255, 170, 0, 0.35);
+  color: #ffaa33;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.subdomain-req-test-btn:hover:not(:disabled) {
+  background: rgba(255, 170, 0, 0.22);
+  border-color: rgba(255, 170, 0, 0.6);
+  color: #ffbe55;
+  box-shadow: 0 0 16px rgba(255, 170, 0, 0.15);
+}
+
+.subdomain-req-test-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .subdomain-req-refresh-btn {
   display: inline-flex;
   align-items: center;

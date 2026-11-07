@@ -410,6 +410,33 @@ const requestCustomSubdomain = async (projectId, ownerId, rawSubdomain) => {
       reviewedAt,
     });
     request.status = "approved";
+  } else {
+    // Notify Super Admin of incoming custom subdomain request (non-blocking)
+    try {
+      const notificationService = require("../services/notification.service");
+      let project = null;
+      try {
+        project = await projectService.getProjectById(projectId, ownerId);
+      } catch (_) {}
+
+      notificationService
+        .notifySubdomainRequest({
+          project: project || { id: projectId, name: "Project" },
+          user: {
+            id: ownerId,
+            username: user?.username || "developer",
+            email: user?.email || "developer@domain",
+          },
+          subdomain: validation.subdomain,
+          hostname: validation.hostname,
+          requestId: request.id,
+        })
+        .catch((mailErr) => {
+          console.warn("[Publication] Subdomain request notification warning:", mailErr.message);
+        });
+    } catch (notifErr) {
+      console.warn("[Publication] Failed to queue subdomain notification:", notifErr.message);
+    }
   }
 
   return request;
