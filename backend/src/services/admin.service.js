@@ -83,7 +83,45 @@ const setCustomSubdomainAccess = async (userId, enabled) => {
     throw new Error("Super Admin already has custom subdomain privileges.");
   }
 
-  return await userRepository.updateCustomSubdomainAccess(userId, enabled);
+  const updatedUser = await userRepository.updateCustomSubdomainAccess(userId, enabled);
+
+  if (!enabled) {
+    // When custom subdomain privilege is revoked:
+    // 1. Mark all pending/approved subdomain requests for this user as rejected
+    try {
+      await publicationRepository.rejectAllUserSubdomainRequests(
+        userId,
+        "Custom subdomain privilege was revoked by the Super Admin.",
+      );
+    } catch (err) {
+      console.warn(
+        `[AdminService] Warning rejecting subdomain requests for revoked user ${userId}:`,
+        err.message,
+      );
+    }
+
+    // 2. Automatically revert all projects currently published on a custom subdomain back to the standard domain
+    try {
+      const customProjects = await publicationRepository.getUserCustomPublishedProjects(userId);
+      for (const proj of customProjects) {
+        await publicationService.updateSubdomain(proj.project_id, userId, {
+          subdomainType: "default",
+          bypassApprovalCheck: true,
+          bypassOwnershipCheck: true,
+        });
+        console.log(
+          `[AdminService] Reverted project ${proj.project_id} to standard domain after custom subdomain privilege was revoked.`,
+        );
+      }
+    } catch (err) {
+      console.warn(
+        `[AdminService] Warning reverting custom published projects for revoked user ${userId}:`,
+        err.message,
+      );
+    }
+  }
+
+  return updatedUser;
 };
 
 const getSubdomainRequests = async (filters = {}) => {
@@ -125,6 +163,7 @@ const approveSubdomainRequest = async (requestId, adminId) => {
         subdomainType: "custom",
         customSubdomain: req.subdomain,
         bypassApprovalCheck: true,
+        bypassOwnershipCheck: true,
       });
     }
   } catch (err) {
@@ -142,12 +181,35 @@ const rejectSubdomainRequest = async (requestId, adminId, reason = null) => {
     throw err;
   }
 
+  const rejectionReason = reason?.trim() || "Declined by administrator.";
+
   const updatedRequest = await publicationRepository.updateSubdomainRequestStatus(requestId, {
     status: "rejected",
-    adminNotes: reason || "Declined by administrator.",
+    adminNotes: rejectionReason,
     reviewedBy: adminId,
     reviewedAt: new Date(),
   });
+
+  // If the project is currently published and using this custom subdomain (or any custom subdomain),
+  // immediately revert it back to the standard default domain!
+  try {
+    const pub = await publicationRepository.getProjectDomain(req.project_id);
+    if (pub && (pub.is_custom || pub.hostname === req.hostname)) {
+      await publicationService.updateSubdomain(req.project_id, req.user_id, {
+        subdomainType: "default",
+        bypassApprovalCheck: true,
+        bypassOwnershipCheck: true,
+      });
+      console.log(
+        `[AdminService] Reverted project ${req.project_id} from revoked custom subdomain (${pub.hostname}) to standard domain.`,
+      );
+    }
+  } catch (err) {
+    console.warn(
+      `[AdminService] Revert custom subdomain warning for project ${req.project_id}:`,
+      err.message,
+    );
+  }
 
   return updatedRequest;
 };
@@ -158,6 +220,23 @@ const deleteSubdomainRequest = async (requestId) => {
     const err = new Error("Subdomain request not found.");
     err.status = 404;
     throw err;
+  }
+
+  // If the project is currently published on this custom domain, revert it to standard domain first
+  try {
+    const pub = await publicationRepository.getProjectDomain(req.project_id);
+    if (pub && (pub.is_custom || pub.hostname === req.hostname)) {
+      await publicationService.updateSubdomain(req.project_id, req.user_id, {
+        subdomainType: "default",
+        bypassApprovalCheck: true,
+        bypassOwnershipCheck: true,
+      });
+    }
+  } catch (err) {
+    console.warn(
+      `[AdminService] Revert custom subdomain warning on delete for project ${req.project_id}:`,
+      err.message,
+    );
   }
 
   await publicationRepository.deleteSubdomainRequestById(requestId);

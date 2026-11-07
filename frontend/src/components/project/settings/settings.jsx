@@ -106,13 +106,24 @@ export default function Settings({ projectId }) {
     }
   };
 
-  const handlePublish = async () => {
+  const handlePublish = async (options = {}) => {
     try {
-      await publicationApi.publishProject(projectId);
+      await publicationApi.publishProject(projectId, options);
       await pubrefresh();
       toast.success("Website published");
     } catch (err) {
       toast.error("Action Failed", err.response?.data?.message || err.message);
+    }
+  };
+
+  const handleUpdateSubdomain = async (options) => {
+    try {
+      await publicationApi.updateSubdomain(projectId, options);
+      await pubrefresh();
+      toast.success("Subdomain updated");
+    } catch (err) {
+      toast.error("Action Failed", err.response?.data?.message || err.message);
+      throw err;
     }
   };
 
@@ -619,7 +630,9 @@ export default function Settings({ projectId }) {
               <PublicationStatus
                 publication={publication}
                 loading={publoading}
+                project={project}
                 onPublish={handlePublish}
+                onUpdateSubdomain={handleUpdateSubdomain}
                 onUnpublish={handleUnpublish}
                 refresh={pubrefresh}
               />

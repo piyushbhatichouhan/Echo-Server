@@ -215,13 +215,25 @@ const republishProject = async (projectId, ownerId) => {
 };
 
 const updateSubdomain = async (projectId, ownerId, options = {}) => {
-  await projectService.verifyProjectOwnership(projectId, ownerId);
+  if (!options.bypassOwnershipCheck) {
+    await projectService.verifyProjectOwnership(projectId, ownerId);
+  }
 
   const publication = await publicationRepository.getProjectDomain(projectId);
   if (!publication) {
     const err = new Error("Project is not published. Please publish it first.");
     err.status = 404;
     throw err;
+  }
+
+  if (!ownerId && options.bypassOwnershipCheck) {
+    const projRes = await pool.query(
+      `SELECT owner_id FROM projects WHERE id = $1`,
+      [projectId],
+    );
+    if (projRes.rows[0]) {
+      ownerId = projRes.rows[0].owner_id;
+    }
   }
 
   const user = await userRepository.getUserById(ownerId);
@@ -235,7 +247,7 @@ const updateSubdomain = async (projectId, ownerId, options = {}) => {
   let customDomain = null;
 
   if (subdomainType === "custom" || (customSubdomain && customSubdomain.trim())) {
-    if (!canCustom) {
+    if (!canCustom && !options.bypassApprovalCheck) {
       const err = new Error(
         "Custom subdomain privilege is restricted to authorized accounts. Please contact the Super Admin.",
       );
@@ -275,15 +287,31 @@ const updateSubdomain = async (projectId, ownerId, options = {}) => {
     customDomain = validation.subdomain;
   } else {
     // Revert to standard default subdomain (username-project.devpiyush.in)
-    const project = await projectService.getProjectById(projectId, ownerId);
+    let project;
+    if (options.bypassOwnershipCheck) {
+      const projRes = await pool.query(
+        `SELECT p.*, u.username FROM projects p JOIN users u ON u.id = p.owner_id WHERE p.id = $1`,
+        [projectId],
+      );
+      project = projRes.rows[0];
+    } else {
+      project = await projectService.getProjectById(projectId, ownerId);
+    }
+
+    if (!project) {
+      const err = new Error("Project details not found.");
+      err.status = 404;
+      throw err;
+    }
+
     targetHostname = await hostnameGenerator.generateHostname(
       project.username,
       project.name,
     );
   }
 
-  // If the target hostname is identical to the current hostname, simply return existing
-  if (targetHostname === publication.hostname) {
+  // If the target hostname is identical to the current hostname and custom flag matches, simply return existing
+  if (targetHostname === publication.hostname && Boolean(publication.is_custom) === isCustom) {
     return publication;
   }
 
