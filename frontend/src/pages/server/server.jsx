@@ -53,6 +53,13 @@ export default function Server() {
       route: "/server/subdomains",
       iconText: subdomainStats?.pending ? `${subdomainStats.pending} ⚡` : "🌐",
     },
+    {
+      title: "Broadcast Mailer",
+      description: "Dispatch maintenance notices, feature releases, and targeted announcements to developers.",
+      available: true,
+      route: "/server/mailer",
+      iconText: "📨",
+    },
     { 
       title: "Storage",
       description: "View storage usage.",

@@ -526,6 +526,10 @@ ${projectUrl}
           Open Project Settings →
         </a>
       </div>
+
+      <div style="border-top: 1px solid #21262d; padding-top: 16px; margin-top: 24px; color: #6e7681; font-size: 12px;">
+        This alert was delivered to your registered EchoHub account email: <strong style="color: #8b949e;">${user.email}</strong>.
+      </div>
     </div>
   `;
 
@@ -540,6 +544,155 @@ ${projectUrl}
     return { ok: true, recipient: user.email, messageId: info?.messageId };
   } catch (err) {
     console.error(`[Notification] Failed to send revocation email to ${user.email}:`, err.message);
+    return { ok: false, error: err.message };
+  }
+};
+
+/**
+ * Sends an email notification to the user when their platform custom subdomain privilege is revoked by the Super Admin.
+ */
+const notifyDeveloperPrivilegeRevoked = async ({
+  user = {},
+  revertedProjects = [],
+  reason = null,
+}) => {
+  if (!user?.email) return { ok: false, error: "No user email" };
+
+  const frontendUrl = getFrontendUrl();
+  const dashboardUrl = `${frontendUrl}/dashboard`;
+  const timestamp = new Date().toUTCString();
+
+  const developerName = user.username || "Developer";
+  const revocationReason = reason?.trim() || "Administrative policy update.";
+
+  const subject = `⚠️ [EchoHub] Custom Subdomain Privilege Revoked`;
+
+  let projectListText = "";
+  let projectListHtml = "";
+
+  if (revertedProjects.length > 0) {
+    projectListText =
+      `\nThe following active project(s) were automatically reverted to their default standard domains:\n` +
+      revertedProjects
+        .map(
+          (p) =>
+            `• ${p.name}: https://${p.revertedHostname} (previously https://${p.oldHostname || "custom"})`,
+        )
+        .join("\n") +
+      "\n";
+
+    projectListHtml = `
+      <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 12px; padding: 18px 20px; margin-bottom: 24px;">
+        <span style="font-size: 12px; font-weight: 600; text-transform: uppercase; color: #6ee7b7; display: block; margin-bottom: 8px;">
+          Active Replacement Endpoint(s)
+        </span>
+        <ul style="margin: 0; padding-left: 20px; color: #c9d1d9; font-size: 14px; line-height: 1.6;">
+          ${revertedProjects
+            .map(
+              (p) => `
+            <li style="margin-bottom: 6px;">
+              <strong>${p.name}</strong>: <code style="color: #10b981; font-family: monospace;">https://${p.revertedHostname}</code>
+            </li>
+          `,
+            )
+            .join("")}
+        </ul>
+        <p style="color: #8b949e; font-size: 12px; margin: 8px 0 0;">
+          Your projects remain live and accessible through these standard hostnames.
+        </p>
+      </div>
+    `;
+  }
+
+  const plainText = `[EchoHub Platform] Custom Subdomain Privilege Revoked
+
+Hello ${developerName},
+
+Your custom subdomain privilege on EchoHub has been revoked by the platform Super Administrator.
+${projectListText}
+• Reason:    ${revocationReason}
+• Timestamp: ${timestamp}
+
+You can continue deploying projects using standard default subdomains (username-project.devpiyush.in).
+View your projects:
+${dashboardUrl}
+`;
+
+  const html = `
+    <div style="
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        max-width: 620px;
+        margin: 0 auto;
+        padding: 32px 24px;
+        background: #0d1117;
+        color: #f0f6fc;
+        border-radius: 16px;
+        border: 1px solid #283042;
+    ">
+      <div style="border-bottom: 1px solid #21262d; padding-bottom: 20px; margin-bottom: 24px;">
+        <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #f87171; background: rgba(248, 113, 113, 0.12); padding: 4px 10px; border-radius: 999px; border: 1px solid rgba(248, 113, 113, 0.3);">
+          Access Revoked
+        </span>
+        <h2 style="color: #f0f6fc; margin: 12px 0 0; font-size: 22px; font-weight: 700;">
+          Custom Subdomain Privilege Revoked
+        </h2>
+      </div>
+
+      <p style="color: #8b949e; font-size: 15px; line-height: 1.5; margin: 0 0 20px;">
+        Hello <strong>${developerName}</strong>, your privilege to configure custom subdomains on EchoHub has been revoked by the Super Administrator.
+      </p>
+
+      ${projectListHtml}
+
+      ${
+        revocationReason
+          ? `
+      <div style="background: #161b22; border-left: 4px solid #f87171; border-radius: 4px 10px 10px 4px; padding: 14px 18px; margin-bottom: 24px;">
+        <strong style="color: #f0f6fc; font-size: 13px; display: block; margin-bottom: 4px;">Reason / Admin Note:</strong>
+        <span style="color: #c9d1d9; font-size: 14px; line-height: 1.5;">${revocationReason}</span>
+      </div>`
+          : ""
+      }
+
+      <p style="color: #8b949e; font-size: 14px; line-height: 1.5; margin: 0 0 24px;">
+        You can continue to deploy and publish projects using standard default subdomains.
+      </p>
+
+      <div style="margin: 28px 0;">
+        <a
+          href="${dashboardUrl}"
+          style="
+            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+            color: #ffffff;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 10px;
+            display: inline-block;
+            font-weight: 600;
+            font-size: 14px;
+          "
+        >
+          Go to Dashboard →
+        </a>
+      </div>
+
+      <div style="border-top: 1px solid #21262d; padding-top: 16px; margin-top: 24px; color: #6e7681; font-size: 12px;">
+        This alert was delivered to your registered EchoHub account email: <strong style="color: #8b949e;">${user.email}</strong>.
+      </div>
+    </div>
+  `;
+
+  try {
+    const info = await sendMail({
+      to: user.email,
+      subject,
+      text: plainText,
+      html,
+    });
+    console.log(`[Notification] Custom subdomain privilege revocation email sent to ${user.email}`);
+    return { ok: true, recipient: user.email, messageId: info?.messageId };
+  } catch (err) {
+    console.error(`[Notification] Failed to send privilege revocation email to ${user.email}:`, err.message);
     return { ok: false, error: err.message };
   }
 };
@@ -786,6 +939,24 @@ const sendTestNotification = async (type = "subdomain") => {
     });
   }
 
+  if (type === "revoked") {
+    return await notifyDeveloperSubdomainRevoked({
+      project: {
+        id: "proj_test_12345678",
+        name: "Sample Diagnostic App",
+      },
+      user: {
+        id: "usr_test_98765432",
+        username: "test-developer",
+        email: getAdminRecipient(),
+      },
+      subdomain: "test-app",
+      hostname: "test-app.devpiyush.in",
+      standardHostname: "test-developer-sample-diagnostic.devpiyush.in",
+      reason: "Administrative policy revocation test.",
+    });
+  }
+
   return await notifySubdomainRequest({
     project: {
       id: "proj_test_12345678",
@@ -807,6 +978,7 @@ module.exports = {
   notifySubdomainRequest,
   notifyCustomSubdomainAssigned,
   notifyDeveloperSubdomainRevoked,
+  notifyDeveloperPrivilegeRevoked,
   notifyCriticalError,
   sendTestNotification,
 };

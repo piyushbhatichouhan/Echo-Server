@@ -80,4 +80,42 @@ export const sendTestNotification = async (type = "subdomain") => {
   return data;
 };
 
+// -------------------------------------------------------------
+// Mailer & Broadcast API
+// -------------------------------------------------------------
+
+export const getMailerTemplates = async () => {
+  const { data } = await api.get("/admin/mailer/templates");
+  return data.data;
+};
+
+export const getMailerRecipients = async (audienceType = "all", userIds = []) => {
+  const params = { audienceType };
+  if (userIds && userIds.length > 0) {
+    params.userIds = userIds.join(",");
+  }
+  const { data } = await api.get("/admin/mailer/recipients", { params });
+  return data.data;
+};
+
+export const previewMailerEmail = async (payload) => {
+  const { data } = await api.post("/admin/mailer/preview", payload);
+  return data.data;
+};
+
+export const sendMailerTest = async (draft) => {
+  const { data } = await api.post("/admin/mailer/test", { draft });
+  return data;
+};
+
+export const sendMailerBroadcast = async (payload) => {
+  const { data } = await api.post("/admin/mailer/send", payload);
+  return data;
+};
+
+export const getMailerHistory = async (limit = 50) => {
+  const { data } = await api.get("/admin/mailer/history", { params: { limit } });
+  return data.data;
+};
+
 

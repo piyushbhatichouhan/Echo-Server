@@ -101,13 +101,20 @@ const setCustomSubdomainAccess = async (userId, enabled) => {
     }
 
     // 2. Automatically revert all projects currently published on a custom subdomain back to the standard domain
+    const revertedProjects = [];
     try {
       const customProjects = await publicationRepository.getUserCustomPublishedProjects(userId);
       for (const proj of customProjects) {
-        await publicationService.updateSubdomain(proj.project_id, userId, {
+        const revertedPub = await publicationService.updateSubdomain(proj.project_id, userId, {
           subdomainType: "default",
           bypassApprovalCheck: true,
           bypassOwnershipCheck: true,
+        });
+        revertedProjects.push({
+          id: proj.project_id,
+          name: proj.name || "Project",
+          oldHostname: proj.hostname,
+          revertedHostname: revertedPub?.hostname || "standard default domain",
         });
         console.log(
           `[AdminService] Reverted project ${proj.project_id} to standard domain after custom subdomain privilege was revoked.`,
@@ -118,6 +125,26 @@ const setCustomSubdomainAccess = async (userId, enabled) => {
         `[AdminService] Warning reverting custom published projects for revoked user ${userId}:`,
         err.message,
       );
+    }
+
+    // 3. Mail user on their registered account email that their custom subdomain access has been revoked
+    if (user.email) {
+      try {
+        const notificationService = require("./notification.service");
+        await notificationService.notifyDeveloperPrivilegeRevoked({
+          user,
+          revertedProjects,
+          reason: "Custom subdomain privilege was revoked by the Super Administrator.",
+        });
+        console.log(
+          `[AdminService] Privilege revocation email notice delivered to registered email: ${user.email}`,
+        );
+      } catch (mailErr) {
+        console.warn(
+          `[AdminService] Privilege revocation email notice warning for ${user.email}:`,
+          mailErr.message,
+        );
+      }
     }
   }
 
@@ -255,29 +282,76 @@ const revokeCustomSubdomain = async (identifier, adminId, reason = null) => {
     );
   }
 
-  // 3. Notify the project owner via email about the revocation
-  try {
-    const notificationService = require("./notification.service");
-    notificationService
-      .notifyDeveloperSubdomainRevoked({
+  // 3. Resolve project owner's registered account details directly from users table
+  let registeredUser = null;
+  const ownerIdToLookup = req.user_id || req.owner_id;
+  if (ownerIdToLookup) {
+    try {
+      registeredUser = await userRepository.getUserById(ownerIdToLookup);
+    } catch (_) {}
+  }
+  if (!registeredUser && req.project_id) {
+    try {
+      const { pool } = require("../config/database");
+      const ownerRes = await pool.query(
+        `SELECT u.id, u.username, u.email FROM users u JOIN projects p ON p.owner_id = u.id WHERE p.id = $1 LIMIT 1`,
+        [req.project_id],
+      );
+      registeredUser = ownerRes.rows[0] || null;
+    } catch (_) {}
+  }
+
+  const recipientUser = {
+    id: registeredUser?.id || req.user_id,
+    username: registeredUser?.username || req.username || req.developer_username || "Developer",
+    email: registeredUser?.email || req.email || req.developer_email,
+  };
+
+  // If standardHostname was not generated from active publication, generate it dynamically
+  if (!standardHostname && req.project_id) {
+    try {
+      const hostnameGenerator = require("../publication/hostname.generator");
+      const uname = recipientUser.username;
+      const pname = req.project_name || "project";
+      if (uname && pname) {
+        standardHostname = await hostnameGenerator.generateHostname(uname, pname);
+      }
+    } catch (_) {}
+    if (!standardHostname) {
+      const safeUname = (recipientUser.username || "user").toLowerCase();
+      const safePname = (req.project_name || "project").toLowerCase().replace(/[^a-z0-9-]/g, "");
+      standardHostname = `${safeUname}-${safePname}.devpiyush.in`;
+    }
+  }
+
+  // 4. Notify the project owner on their registered account email
+  let mailResult = null;
+  if (recipientUser.email) {
+    try {
+      const notificationService = require("./notification.service");
+      mailResult = await notificationService.notifyDeveloperSubdomainRevoked({
         project: { id: req.project_id, name: req.project_name || "Project" },
-        user: {
-          id: req.user_id,
-          username: req.username || req.developer_username || "developer",
-          email: req.email || req.developer_email,
-        },
+        user: recipientUser,
         subdomain: req.subdomain,
         hostname: req.hostname,
-        standardHostname: standardHostname || "standard project domain",
+        standardHostname,
         reason: rejectionReason,
-      })
-      .catch((mailErr) => {
-        console.warn(
-          "[AdminService] Developer revocation notice mail warning:",
-          mailErr.message,
-        );
       });
-  } catch (_) {}
+      console.log(
+        `[AdminService] Revocation notice email dispatched to registered email (${recipientUser.email}) for subdomain ${req.hostname}. Status:`,
+        mailResult?.ok ? "DELIVERED" : mailResult?.error,
+      );
+    } catch (mailErr) {
+      console.warn(
+        `[AdminService] Developer revocation notice mail failed for ${recipientUser.email}:`,
+        mailErr.message,
+      );
+    }
+  } else {
+    console.warn(
+      `[AdminService] Cannot send revocation email: no registered email found for user ${recipientUser.id} on project ${req.project_id}`,
+    );
+  }
 
   return {
     ...updatedRequest,
@@ -285,6 +359,8 @@ const revokeCustomSubdomain = async (identifier, adminId, reason = null) => {
     hostname: req.hostname,
     status: "rejected",
     adminNotes: rejectionReason,
+    emailSent: mailResult?.ok === true,
+    recipientEmail: recipientUser.email || null,
   };
 };
 
@@ -301,20 +377,50 @@ const deleteSubdomainRequest = async (requestId) => {
   }
 
   // If the project is currently published on this custom domain, revert it to standard domain first
+  let standardHostname = null;
   try {
     const pub = await publicationRepository.getProjectDomain(req.project_id);
     if (pub && (pub.is_custom || pub.hostname === req.hostname)) {
-      await publicationService.updateSubdomain(req.project_id, req.user_id, {
+      const revertedPub = await publicationService.updateSubdomain(req.project_id, req.user_id, {
         subdomainType: "default",
         bypassApprovalCheck: true,
         bypassOwnershipCheck: true,
       });
+      standardHostname = revertedPub?.hostname || null;
     }
   } catch (err) {
     console.warn(
       `[AdminService] Revert custom subdomain warning on delete for project ${req.project_id}:`,
       err.message,
     );
+  }
+
+  // Notify the project owner on their registered account email
+  try {
+    let registeredUser = null;
+    if (req.user_id) {
+      registeredUser = await userRepository.getUserById(req.user_id);
+    }
+    const recipientUser = {
+      id: registeredUser?.id || req.user_id,
+      username: registeredUser?.username || req.username || req.developer_username || "Developer",
+      email: registeredUser?.email || req.email || req.developer_email,
+    };
+    if (recipientUser.email) {
+      const notificationService = require("./notification.service");
+      await notificationService.notifyDeveloperSubdomainRevoked({
+        project: { id: req.project_id, name: req.project_name || "Project" },
+        user: recipientUser,
+        subdomain: req.subdomain,
+        hostname: req.hostname,
+        standardHostname:
+          standardHostname ||
+          `${(recipientUser.username || "user").toLowerCase()}-${(req.project_name || "project").toLowerCase().replace(/[^a-z0-9-]/g, "")}.devpiyush.in`,
+        reason: "Subdomain reservation was removed by the Super Administrator.",
+      });
+    }
+  } catch (mailErr) {
+    console.warn("[AdminService] Delete notification email warning:", mailErr.message);
   }
 
   await publicationRepository.deleteSubdomainRequestById(requestId);
