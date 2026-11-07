@@ -156,6 +156,62 @@ async function checkDatabase() {
   console.log("✓ PostgreSQL OK");
 }
 
+function checkEncryption() {
+  console.log("Checking Encryption Configuration...");
+  const { getEncryptionKey } = require("../utils/crypto.util");
+  try {
+    const key = getEncryptionKey();
+    if (key && key.length === 32) {
+      console.log("✓ AES-256-GCM Encryption Key OK");
+    }
+  } catch (err) {
+    if (process.env.NODE_ENV === "production") {
+      throw err;
+    }
+    console.warn("ℹ Encryption notice:", err.message);
+  }
+}
+
+async function migrateUnencryptedEnvironmentVariables() {
+  const client = await pool.connect();
+  try {
+    const { rows } = await client.query(`
+      SELECT id, variable_key, variable_value
+      FROM environment_variables
+      WHERE variable_value IS NOT NULL
+        AND variable_value NOT LIKE 'enc:v1:%'
+    `);
+
+    if (rows.length > 0) {
+      console.log(
+        `[Validator] Encrypting ${rows.length} legacy plaintext environment variable(s) at rest with AES-256-GCM...`,
+      );
+      const { encrypt } = require("../utils/crypto.util");
+
+      await client.query("BEGIN");
+      for (const row of rows) {
+        const encrypted = encrypt(row.variable_value);
+        await client.query(
+          `UPDATE environment_variables SET variable_value = $1, updated_at = NOW() WHERE id = $2`,
+          [encrypted, row.id],
+        );
+      }
+      await client.query("COMMIT");
+      console.log(
+        `✓ Successfully encrypted ${rows.length} environment variable(s) at rest.`,
+      );
+    }
+  } catch (err) {
+    await client.query("ROLLBACK").catch(() => {});
+    console.warn(
+      "[Validator] Notice encrypting legacy environment variables:",
+      err.message,
+    );
+  } finally {
+    client.release();
+  }
+}
+
 const portService = require("../services/port.service");
 const { verifyMailConnection, getFromAddress } = require("../services/mail.service");
 
@@ -186,6 +242,10 @@ async function validateStartup() {
   await checkDocker();
 
   await checkDatabase();
+
+  checkEncryption();
+
+  await migrateUnencryptedEnvironmentVariables();
 
   await checkPorts();
 
