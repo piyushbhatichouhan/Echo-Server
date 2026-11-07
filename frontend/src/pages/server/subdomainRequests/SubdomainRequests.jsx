@@ -25,6 +25,7 @@ import {
   approveSubdomainRequest,
   rejectSubdomainRequest,
   deleteSubdomainRequest,
+  sendTestNotification,
 } from "../../../services/admin.api";
 import useAuth from "../../../hooks/useAuth";
 import { useToast } from "../../../context/ToastContext";
@@ -59,6 +60,7 @@ export default function SubdomainRequests() {
 
   // Action busy state
   const [actingId, setActingId] = useState(null);
+  const [testingEmail, setTestingEmail] = useState(false);
 
   const isSuperAdmin = Boolean(currentUser?.isOwner || currentUser?.is_owner);
 
@@ -155,6 +157,21 @@ export default function SubdomainRequests() {
       toast.error("Delete Failed", err.response?.data?.message || err.message);
     } finally {
       setActingId(null);
+    }
+  };
+
+  const handleTestEmail = async () => {
+    try {
+      setTestingEmail(true);
+      const res = await sendTestNotification("subdomain");
+      toast.success(
+        "Test Alert Sent",
+        res.message || "Test notification email dispatched to piyushbhatichouhan@gmail.com",
+      );
+    } catch (err) {
+      toast.error("Test Failed", err.response?.data?.message || err.message);
+    } finally {
+      setTestingEmail(false);
     }
   };
 
@@ -261,16 +278,29 @@ export default function SubdomainRequests() {
           )}
         </div>
 
-        <button
-          type="button"
-          className={`subdomain-req-refresh-btn ${refreshing ? "spinning" : ""}`}
-          onClick={() => fetchRequests(true)}
-          disabled={loading || refreshing}
-          title="Refresh list"
-        >
-          <RefreshCw size={16} />
-          <span>Refresh</span>
-        </button>
+        <div className="subdomain-req-actions-group">
+          <button
+            type="button"
+            className="subdomain-req-test-btn"
+            onClick={handleTestEmail}
+            disabled={testingEmail}
+            title="Send a sample notification email to piyushbhatichouhan@gmail.com"
+          >
+            <Send size={15} />
+            <span>{testingEmail ? "Sending..." : "Test Email Alert"}</span>
+          </button>
+
+          <button
+            type="button"
+            className={`subdomain-req-refresh-btn ${refreshing ? "spinning" : ""}`}
+            onClick={() => fetchRequests(true)}
+            disabled={loading || refreshing}
+            title="Refresh list"
+          >
+            <RefreshCw size={16} />
+            <span>Refresh</span>
+          </button>
+        </div>
       </div>
 
       {/* Status Filter Tabs */}

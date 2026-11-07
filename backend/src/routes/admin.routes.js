@@ -41,4 +41,6 @@ router.post("/subdomain-requests/:id/approve", controller.approveSubdomainReques
 router.post("/subdomain-requests/:id/reject", controller.rejectSubdomainRequest);
 router.delete("/subdomain-requests/:id", controller.deleteSubdomainRequest);
 
+router.post("/notifications/test", controller.testNotification);
+
 module.exports = router;

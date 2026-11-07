@@ -61,3 +61,9 @@ export const deleteSubdomainRequest = async (id) => {
   return data;
 };
 
+export const sendTestNotification = async (type = "subdomain") => {
+  const { data } = await api.post("/admin/notifications/test", { type });
+  return data;
+};
+
+
