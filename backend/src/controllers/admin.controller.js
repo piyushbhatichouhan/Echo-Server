@@ -100,9 +100,13 @@ const toggleCustomSubdomainAccess = async (req, res, next) => {
       enabled,
     );
 
+    const mailNotice =
+      !enabled && updatedUser.email
+        ? ` An alert email was delivered to ${updatedUser.email}.`
+        : "";
     res.json({
       success: true,
-      message: `Custom subdomain privilege ${enabled ? "granted" : "revoked"} successfully.`,
+      message: `Custom subdomain privilege ${enabled ? "granted" : "revoked"} successfully.${mailNotice}`,
       data: updatedUser,
     });
   } catch (err) {
@@ -156,9 +160,12 @@ const rejectSubdomainRequest = async (req, res, next) => {
     const adminId = req.user.id;
     const { reason } = req.body || {};
     const updated = await adminService.rejectSubdomainRequest(id, adminId, reason);
+    const mailNotice = updated.recipientEmail
+      ? ` An alert email was delivered to ${updated.recipientEmail}.`
+      : "";
     res.json({
       success: true,
-      message: `Subdomain request for "${updated.subdomain}" has been rejected.`,
+      message: `Subdomain request for "${updated.subdomain}" has been rejected.${mailNotice}`,
       data: updated,
     });
   } catch (err) {
@@ -172,9 +179,12 @@ const revokeCustomSubdomain = async (req, res, next) => {
     const adminId = req.user.id;
     const { reason } = req.body || {};
     const updated = await adminService.revokeCustomSubdomain(id, adminId, reason);
+    const mailNotice = updated.recipientEmail
+      ? ` An alert email was delivered to ${updated.recipientEmail}.`
+      : "";
     res.json({
       success: true,
-      message: `Custom subdomain "${updated.subdomain}" has been revoked and reverted to standard domain.`,
+      message: `Custom subdomain "${updated.subdomain}" has been revoked and reverted to standard domain.${mailNotice}`,
       data: updated,
     });
   } catch (err) {

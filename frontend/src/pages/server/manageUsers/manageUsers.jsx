@@ -177,8 +177,11 @@ export default function ManageUsers() {
         await toggleCustomSubdomain(targetUser.id, true);
         toast.success("Privilege Granted", `"${targetUser.username}" can now choose custom subdomains on devpiyush.in.`);
       } else if (type === "revoke_subdomain") {
-        await toggleCustomSubdomain(targetUser.id, false);
-        toast.success("Privilege Revoked", `Custom subdomain privilege revoked from "${targetUser.username}".`);
+        const res = await toggleCustomSubdomain(targetUser.id, false);
+        toast.success(
+          "Privilege Revoked",
+          res?.message || `Custom subdomain privilege revoked from "${targetUser.username}".`,
+        );
       }
       await refresh();
     } catch (err) {
@@ -540,7 +543,7 @@ export default function ManageUsers() {
                   ? `Enabling this account will restore access and allow the developer to log in and manage their workspaces.`
                   : actionModal.type === "grant_subdomain"
                   ? `Granting custom subdomain privilege will allow "${actionModal.targetUser.username}" to choose their own custom subdomain on devpiyush.in when publishing hosted projects.`
-                  : `Revoking this privilege will prevent "${actionModal.targetUser.username}" from choosing custom subdomains on devpiyush.in. Existing published projects will remain active until modified.`}
+                  : `Revoking this privilege will prevent "${actionModal.targetUser.username}" from choosing custom subdomains on devpiyush.in. Any active custom domains will be reverted to standard domains, and a notification email will be sent to their registered account email (${actionModal.targetUser.email}).`}
               </p>
 
               <div className="action-confirm-buttons">

@@ -6,9 +6,18 @@ const requireAdmin = require("../middleware/requireOwner");
 const controller = require("../controllers/admin.controller");
 
 const serverSettingsController = require("../controllers/serverSettings.controller");
+const mailerController = require("../controllers/mailer.controller");
 
 router.use(authenticate);
 router.use(requireAdmin);
+
+// Mailer & Broadcast Routes
+router.get("/mailer/templates", mailerController.getTemplates);
+router.get("/mailer/recipients", mailerController.getRecipients);
+router.post("/mailer/preview", mailerController.previewEmail);
+router.post("/mailer/test", mailerController.sendTestEmail);
+router.post("/mailer/send", mailerController.sendBroadcast);
+router.get("/mailer/history", mailerController.getHistory);
 
 router.get("/users", controller.getUsers);
 
