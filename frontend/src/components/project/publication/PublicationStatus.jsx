@@ -37,6 +37,7 @@ export default function PublicationStatus({
   onPublish,
   onUpdateSubdomain,
   onUnpublish,
+  refresh,
 }) {
   const { user, refreshUser } = useAuth();
   const toast = useToast();
@@ -75,9 +76,9 @@ export default function PublicationStatus({
   const [editCheckResult, setEditCheckResult] = useState(null);
   const [isUpdating, setIsUpdating] = useState(false);
 
-  // Load project's current subdomain request
+  // Load project's current subdomain request (load for all project owners so revocation notes are visible)
   const loadSubdomainRequest = useCallback(async () => {
-    if (!project?.id || !hasSubdomainPrivilege) return;
+    if (!project?.id) return;
     try {
       setLoadingRequest(true);
       const req = await publicationApi.getSubdomainRequest(project.id);
@@ -87,7 +88,7 @@ export default function PublicationStatus({
     } finally {
       setLoadingRequest(false);
     }
-  }, [project?.id, hasSubdomainPrivilege]);
+  }, [project?.id]);
 
   useEffect(() => {
     loadSubdomainRequest();
@@ -203,10 +204,13 @@ export default function PublicationStatus({
     try {
       setIsCancelling(true);
       await publicationApi.cancelSubdomainRequest(project?.id);
-      toast?.success("Request Cancelled", "Custom subdomain request has been removed.");
+      toast?.success("Notification Dismissed", "Custom subdomain notification dismissed.");
       setSubdomainRequest(null);
+      if (typeof refresh === "function") {
+        await refresh();
+      }
     } catch (err) {
-      toast?.error("Cancel Failed", err.response?.data?.message || err.message);
+      toast?.error("Action Failed", err.response?.data?.message || err.message);
     } finally {
       setIsCancelling(false);
     }
@@ -322,6 +326,43 @@ export default function PublicationStatus({
             )}
           </div>
         </div>
+
+        {/* Prominent Custom Subdomain Declined/Revoked Alert Banner for Unpublished Projects */}
+        {hasRejectedSubdomain && (
+          <div className="subdomain-revocation-notice-banner">
+            <div className="revocation-banner-main">
+              <div className="revocation-banner-icon-box">
+                <AlertCircle size={22} className="revocation-alert-icon" />
+              </div>
+              <div className="revocation-banner-content">
+                <div className="revocation-banner-title">
+                  <strong>Custom Subdomain Request Declined / Revoked</strong>
+                  <span className="revocation-badge">Declined</span>
+                </div>
+                <p className="revocation-banner-desc">
+                  The custom subdomain <code>https://{subdomainRequest.hostname}</code> was declined or revoked by the Super Admin.
+                  You can publish this project using your standard domain below.
+                </p>
+                {subdomainRequest.admin_notes && (
+                  <div className="revocation-reason-box">
+                    <span className="revocation-reason-label">Reason / Admin Note:</span>
+                    <span className="revocation-reason-text">{subdomainRequest.admin_notes}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+            <button
+              type="button"
+              className="revocation-dismiss-btn"
+              onClick={handleCancelRequest}
+              disabled={isCancelling}
+              title="Dismiss this notification"
+            >
+              {isCancelling ? <Loader2 size={14} className="spin" /> : <X size={16} />}
+              <span>Dismiss</span>
+            </button>
+          </div>
+        )}
 
         {/* Domain choice selector */}
         {hasSubdomainPrivilege ? (
@@ -657,6 +698,46 @@ export default function PublicationStatus({
           isRaw
         />
       </div>
+
+      {/* Prominent Custom Subdomain Revocation Alert Banner for Published Projects */}
+      {hasRejectedSubdomain && (
+        <div className="subdomain-revocation-notice-banner">
+          <div className="revocation-banner-main">
+            <div className="revocation-banner-icon-box">
+              <AlertCircle size={22} className="revocation-alert-icon" />
+            </div>
+            <div className="revocation-banner-content">
+              <div className="revocation-banner-title">
+                <strong>Custom Subdomain Revoked</strong>
+                <span className="revocation-badge">Revoked by Admin</span>
+              </div>
+              <p className="revocation-banner-desc">
+                Your custom subdomain <code>https://{subdomainRequest.hostname}</code> has been revoked by the Super Admin.
+                Your website traffic has been automatically reverted to your standard domain:{" "}
+                <a href={url} target="_blank" rel="noreferrer">
+                  <code>{url}</code>
+                </a>.
+              </p>
+              {subdomainRequest.admin_notes && (
+                <div className="revocation-reason-box">
+                  <span className="revocation-reason-label">Reason / Admin Note:</span>
+                  <span className="revocation-reason-text">{subdomainRequest.admin_notes}</span>
+                </div>
+              )}
+            </div>
+          </div>
+          <button
+            type="button"
+            className="revocation-dismiss-btn"
+            onClick={handleCancelRequest}
+            disabled={isCancelling}
+            title="Dismiss this notification"
+          >
+            {isCancelling ? <Loader2 size={14} className="spin" /> : <X size={16} />}
+            <span>Dismiss</span>
+          </button>
+        </div>
+      )}
 
       {/* Prominent Approved Subdomain Notification if currently on standard domain */}
       {!isCustomSubdomain && hasApprovedSubdomain && !isEditing && (

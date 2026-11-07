@@ -299,6 +299,36 @@ const getSubdomainRequestStats = async () => {
   return rows[0] || { total: 0, pending: 0, approved: 0, rejected: 0 };
 };
 
+const getUserCustomPublishedProjects = async (userId) => {
+  const { rows } = await pool.query(
+    `
+    SELECT pd.*, p.name as project_name, p.owner_id
+    FROM project_domains pd
+    JOIN projects p ON p.id = pd.project_id
+    WHERE p.owner_id = $1 AND pd.is_custom = TRUE
+    `,
+    [userId],
+  );
+  return rows;
+};
+
+const rejectAllUserSubdomainRequests = async (userId, reason) => {
+  const { rows } = await pool.query(
+    `
+    UPDATE subdomain_requests
+    SET
+      status = 'rejected',
+      admin_notes = $1,
+      reviewed_at = NOW(),
+      updated_at = NOW()
+    WHERE user_id = $2 AND status IN ('pending', 'approved')
+    RETURNING *
+    `,
+    [reason, userId],
+  );
+  return rows;
+};
+
 module.exports = {
   getProjectDomain,
   listProjectDomains,
@@ -316,4 +346,6 @@ module.exports = {
   updateSubdomainRequestStatus,
   listSubdomainRequests,
   getSubdomainRequestStats,
+  getUserCustomPublishedProjects,
+  rejectAllUserSubdomainRequests,
 };
