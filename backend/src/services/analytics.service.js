@@ -142,14 +142,7 @@ const verifyProjectAccess = async (projectId, userId, isSuperAdmin) => {
 const getProjectAnalytics = async (projectId, timeRange = "24h", userId, isSuperAdmin) => {
   const project = await verifyProjectAccess(projectId, userId, isSuperAdmin);
 
-  // Check if project has any records yet; seed baseline sample if empty
-  const recordCount = await analyticsRepo.countProjectRecords(projectId);
-  if (recordCount === 0) {
-    const seedRecords = generateSampleTraffic(projectId, project.owner_id, 140);
-    await analyticsRepo.insertBatch(seedRecords);
-  }
-
-  // Fetch summary, timeline, and top paths in parallel
+  // Fetch summary, timeline, and top paths in parallel directly from genuine telemetry
   const [summary, rawTimeline, topPaths] = await Promise.all([
     analyticsRepo.getProjectAnalyticsSummary(projectId, timeRange),
     analyticsRepo.getProjectTimeline(projectId, timeRange),
@@ -303,9 +296,93 @@ const getSuperAdminUserAnalytics = async () => {
   };
 };
 
+/**
+ * Ingests a single real HTTP traffic event (from NPM log watcher, router, or ingest webhook).
+ */
+const ingestTrafficEvent = async ({
+  hostname,
+  path = "/",
+  method = "GET",
+  statusCode = 200,
+  responseTimeMs = 25,
+  ip = null,
+  bytesSent = 0,
+  timestamp = null,
+}) => {
+  if (!hostname) return null;
+
+  const projectOwner = await analyticsRepo.getProjectOwnerByHostname(hostname);
+  if (!projectOwner) {
+    return null; // Not an active published project domain on this platform
+  }
+
+  const record = {
+    projectId: projectOwner.project_id,
+    userId: projectOwner.user_id,
+    statusCode: Number(statusCode) || 200,
+    responseTimeMs: Math.max(0, Number(responseTimeMs) || 0),
+    ipHash: hashIp(ip),
+    method: String(method || "GET").toUpperCase().slice(0, 10),
+    path: String(path || "/").split("?")[0].slice(0, 500),
+    bytesSent: Math.max(0, Number(bytesSent) || 0),
+    timestamp: timestamp ? new Date(timestamp) : new Date(),
+  };
+
+  return await analyticsRepo.recordRequest(record);
+};
+
+/**
+ * Ingests a batch of real HTTP traffic events.
+ */
+const ingestBatchTrafficEvents = async (events) => {
+  if (!Array.isArray(events) || events.length === 0) return 0;
+
+  const resolvedRecords = [];
+
+  for (const ev of events) {
+    if (!ev || !ev.hostname) continue;
+
+    const projectOwner = await analyticsRepo.getProjectOwnerByHostname(ev.hostname);
+    if (!projectOwner) continue;
+
+    resolvedRecords.push({
+      projectId: projectOwner.project_id,
+      userId: projectOwner.user_id,
+      statusCode: Number(ev.statusCode) || 200,
+      responseTimeMs: Math.max(0, Number(ev.responseTimeMs) || 0),
+      ipHash: hashIp(ev.ip),
+      method: String(ev.method || "GET").toUpperCase().slice(0, 10),
+      path: String(ev.path || "/").split("?")[0].slice(0, 500),
+      bytesSent: Math.max(0, Number(ev.bytesSent) || 0),
+      timestamp: ev.timestamp ? new Date(ev.timestamp) : new Date(),
+    });
+  }
+
+  if (resolvedRecords.length === 0) return 0;
+
+  return await analyticsRepo.insertBatch(resolvedRecords);
+};
+
+/**
+ * Resets / deletes all recorded analytics for a project.
+ */
+const clearProjectAnalytics = async (projectId, userId, isSuperAdmin) => {
+  await verifyProjectAccess(projectId, userId, isSuperAdmin);
+  const deletedCount = await analyticsRepo.deleteProjectAnalytics(projectId);
+  return {
+    success: true,
+    message: `Cleared ${deletedCount} historical analytics records for project.`,
+    deletedCount,
+  };
+};
+
 module.exports = {
   getProjectAnalytics,
   simulateTraffic,
+  clearProjectAnalytics,
+  ingestTrafficEvent,
+  ingestBatchTrafficEvents,
   getSuperAdminUserAnalytics,
+  hashIp,
   recordRequest: analyticsRepo.recordRequest,
 };

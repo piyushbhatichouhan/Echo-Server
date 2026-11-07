@@ -19,3 +19,4 @@ README.md
 watchdog/README.md
 dump-echo_db-202610290815.sql
 new_migration.md
+upgrades.md

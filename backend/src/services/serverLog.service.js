@@ -48,6 +48,11 @@ addServerLog({
 /**
  * Express middleware to record API access logs into server log buffer
  */
+const sanitizeUrlForLogging = (url) => {
+  if (!url || typeof url !== "string") return url;
+  return url.replace(/([?&]token=)[^&#]+/gi, "$1[REDACTED]");
+};
+
 const requestLogger = (req, res, next) => {
   // Ignore health check probes and static assets to prevent log flooding
   if (
@@ -70,13 +75,15 @@ const requestLogger = (req, res, next) => {
     else if (status >= 400) level = "warn";
     else if (status >= 200 && status < 300) level = "info";
 
+    const sanitizedUrl = sanitizeUrlForLogging(req.originalUrl);
+
     addServerLog({
       level,
       source: "api",
-      message: `${req.method} ${req.originalUrl} - ${status} (${duration}ms)`,
+      message: `${req.method} ${sanitizedUrl} - ${status} (${duration}ms)`,
       details: {
         method: req.method,
-        path: req.originalUrl,
+        path: sanitizedUrl,
         statusCode: status,
         durationMs: duration,
         ip: req.ip || req.socket?.remoteAddress,

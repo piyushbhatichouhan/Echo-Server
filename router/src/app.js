@@ -34,7 +34,7 @@ app.use(async (req, res) => {
       });
     }
 
-    proxyService.proxyRequest(req, res, project.deployment);
+    proxyService.proxyRequest(req, res, project.deployment, project.project);
   } catch (err) {
     console.error(err);
 

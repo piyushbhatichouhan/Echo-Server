@@ -18,8 +18,14 @@ module.exports = {
 
   remove: containerService.removeContainer,
 
+  removeByName: containerService.removeContainerByName,
+
+  removePreviousContainers: containerService.removePreviousContainers,
+
+  findActiveContainer: containerService.findActiveContainer,
+
   startByProject: containerService.startContainerByProject,
- 
+
   getStatus: containerService.getContainerStatus,
   removeByHostPort: containerService.removeContainerByHostPort,
 };

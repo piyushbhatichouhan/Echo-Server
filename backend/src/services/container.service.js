@@ -1,7 +1,7 @@
 const docker = require("../docker/docker.client");
 
-const getContainerName = (projectId) => {
-  return `echohub-${projectId}`;
+const getContainerName = (projectId, version = null) => {
+  return version ? `echohub-${projectId}-${version}` : `echohub-${projectId}`;
 };
 
 const getContainerResourceLimits = () => {
@@ -19,6 +19,146 @@ const getContainerResourceLimits = () => {
   };
 };
 
+const removeContainerByName = async (nameOrId) => {
+  if (!nameOrId) return;
+  try {
+    const cont = docker.getContainer(nameOrId);
+    try {
+      await cont.stop({ t: 1 });
+    } catch {}
+    await cont.remove({ force: true });
+  } catch (err) {
+    // Ignore if doesn't exist
+  }
+};
+
+const removePreviousContainers = async (
+  projectId,
+  keepContainerIdOrName = null,
+) => {
+  if (!projectId) return;
+  try {
+    const containers = await docker.listContainers({ all: true });
+    const pIdStr = String(projectId);
+    const prefix1 = `/echohub-${pIdStr}-`;
+    const prefix2 = `/echo-project-${pIdStr}-`;
+    const exact1 = `/echohub-${pIdStr}`;
+    const exact2 = `/echo-project-${pIdStr}`;
+
+    const keepNorm = keepContainerIdOrName
+      ? String(keepContainerIdOrName).replace(/^\//, "")
+      : null;
+
+    for (const c of containers) {
+      const names = c.Names || [];
+      const matchesProject = names.some(
+        (n) =>
+          n === exact1 ||
+          n === exact2 ||
+          n.startsWith(prefix1) ||
+          n.startsWith(prefix2),
+      );
+
+      if (!matchesProject) continue;
+
+      const isKeep =
+        c.Id === keepNorm ||
+        names.some((n) => n.replace(/^\//, "") === keepNorm);
+
+      if (isKeep) continue;
+
+      console.log(
+        `[ContainerService] Blue-Green cleanup: stopping and removing previous container ${c.Id.slice(0, 12)} (${names.join(", ")}) for project ${projectId}`,
+      );
+      try {
+        const cont = docker.getContainer(c.Id);
+        try {
+          await cont.stop({ t: 2 });
+        } catch {}
+        try {
+          await cont.remove({ force: true });
+        } catch {}
+      } catch (err) {
+        console.warn(
+          `[ContainerService] Error removing old container ${c.Id.slice(0, 12)}:`,
+          err.message,
+        );
+      }
+    }
+  } catch (err) {
+    console.warn(
+      `[ContainerService] removePreviousContainers error for project ${projectId}:`,
+      err.message,
+    );
+  }
+};
+
+const findActiveContainer = async (projectId) => {
+  if (!projectId) {
+    throw new Error("Project ID is required");
+  }
+  const idStr = String(projectId);
+
+  // If already a full container name or docker ID
+  if (
+    idStr.startsWith("echohub-") ||
+    idStr.startsWith("echo-") ||
+    idStr.length >= 64
+  ) {
+    return docker.getContainer(idStr);
+  }
+
+  try {
+    // 1. Database check for running deployment container
+    try {
+      const { pool } = require("../config/database");
+      const { rows } = await pool.query(
+        `SELECT container_id, container_name FROM deployments WHERE project_id = $1 AND status = 'running' ORDER BY created_at DESC LIMIT 1`,
+        [projectId],
+      );
+      if (rows[0]?.container_id) {
+        const cont = docker.getContainer(rows[0].container_id);
+        const info = await cont.inspect();
+        if (info) return cont;
+      }
+      if (rows[0]?.container_name) {
+        const cont = docker.getContainer(rows[0].container_name);
+        const info = await cont.inspect();
+        if (info) return cont;
+      }
+    } catch {}
+
+    // 2. Docker container list search
+    const containers = await docker.listContainers({ all: true });
+    const prefix1 = `/echohub-${idStr}-`;
+    const prefix2 = `/echo-project-${idStr}-`;
+    const exact1 = `/echohub-${idStr}`;
+    const exact2 = `/echo-project-${idStr}`;
+
+    const projectContainers = containers.filter((c) =>
+      (c.Names || []).some(
+        (n) =>
+          n === exact1 ||
+          n === exact2 ||
+          n.startsWith(prefix1) ||
+          n.startsWith(prefix2),
+      ),
+    );
+
+    if (projectContainers.length > 0) {
+      // Prioritize running container
+      const running = projectContainers.find((c) => c.State === "running");
+      if (running) {
+        return docker.getContainer(running.Id);
+      }
+      projectContainers.sort((a, b) => (b.Created || 0) - (a.Created || 0));
+      return docker.getContainer(projectContainers[0].Id);
+    }
+  } catch {}
+
+  // Fallback to static container name
+  return docker.getContainer(getContainerName(projectId));
+};
 
 const removeContainerByHostPort = async (hostPort) => {
   if (!hostPort || isNaN(Number(hostPort)) || Number(hostPort) <= 0) return;
@@ -52,8 +192,21 @@ const createContainer = async (
   environment,
   hostPort,
   containerPort,
+  options = {},
 ) => {
   const safeContainerPort = Number(containerPort) || 3000;
+
+  let targetContainerName = null;
+  if (typeof options === "string") {
+    targetContainerName = options;
+  } else if (options && typeof options === "object") {
+    targetContainerName =
+      options.containerName ||
+      (options.version ? getContainerName(projectId, options.version) : null);
+  }
+  if (!targetContainerName) {
+    targetContainerName = getContainerName(projectId);
+  }
 
   const envMap = new Map();
 
@@ -85,7 +238,9 @@ const createContainer = async (
     Number(resolvedHostPort) <= 0
   ) {
     const portService = require("./port.service");
-    resolvedHostPort = await portService.getAvailablePort(projectId);
+    resolvedHostPort = await portService.getAvailablePort(projectId, {
+      allowReuse: false,
+    });
     console.warn(
       `[ContainerService] Host port was invalid (${hostPort}), allocated free port ${resolvedHostPort} for project ${projectId}`,
     );
@@ -93,16 +248,18 @@ const createContainer = async (
 
   const projectPort = String(resolvedHostPort);
 
-  // Guarantee no container name or port collision exists in Docker
-  await removeContainerByProject(projectId);
+  // Blue-Green: Only clean up any existing container with the exact target name or zombie on hostPort.
+  // (Do NOT remove other running project containers so the current live deployment remains online!)
+  await removeContainerByName(targetContainerName);
   await removeContainerByHostPort(projectPort);
 
   const limits = getContainerResourceLimits();
+  const hostIp = process.env.DOCKER_HOST_BIND_IP || "127.0.0.1";
 
   const containerOptions = {
     Image: imageName,
 
-    name: getContainerName(projectId),
+    name: targetContainerName,
 
     Env: dockerEnvironment,
 
@@ -118,6 +275,7 @@ const createContainer = async (
       PortBindings: {
         [`${safeContainerPort}/tcp`]: [
           {
+            HostIp: hostIp,
             HostPort: projectPort,
           },
         ],
@@ -134,10 +292,7 @@ const createContainer = async (
 
   const container = await docker.createContainer(containerOptions);
 
-
-  //
   // Connect to Docker network AFTER creation
-  //
   if (process.env.DOCKER_NETWORK) {
     try {
       const network = docker.getNetwork(process.env.DOCKER_NETWORK);
@@ -198,44 +353,131 @@ const inspectContainer = async (container) => {
   return await container.inspect();
 };
 
-const getContainer = (projectId) => {
-  return docker.getContainer(getContainerName(projectId));
+const getContainer = (projectIdOrIdentifier) => {
+  if (!projectIdOrIdentifier) {
+    throw new Error("Container identifier is required");
+  }
+  const idStr = String(projectIdOrIdentifier);
+  if (
+    idStr.startsWith("echohub-") ||
+    idStr.startsWith("echo-") ||
+    idStr.length >= 64
+  ) {
+    return docker.getContainer(idStr);
+  }
+  return docker.getContainer(getContainerName(projectIdOrIdentifier));
 };
 
 const containerExists = async (projectId) => {
   try {
-    await getContainer(projectId).inspect();
-
+    const container = await findActiveContainer(projectId);
+    await container.inspect();
     return true;
   } catch {
     return false;
   }
 };
 
-const stopContainerByProject = async (projectId) => {
+const stopContainerByProject = async (projectId, exceptContainerId = null) => {
+  if (!projectId) return;
   try {
-    const container = getContainer(projectId);
-    await container.stop();
-  } catch (error) {
-    // Ignore if already stopped or doesn't exist
+    const containers = await docker.listContainers({ all: true });
+    const pIdStr = String(projectId);
+    const prefix1 = `/echohub-${pIdStr}-`;
+    const prefix2 = `/echo-project-${pIdStr}-`;
+    const exact1 = `/echohub-${pIdStr}`;
+    const exact2 = `/echo-project-${pIdStr}`;
+
+    const keepNorm = exceptContainerId
+      ? String(exceptContainerId).replace(/^\//, "")
+      : null;
+
+    for (const c of containers) {
+      const names = c.Names || [];
+      const matches = names.some(
+        (n) =>
+          n === exact1 ||
+          n === exact2 ||
+          n.startsWith(prefix1) ||
+          n.startsWith(prefix2),
+      );
+      if (matches) {
+        if (
+          keepNorm &&
+          (c.Id === keepNorm ||
+            names.some((n) => n.replace(/^\//, "") === keepNorm))
+        ) {
+          continue;
+        }
+        try {
+          const cont = docker.getContainer(c.Id);
+          await cont.stop({ t: 2 });
+        } catch {}
+      }
+    }
+  } catch {
+    try {
+      const container = getContainer(projectId);
+      await container.stop();
+    } catch {}
   }
 };
 
-const removeContainerByProject = async (projectId) => {
+const removeContainerByProject = async (
+  projectId,
+  exceptContainerId = null,
+) => {
+  if (!projectId) return;
   try {
-    const container = getContainer(projectId);
+    const containers = await docker.listContainers({ all: true });
+    const pIdStr = String(projectId);
+    const prefix1 = `/echohub-${pIdStr}-`;
+    const prefix2 = `/echo-project-${pIdStr}-`;
+    const exact1 = `/echohub-${pIdStr}`;
+    const exact2 = `/echo-project-${pIdStr}`;
 
-    await container.remove({
-      force: true,
-    });
-  } catch (error) {
-    // Ignore if it doesn't exist
+    const keepNorm = exceptContainerId
+      ? String(exceptContainerId).replace(/^\//, "")
+      : null;
+
+    for (const c of containers) {
+      const names = c.Names || [];
+      const matches = names.some(
+        (n) =>
+          n === exact1 ||
+          n === exact2 ||
+          n.startsWith(prefix1) ||
+          n.startsWith(prefix2),
+      );
+      if (matches) {
+        if (
+          keepNorm &&
+          (c.Id === keepNorm ||
+            names.some((n) => n.replace(/^\//, "") === keepNorm))
+        ) {
+          continue;
+        }
+        try {
+          const cont = docker.getContainer(c.Id);
+          try {
+            await cont.stop({ t: 1 });
+          } catch {}
+          await cont.remove({ force: true });
+        } catch {}
+      }
+    }
+  } catch {
+    try {
+      const container = getContainer(projectId);
+      await container.remove({ force: true });
+    } catch {}
   }
 };
 
 const getContainerStatus = async (projectId) => {
   try {
-    const info = await getContainer(projectId).inspect();
+    const container = await findActiveContainer(projectId);
+    const info = await container.inspect();
 
     return {
       exists: true,
@@ -293,17 +535,15 @@ const streamContainerLogs = async (container, deploymentId) => {
 };
 
 const stopContainer = async (projectId) => {
-  const container = getContainer(projectId);
+  await stopContainerByProject(projectId);
+};
+
+const restartContainer = async (projectId, deploymentId) => {
+  const container = await findActiveContainer(projectId);
 
   if (!container) {
     throw new Error("Container not found");
   }
-
-  await container.stop();
-};
-
-const restartContainer = async (projectId, deploymentId) => {
-  const container = getContainer(projectId);
 
   await container.restart();
 
@@ -311,7 +551,11 @@ const restartContainer = async (projectId, deploymentId) => {
 };
 
 const startContainerByProject = async (projectId, deploymentId) => {
-  const container = getContainer(projectId);
+  const container = await findActiveContainer(projectId);
+
+  if (!container) {
+    throw new Error("Container not found");
+  }
 
   await container.start();
 
@@ -336,7 +580,7 @@ const waitUntilContainerRunning = async (
 };
 
 const getContainerIPAddress = async (projectId) => {
-  const container = getContainer(projectId);
+  const container = await findActiveContainer(projectId);
   const info = await container.inspect();
   const networks = info.NetworkSettings?.Networks || {};
 
@@ -361,7 +605,7 @@ const getContainerIPAddress = async (projectId) => {
 };
 
 const getContainerConnectionInfo = async (projectId) => {
-  const container = getContainer(projectId);
+  const container = await findActiveContainer(projectId);
   const info = await container.inspect();
 
   const rawName = info.Name || "";
@@ -417,7 +661,7 @@ const getContainerConnectionInfo = async (projectId) => {
 
 const getContainerTelemetry = async (projectId) => {
   try {
-    const container = getContainer(projectId);
+    const container = await findActiveContainer(projectId);
     const stats = await container.stats({ stream: false });
 
     const memoryUsed = stats.memory_stats?.usage || 0;
@@ -461,7 +705,7 @@ const getContainerTelemetry = async (projectId) => {
 };
 
 const executeTerminalCommand = async (projectId, command) => {
-  const container = getContainer(projectId);
+  const container = await findActiveContainer(projectId);
   const exec = await container.exec({
     Cmd: ["sh", "-c", command],
     AttachStdout: true,
@@ -503,6 +747,9 @@ module.exports = {
   startContainer,
   stopContainer,
   removeContainer,
+  removeContainerByName,
+  removePreviousContainers,
+  findActiveContainer,
   inspectContainer,
   getContainer,
   containerExists,

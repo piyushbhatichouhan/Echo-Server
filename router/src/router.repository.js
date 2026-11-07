@@ -10,6 +10,7 @@ SELECT
 
     p.id AS project_id,
     p.name,
+    p.owner_id AS user_id,
 
     d.container_name,
     d.container_port,

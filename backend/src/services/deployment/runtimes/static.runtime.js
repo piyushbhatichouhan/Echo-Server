@@ -59,8 +59,14 @@ async function prepare(context) {
     context.cwd,
     settings.output_directory || ".",
   );
-  context.imageName = `echo-${project.id}`;
+  const version = `${Date.now()}`;
+  context.version = version;
+  context.imageName = `echohub-static-${project.id}:${version}`;
   context.containerPort = module.exports.INTERNAL_PORT;
+  context.containerName = context.infrastructure.container.getContainerName(
+    project.id,
+    version,
+  );
   context.publishedDirectory =
     context.infrastructure.publisher.getPublishedDirectory(project.id);
 
@@ -203,21 +209,16 @@ async function publish(context) {
     "Building Docker Image",
   );
 
-  // Remove previous image
-  await context.infrastructure.docker.remove(project.id);
+  // Blue-Green: Keep previous Docker image intact while old container is serving live traffic
 
-  await context.infrastructure.logger.info(
-    deployment.id,
-    "Previous Docker image removed.",
-  );
-
-  // Build new image
+  // Build new image with version tag
   const imageName = await context.infrastructure.docker.build(
     project.id,
     settings,
     async (message) => {
       await context.infrastructure.logger.info(deployment.id, message);
     },
+    context.version,
   );
 
   context.imageName = imageName;
@@ -247,7 +248,34 @@ async function verify(context) {
 async function finishDeployment(context) {
   const { deployment, project } = context;
 
-  // Blue/Green: Mark all previous deployments stopped except the newly healthy one
+  // 1. Mark newly healthy deployment as running
+  await context.infrastructure.deployment.updateStatus(
+    deployment.id,
+    "running",
+  );
+
+  // 2. Atomically update reverse proxy (NPM/Nginx) if project is published
+  try {
+    const publicationService = require("../../../publication/publication.service");
+    await publicationService.republishProject(project.id, project.owner_id);
+  } catch (pubErr) {
+    console.warn(
+      "[Deployment] Reverse proxy atomic switch warning:",
+      pubErr.message,
+    );
+  }
+
+  // 3. Blue/Green: Terminate previous container(s) now that new container is healthy & serving traffic
+  try {
+    await context.infrastructure.container.removePreviousContainers(
+      project.id,
+      context.container?.id || context.containerName,
+    );
+  } catch (termErr) {
+    console.warn("[Deployment] Old container cleanup warning:", termErr.message);
+  }
+
+  // 4. Mark all previous deployments stopped in DB
   await context.infrastructure.deployment.stopPreviousDeployments(
     project.id,
     deployment.id,
@@ -260,7 +288,7 @@ async function finishDeployment(context) {
 
   await context.infrastructure.logger.info(
     deployment.id,
-    "Deployment completed successfully.",
+    "Deployment completed successfully with zero downtime (Blue-Green).",
   );
 }
 
@@ -282,7 +310,25 @@ async function failDeployment(context, error) {
   await cleanup(context);
 }
 
-async function cleanup(context) {}
+async function cleanup(context) {
+  // Blue-Green failure cleanup: only remove the new failed container and its image,
+  // leaving the previous running container online and untouched!
+  try {
+    if (context.container) {
+      await context.infrastructure.container.remove(context.container);
+    } else if (context.containerName) {
+      await context.infrastructure.container.removeByName(context.containerName);
+    }
+  } catch {}
+
+  try {
+    if (context.imageName) {
+      const docker = require("../../../docker/docker.client");
+      const img = docker.getImage(context.imageName);
+      await img.remove({ force: true });
+    }
+  } catch {}
+}
 
 async function start(context) {
   const { project, environment } = context;
@@ -299,7 +345,9 @@ async function start(context) {
   let hostPort = deployment.port;
   if (!hostPort || isNaN(Number(hostPort)) || Number(hostPort) <= 0) {
     const portService = require("../../port.service");
-    hostPort = await portService.getAvailablePort(project.id);
+    hostPort = await portService.getAvailablePort(project.id, {
+      allowReuse: false,
+    });
     await context.infrastructure.deployment.updatePort(deployment.id, hostPort);
     deployment.port = hostPort;
   }
@@ -316,21 +364,26 @@ async function start(context) {
     module.exports.INTERNAL_PORT;
 
   const imageName =
-    context.imageName || deployment.image_name || `echohub-${project.id}`;
+    context.imageName ||
+    deployment.image_name ||
+    `echohub-static-${project.id}:${context.version || Date.now()}`;
 
-  // Stop previous container
-  await context.infrastructure.container.stopByProject(project.id);
+  const containerName =
+    context.containerName ||
+    deployment.container_name ||
+    context.infrastructure.container.getContainerName(
+      project.id,
+      context.version || Date.now(),
+    );
 
-  // Remove previous container
-  await context.infrastructure.container.removeByProject(project.id);
-
-  // Create new container
+  // Blue-Green: Create fresh container alongside existing container
   const container = await context.infrastructure.container.create(
     project.id,
     imageName,
     environment,
     hostPort, // host port
     containerPort, // runtime internal port
+    containerName,
   );
 
   context.container = container;
@@ -338,7 +391,7 @@ async function start(context) {
   await context.infrastructure.deployment.updateContainer(
     deployment.id,
     container.id,
-    container.echoName,
+    container.echoName || containerName,
     containerPort,
   );
   // Start it
@@ -346,18 +399,14 @@ async function start(context) {
 
   await context.infrastructure.deployment.markStoppedByUser(project.id, false);
 
-  await context.infrastructure.deployment.updateStatus(
-    deployment.id,
-    "running",
-  );
-
   await context.infrastructure.logger.info(
     deployment.id,
-    "Static site is now online.",
+    "Application container started, preparing health checks...",
   );
 
   return { success: true, deployment, port: hostPort };
 }
+
 async function healthCheck(context) {
   const { project, deployment, settings } = context;
 
@@ -373,7 +422,7 @@ async function healthCheck(context) {
     80;
 
   const result = await healthService.verifyAndDetectPort(
-    project.id,
+    context.container?.id || project.id,
     containerPort,
     {
       deploymentId: deployment.id,
