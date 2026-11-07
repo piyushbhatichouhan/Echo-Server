@@ -284,9 +284,10 @@ const notifyCriticalError = async ({
   const heapUsedMB = Math.round(memory.heapUsed / (1024 * 1024));
   const uptimeSec = Math.floor(process.uptime());
 
-  // Request context if available
+  // Request context if available (sanitize sensitive query parameters like ?token=)
   const reqMethod = req?.method || null;
-  const reqPath = req?.originalUrl || req?.url || null;
+  const rawPath = req?.originalUrl || req?.url || null;
+  const reqPath = rawPath ? rawPath.replace(/([?&]token=)[^&#]+/gi, "$1[REDACTED]") : null;
   const reqIp = req?.ip || req?.socket?.remoteAddress || null;
   const reqUser = req?.user?.username
     ? `${req.user.username} (${req.user.email || req.user.id})`

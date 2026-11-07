@@ -412,23 +412,21 @@ const rollbackDeployment = async (projectId, ownerId, targetDeploymentId) => {
     ownerId,
   );
 
-  // Stop previous running container
-  await container.stopByProject(projectId);
-  await container.removeByProject(projectId);
-
-  // Start container from target deployment's image
+  // Start container from target deployment's image using Blue-Green switchover
   const containerPort =
     targetDeployment.container_port ||
     Number(settings?.port) ||
     3000;
 
-  let hostPort = targetDeployment.port;
-  if (!hostPort || isNaN(Number(hostPort)) || Number(hostPort) <= 0) {
-    const portService = require("./port.service");
-    hostPort = await portService.getAvailablePort(projectId);
-    await deploymentRepository.updatePort(targetDeployment.id, hostPort);
-    targetDeployment.port = hostPort;
-  }
+  const portService = require("./port.service");
+  const hostPort = await portService.getAvailablePort(projectId, {
+    allowReuse: false,
+  });
+  await deploymentRepository.updatePort(targetDeployment.id, hostPort);
+  targetDeployment.port = hostPort;
+
+  const rbVersion = `rb${Date.now()}`;
+  const containerName = container.getContainerName(projectId, rbVersion);
 
   const newContainer = await container.create(
     projectId,
@@ -436,6 +434,7 @@ const rollbackDeployment = async (projectId, ownerId, targetDeploymentId) => {
     userEnvironment,
     hostPort,
     containerPort,
+    containerName,
   );
 
   await container.start(newContainer, targetDeployment.id);
@@ -449,13 +448,18 @@ const rollbackDeployment = async (projectId, ownerId, targetDeploymentId) => {
   await deploymentRepository.updateContainer(
     targetDeployment.id,
     newContainer.id,
-    newContainer.echoName,
+    newContainer.echoName || containerName,
     containerPort,
   );
   await deploymentRepository.markStoppedByUser(projectId, false);
 
   // Republish if published
   await publicationService.republishProject(projectId, ownerId);
+
+  // Terminate previous containers after successful switchover
+  try {
+    await container.removePreviousContainers(projectId, newContainer.id);
+  } catch {}
 
   return targetDeployment;
 };

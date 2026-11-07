@@ -62,6 +62,12 @@ const startServer = async () => {
     await connectDatabase();
     await validateStartup();
 
+    // Start background watcher for real HTTP access logs (NPM / Docker telemetry)
+    const npmLogWatcher = require("./services/npmLogWatcher.service");
+    npmLogWatcher.start().catch((err) => {
+      console.warn("[NpmLogWatcher] Startup notice:", err.message);
+    });
+
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port, helloooo ${PORT}`);
     });

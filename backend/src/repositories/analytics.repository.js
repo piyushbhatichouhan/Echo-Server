@@ -206,10 +206,68 @@ const getProjectTopPaths = async (projectId, timeRange = "24h", limit = 6) => {
 };
 
 /**
+ * Deletes all analytics records for a given project.
+ */
+const deleteProjectAnalytics = async (projectId) => {
+  const query = `DELETE FROM http_analytics WHERE project_id = $1 RETURNING id;`;
+  const result = await pool.query(query, [projectId]);
+  return result.rowCount || 0;
+};
+
+/**
+ * Resolves project and owner information from a published hostname.
+ */
+const getProjectOwnerByHostname = async (hostname) => {
+  if (!hostname) return null;
+  const cleanHost = String(hostname).trim().toLowerCase();
+  const query = `
+    SELECT
+      p.id AS project_id,
+      p.owner_id AS user_id,
+      p.name AS project_name,
+      pd.hostname
+    FROM project_domains pd
+    JOIN projects p ON p.id = pd.project_id
+    WHERE LOWER(pd.hostname) = $1
+      AND pd.publication_status = 'active'
+    LIMIT 1;
+  `;
+  const result = await pool.query(query, [cleanHost]);
+  return result.rows[0] || null;
+};
+
+/**
  * Retrieves per-user analytics breakdown for SuperAdmin.
+ * Uses CTEs to compute project counts and traffic metrics independently per user,
+ * avoiding Cartesian product multiplication bugs when users have multiple projects/deployments.
  */
 const getSuperAdminUserAnalytics = async () => {
   const query = `
+    WITH user_projects AS (
+      SELECT
+        p.owner_id AS user_id,
+        COUNT(DISTINCT p.id)::int AS project_count,
+        COUNT(DISTINCT CASE WHEN d.status = 'running' THEN p.id END)::int AS running_project_count
+      FROM projects p
+      LEFT JOIN deployments d ON d.project_id = p.id
+      GROUP BY p.owner_id
+    ),
+    user_traffic AS (
+      SELECT
+        a.user_id,
+        COUNT(*)::int AS total_requests_30d,
+        COUNT(*) FILTER (WHERE a.timestamp >= NOW() - INTERVAL '24 hours')::int AS total_requests_24h,
+        COUNT(DISTINCT a.ip_hash)::int AS unique_visitors_30d,
+        COALESCE(ROUND(AVG(a.response_time_ms)), 0)::int AS avg_latency_ms,
+        COALESCE(SUM(a.bytes_sent), 0)::bigint AS total_bytes_sent,
+        COUNT(*) FILTER (WHERE a.status_code >= 200 AND a.status_code < 300)::int AS count_2xx,
+        COUNT(*) FILTER (WHERE a.status_code >= 300 AND a.status_code < 400)::int AS count_3xx,
+        COUNT(*) FILTER (WHERE a.status_code >= 400 AND a.status_code < 500)::int AS count_4xx,
+        COUNT(*) FILTER (WHERE a.status_code >= 500 AND a.status_code < 600)::int AS count_5xx
+      FROM http_analytics a
+      WHERE a.timestamp >= NOW() - INTERVAL '30 days'
+      GROUP BY a.user_id
+    )
     SELECT 
       u.id AS user_id,
       u.username,
@@ -217,23 +275,21 @@ const getSuperAdminUserAnalytics = async () => {
       u.is_owner,
       u.can_custom_subdomain,
       u.created_at,
-      COUNT(DISTINCT p.id)::int AS project_count,
-      COUNT(DISTINCT CASE WHEN d.status = 'running' THEN p.id END)::int AS running_project_count,
-      COALESCE(COUNT(a.id), 0)::int AS total_requests_30d,
-      COALESCE(COUNT(a.id) FILTER (WHERE a.timestamp >= NOW() - INTERVAL '24 hours'), 0)::int AS total_requests_24h,
-      COALESCE(COUNT(DISTINCT a.ip_hash), 0)::int AS unique_visitors_30d,
-      COALESCE(ROUND(AVG(a.response_time_ms)), 0)::int AS avg_latency_ms,
-      COALESCE(SUM(a.bytes_sent), 0)::bigint AS total_bytes_sent,
-      COALESCE(COUNT(a.id) FILTER (WHERE a.status_code >= 200 AND a.status_code < 300), 0)::int AS count_2xx,
-      COALESCE(COUNT(a.id) FILTER (WHERE a.status_code >= 300 AND a.status_code < 400), 0)::int AS count_3xx,
-      COALESCE(COUNT(a.id) FILTER (WHERE a.status_code >= 400 AND a.status_code < 500), 0)::int AS count_4xx,
-      COALESCE(COUNT(a.id) FILTER (WHERE a.status_code >= 500 AND a.status_code < 600), 0)::int AS count_5xx
+      COALESCE(up.project_count, 0)::int AS project_count,
+      COALESCE(up.running_project_count, 0)::int AS running_project_count,
+      COALESCE(ut.total_requests_30d, 0)::int AS total_requests_30d,
+      COALESCE(ut.total_requests_24h, 0)::int AS total_requests_24h,
+      COALESCE(ut.unique_visitors_30d, 0)::int AS unique_visitors_30d,
+      COALESCE(ut.avg_latency_ms, 0)::int AS avg_latency_ms,
+      COALESCE(ut.total_bytes_sent, 0)::bigint AS total_bytes_sent,
+      COALESCE(ut.count_2xx, 0)::int AS count_2xx,
+      COALESCE(ut.count_3xx, 0)::int AS count_3xx,
+      COALESCE(ut.count_4xx, 0)::int AS count_4xx,
+      COALESCE(ut.count_5xx, 0)::int AS count_5xx
     FROM users u
-    LEFT JOIN projects p ON p.owner_id = u.id
-    LEFT JOIN deployments d ON d.project_id = p.id
-    LEFT JOIN http_analytics a ON a.user_id = u.id AND a.timestamp >= NOW() - INTERVAL '30 days'
-    GROUP BY u.id, u.username, u.email, u.is_owner, u.can_custom_subdomain, u.created_at
-    ORDER BY total_requests_30d DESC, u.username ASC
+    LEFT JOIN user_projects up ON up.user_id = u.id
+    LEFT JOIN user_traffic ut ON ut.user_id = u.id
+    ORDER BY total_requests_30d DESC, u.username ASC;
   `;
 
   const result = await pool.query(query);
@@ -267,6 +323,8 @@ module.exports = {
   recordRequest,
   insertBatch,
   countProjectRecords,
+  deleteProjectAnalytics,
+  getProjectOwnerByHostname,
   getProjectAnalyticsSummary,
   getProjectTimeline,
   getProjectTopPaths,

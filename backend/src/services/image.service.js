@@ -3,11 +3,11 @@ const docker = require("../docker/docker.client");
 const workspace = require("./workspace.service");
 const buildContext = require("./build-context.service");
 
-const getImageName = (projectId) => {
-  return `echohub-${projectId}`;
+const getImageName = (projectId, version = null) => {
+  return version ? `echohub-${projectId}:${version}` : `echohub-${projectId}`;
 };
 
-const buildImage = async (projectId, settings, log) => {
+const buildImage = async (projectId, settings, log, version = null) => {
   console.log("Starting build...");
 
   const buildPath = await buildContext.prepareBuildContext(
@@ -24,7 +24,7 @@ const buildImage = async (projectId, settings, log) => {
     },
   });
 
-  const imageName = getImageName(projectId);
+  const imageName = getImageName(projectId, version);
 
   console.log("Building image:", imageName);
 

@@ -2,13 +2,19 @@ const repository = require("./npm.repository");
 const health = require("./health.service");
 const publicationRepository = require("../publication/publication.repository");
 
-const publish = async ({ projectId, hostname, port }) => {
+const publish = async ({
+  projectId,
+  hostname,
+  port,
+  containerName = null,
+}) => {
   console.log(`[Routing] Publishing ${hostname}`);
 
   await repository.publishHost({
     projectId,
     hostname,
     port,
+    containerName,
   });
   const healthy = await health.checkPublication(hostname);
 

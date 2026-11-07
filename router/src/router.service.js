@@ -19,6 +19,7 @@ const resolveHostname = async (hostname) => {
     project: {
       id: row.project_id,
       name: row.name,
+      userId: row.user_id,
     },
 
     deployment: {

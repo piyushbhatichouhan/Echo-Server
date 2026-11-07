@@ -78,12 +78,15 @@ const cleanupPseudoPorts = async () => {
   }
 };
 
-const getAvailablePort = async (forProjectId = null) => {
+const getAvailablePort = async (
+  forProjectId = null,
+  { allowReuse = false } = {},
+) => {
   // Always clean up non-running pseudo ports first
   await cleanupPseudoPorts();
 
-  // If this project is already running on a port, reuse it
-  if (forProjectId) {
+  // If reuse is explicitly allowed and this project is already running on a port, reuse it
+  if (forProjectId && allowReuse) {
     const existing = await pool.query(
       `
       SELECT port
@@ -103,12 +106,12 @@ const getAvailablePort = async (forProjectId = null) => {
     }
   }
 
-  // Get all ports currently used by running deployments in database
+  // Get all ports currently used by active deployments in database (running, building, or queued)
   const result = await pool.query(`
     SELECT port
     FROM deployments
     WHERE port IS NOT NULL
-      AND status = 'running'
+      AND status IN ('running', 'building', 'queued')
     ORDER BY port
   `);
 
@@ -118,7 +121,7 @@ const getAvailablePort = async (forProjectId = null) => {
   let port = START_PORT;
 
   while (port <= MAX_PORT) {
-    // 1. Must not be in DB 'running' deployments
+    // 1. Must not be in DB 'running', 'building', or 'queued' deployments
     if (dbUsed.has(port)) {
       port++;
       continue;

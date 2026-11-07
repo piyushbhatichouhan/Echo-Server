@@ -9,10 +9,16 @@ const getHostByHostname = async (hostname) => {
   return response.data.find((h) => h.domain_names.includes(hostname));
 };
 
-const updateHost = async ({ id, projectId, hostname, port }) => {
+const updateHost = async ({
+  id,
+  projectId,
+  hostname,
+  port,
+  containerName = null,
+}) => {
   const forwardHost =
     process.env.NPM_FORWARD_MODE === "docker"
-      ? `echohub-${projectId}`
+      ? containerName || `echohub-${projectId}`
       : process.env.NPM_FORWARD_HOST;
 
   const response = await client.request({
@@ -48,7 +54,12 @@ const updateHost = async ({ id, projectId, hostname, port }) => {
   return response.data;
 };
 
-const publishHost = async ({ projectId, hostname, port }) => {
+const publishHost = async ({
+  projectId,
+  hostname,
+  port,
+  containerName = null,
+}) => {
   const existing = await getHostByHostname(hostname);
 
   if (existing) {
@@ -59,6 +70,7 @@ const publishHost = async ({ projectId, hostname, port }) => {
       projectId,
       hostname,
       port,
+      containerName,
     });
   }
 
@@ -66,7 +78,7 @@ const publishHost = async ({ projectId, hostname, port }) => {
 
   const forwardHost =
     process.env.NPM_FORWARD_MODE === "docker"
-      ? `echohub-${projectId}`
+      ? containerName || `echohub-${projectId}`
       : process.env.NPM_FORWARD_HOST;
 
   const response = await client.request({

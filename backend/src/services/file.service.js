@@ -1246,6 +1246,22 @@ const extractArchive = async (projectId, ownerId, relativePath, destination = ""
   const zip = new AdmZip(zipStoragePath);
   const zipEntries = zip.getEntries();
 
+  // Validate all archive entry paths before extraction to prevent Zip Slip directory traversal attacks
+  const resolvedDest = path.resolve(destStoragePath);
+  for (const entry of zipEntries) {
+    const entryTarget = path.resolve(resolvedDest, entry.entryName);
+    if (
+      entryTarget !== resolvedDest &&
+      !entryTarget.startsWith(resolvedDest + path.sep)
+    ) {
+      const error = new Error(
+        `Path traversal detected in archive entry: "${entry.entryName}". Extraction aborted.`,
+      );
+      error.status = 400;
+      throw error;
+    }
+  }
+
   let totalUncompressedSize = 0;
   for (const entry of zipEntries) {
     if (!entry.isDirectory) {
