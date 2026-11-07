@@ -166,6 +166,22 @@ const rejectSubdomainRequest = async (req, res, next) => {
   }
 };
 
+const revokeCustomSubdomain = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const adminId = req.user.id;
+    const { reason } = req.body || {};
+    const updated = await adminService.revokeCustomSubdomain(id, adminId, reason);
+    res.json({
+      success: true,
+      message: `Custom subdomain "${updated.subdomain}" has been revoked and reverted to standard domain.`,
+      data: updated,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 const deleteSubdomainRequest = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -210,6 +226,7 @@ module.exports = {
   getSubdomainRequestStats,
   approveSubdomainRequest,
   rejectSubdomainRequest,
+  revokeCustomSubdomain,
   deleteSubdomainRequest,
   testNotification,
 };

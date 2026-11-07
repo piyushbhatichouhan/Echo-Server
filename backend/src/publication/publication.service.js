@@ -101,24 +101,43 @@ const publishProject = async (projectId, ownerId, options = {}) => {
       throw err;
     }
 
-    // Unless user is Super Admin or bypass requested, enforce approved request
-    if (!isOwner && !options.bypassApprovalCheck) {
-      const approvedReq = await publicationRepository.getApprovedSubdomainRequest(
-        projectId,
-        validation.subdomain,
-      );
-      if (!approvedReq) {
-        const err = new Error(
-          `The custom subdomain "${validation.subdomain}" has not been approved by the Super Admin for this project. Please submit a request first.`,
-        );
-        err.status = 403;
-        throw err;
-      }
-    }
-
     hostname = validation.hostname;
     isCustom = true;
     customDomain = validation.subdomain;
+
+    // Track active custom subdomain in subdomain_requests
+    try {
+      await publicationRepository.createOrUpdateSubdomainRequest(
+        projectId,
+        ownerId,
+        validation.subdomain,
+        validation.hostname,
+        "approved",
+        "Assigned directly with custom subdomain privilege",
+      );
+    } catch (reqErr) {
+      console.warn("[Publication] Tracking custom subdomain request notice:", reqErr.message);
+    }
+
+    // Send email notification to Super Admin
+    try {
+      const notificationService = require("../services/notification.service");
+      notificationService
+        .notifyCustomSubdomainAssigned({
+          project: project || { id: projectId, name: "Project" },
+          user: {
+            id: ownerId,
+            username: user?.username || "developer",
+            email: user?.email || "",
+          },
+          subdomain: validation.subdomain,
+          hostname: validation.hostname,
+          action: "assigned",
+        })
+        .catch((mailErr) => {
+          console.warn("[Publication] Custom subdomain notification warning:", mailErr.message);
+        });
+    } catch (_) {}
   } else {
     hostname = await hostnameGenerator.generateHostname(
       project.username,
@@ -284,24 +303,43 @@ const updateSubdomain = async (projectId, ownerId, options = {}) => {
       throw err;
     }
 
-    // Unless user is Super Admin or bypass requested, enforce approved request
-    if (!isOwner && !options.bypassApprovalCheck) {
-      const approvedReq = await publicationRepository.getApprovedSubdomainRequest(
-        projectId,
-        validation.subdomain,
-      );
-      if (!approvedReq) {
-        const err = new Error(
-          `The custom subdomain "${validation.subdomain}" has not been approved by the Super Admin for this project. Please submit a request first.`,
-        );
-        err.status = 403;
-        throw err;
-      }
-    }
-
     targetHostname = validation.hostname;
     isCustom = true;
     customDomain = validation.subdomain;
+
+    // Track updated custom subdomain in subdomain_requests
+    try {
+      await publicationRepository.createOrUpdateSubdomainRequest(
+        projectId,
+        ownerId,
+        validation.subdomain,
+        validation.hostname,
+        "approved",
+        "Updated directly with custom subdomain privilege",
+      );
+    } catch (reqErr) {
+      console.warn("[Publication] Tracking custom subdomain update notice:", reqErr.message);
+    }
+
+    // Send email notification to Super Admin
+    try {
+      const notificationService = require("../services/notification.service");
+      notificationService
+        .notifyCustomSubdomainAssigned({
+          project: { id: projectId, name: publication.project_name || "Project" },
+          user: {
+            id: ownerId,
+            username: user?.username || "developer",
+            email: user?.email || "",
+          },
+          subdomain: validation.subdomain,
+          hostname: validation.hostname,
+          action: "updated",
+        })
+        .catch((mailErr) => {
+          console.warn("[Publication] Custom subdomain update notification warning:", mailErr.message);
+        });
+    } catch (_) {}
   } else {
     // Revert to standard default subdomain (username-project.devpiyush.in)
     let project;
@@ -407,10 +445,10 @@ const requestCustomSubdomain = async (projectId, ownerId, rawSubdomain) => {
     throw err;
   }
 
-  // Super Admin requests are immediately auto-approved; regular developer requests are 'pending'
-  const status = isOwner ? "approved" : "pending";
-  const reviewedBy = isOwner ? ownerId : null;
-  const reviewedAt = isOwner ? new Date() : null;
+  // Privileged users have immediate approval to claim their custom subdomain
+  const status = "approved";
+  const reviewedBy = ownerId;
+  const reviewedAt = new Date();
 
   const request = await publicationRepository.createOrUpdateSubdomainRequest(
     projectId,
@@ -418,42 +456,48 @@ const requestCustomSubdomain = async (projectId, ownerId, rawSubdomain) => {
     validation.subdomain,
     validation.hostname,
     status,
+    "Claimed directly with custom subdomain privilege",
   );
 
-  if (isOwner) {
-    await publicationRepository.updateSubdomainRequestStatus(request.id, {
-      status: "approved",
-      reviewedBy,
-      reviewedAt,
-    });
-    request.status = "approved";
-  } else {
-    // Notify Super Admin of incoming custom subdomain request (non-blocking)
-    try {
-      const notificationService = require("../services/notification.service");
-      let project = null;
-      try {
-        project = await projectService.getProjectById(projectId, ownerId);
-      } catch (_) {}
-
-      notificationService
-        .notifySubdomainRequest({
-          project: project || { id: projectId, name: "Project" },
-          user: {
-            id: ownerId,
-            username: user?.username || "developer",
-            email: user?.email || "developer@domain",
-          },
-          subdomain: validation.subdomain,
-          hostname: validation.hostname,
-          requestId: request.id,
-        })
-        .catch((mailErr) => {
-          console.warn("[Publication] Subdomain request notification warning:", mailErr.message);
-        });
-    } catch (notifErr) {
-      console.warn("[Publication] Failed to queue subdomain notification:", notifErr.message);
+  // If project is already published, seamlessly update it to the claimed custom subdomain
+  try {
+    const pub = await publicationRepository.getProjectDomain(projectId);
+    if (pub && pub.publication_status === "active") {
+      await updateSubdomain(projectId, ownerId, {
+        subdomainType: "custom",
+        customSubdomain: validation.subdomain,
+        bypassApprovalCheck: true,
+      });
     }
+  } catch (syncErr) {
+    console.warn("[Publication] Auto-sync custom subdomain warning:", syncErr.message);
+  }
+
+  // Notify Super Admin of custom subdomain assignment
+  try {
+    const notificationService = require("../services/notification.service");
+    let project = null;
+    try {
+      project = await projectService.getProjectById(projectId, ownerId);
+    } catch (_) {}
+
+    notificationService
+      .notifyCustomSubdomainAssigned({
+        project: project || { id: projectId, name: "Project" },
+        user: {
+          id: ownerId,
+          username: user?.username || "developer",
+          email: user?.email || "developer@domain",
+        },
+        subdomain: validation.subdomain,
+        hostname: validation.hostname,
+        action: "assigned",
+      })
+      .catch((mailErr) => {
+        console.warn("[Publication] Custom subdomain notification warning:", mailErr.message);
+      });
+  } catch (notifErr) {
+    console.warn("[Publication] Failed to queue subdomain notification:", notifErr.message);
   }
 
   return request;

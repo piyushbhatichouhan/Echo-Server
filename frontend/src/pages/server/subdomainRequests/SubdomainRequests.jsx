@@ -24,6 +24,7 @@ import {
   getSubdomainRequests,
   approveSubdomainRequest,
   rejectSubdomainRequest,
+  revokeCustomSubdomain,
   deleteSubdomainRequest,
   sendTestNotification,
 } from "../../../services/admin.api";
@@ -32,10 +33,10 @@ import { useToast } from "../../../context/ToastContext";
 import "./SubdomainRequests.css";
 
 const STATUS_FILTERS = [
-  { id: "all", label: "All Requests" },
-  { id: "pending", label: "Pending" },
-  { id: "approved", label: "Approved" },
-  { id: "rejected", label: "Rejected" },
+  { id: "all", label: "All Custom Subdomains" },
+  { id: "approved", label: "Active & Claimed" },
+  { id: "pending", label: "Pending Review" },
+  { id: "rejected", label: "Revoked" },
 ];
 
 export default function SubdomainRequests() {
@@ -131,15 +132,19 @@ export default function SubdomainRequests() {
 
     try {
       setRejectModal((prev) => ({ ...prev, submitting: true }));
-      const res = await rejectSubdomainRequest(request.id, reason.trim());
+      const isApproved = request.status === "approved" || request.is_live_custom;
+      const res = await revokeCustomSubdomain(request.id, reason.trim());
       toast.success(
-        "Request Rejected",
-        res.message || `Declined subdomain request for "${request.subdomain}".`,
+        isApproved ? "Custom Domain Revoked" : "Request Rejected",
+        res.message ||
+          (isApproved
+            ? `Revoked custom subdomain "${request.subdomain}". Reverted project to standard domain.`
+            : `Declined subdomain request for "${request.subdomain}".`),
       );
       closeRejectModal();
       await fetchRequests(true);
     } catch (err) {
-      toast.error("Rejection Failed", err.response?.data?.message || err.message);
+      toast.error("Action Failed", err.response?.data?.message || err.message);
       setRejectModal((prev) => ({ ...prev, submitting: false }));
     }
   };
@@ -246,11 +251,11 @@ export default function SubdomainRequests() {
         <div className="subdomain-req-title-wrap">
           <div className="subdomain-req-badge">
             <Crown size={14} />
-            <span>Exclusive Routing</span>
+            <span>Custom Domain Management</span>
           </div>
-          <h1>Custom Subdomain Requests</h1>
+          <h1>Custom Subdomain Allocations</h1>
           <p>
-            Review, approve, and authorize custom domain prefixes requested by developers for their projects.
+            Monitor, inspect, and manage custom subdomains assigned by developers across all projects.
           </p>
         </div>
       </div>
@@ -394,11 +399,22 @@ export default function SubdomainRequests() {
                         <span>{copiedId === req.id ? "Copied" : "Copy"}</span>
                       </button>
 
+                      <a
+                        href={`https://${req.hostname}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="req-visit-link"
+                        title="Open live project in browser"
+                      >
+                        <ExternalLink size={13} />
+                        <span>Visit Live</span>
+                      </a>
+
                       <span className={`req-status-pill pill--${req.status}`}>
                         {isApproved ? (
                           <>
                             <CheckCircle2 size={12} />
-                            <span>Approved</span>
+                            <span>{req.is_live_custom ? "Live on Web" : "Active"}</span>
                           </>
                         ) : isPending ? (
                           <>
@@ -408,7 +424,7 @@ export default function SubdomainRequests() {
                         ) : (
                           <>
                             <XCircle size={12} />
-                            <span>Rejected</span>
+                            <span>Revoked</span>
                           </>
                         )}
                       </span>
@@ -420,6 +436,9 @@ export default function SubdomainRequests() {
                         <FolderGit2 size={14} />
                         <span className="meta-label">Project:</span>
                         <strong className="meta-value">{req.project_name || "Unknown"}</strong>
+                        {req.project_id && (
+                          <span className="meta-id">({String(req.project_id).slice(0, 8)}...)</span>
+                        )}
                       </div>
 
                       <div className="req-meta-item" title="Requesting Developer">
@@ -428,11 +447,14 @@ export default function SubdomainRequests() {
                         <span className="meta-value">
                           {req.developer_username} ({req.developer_email})
                         </span>
+                        {req.can_custom_subdomain && (
+                          <span className="meta-privilege-tag">Privilege Active</span>
+                        )}
                       </div>
 
                       <div className="req-meta-item" title="Submission Timestamp">
                         <Clock size={14} />
-                        <span className="meta-label">Requested:</span>
+                        <span className="meta-label">Assigned:</span>
                         <span className="meta-value">
                           {new Date(req.created_at).toLocaleString()}
                         </span>
@@ -486,30 +508,43 @@ export default function SubdomainRequests() {
                     </>
                   )}
 
-                  {isApproved && (
+                  {(isApproved || req.is_live_custom) && (
                     <button
                       type="button"
-                      className="action-btn action-btn--secondary"
+                      className="action-btn action-btn--danger"
                       onClick={() => openRejectModal(req)}
                       disabled={isActing}
-                      title="Revoke active approval"
+                      title="Revoke this custom subdomain and revert project to standard domain"
                     >
                       <XCircle size={14} />
-                      <span>Revoke</span>
+                      <span>Revoke Custom Domain</span>
                     </button>
                   )}
 
                   {isRejected && (
-                    <button
-                      type="button"
-                      className="action-btn action-btn--danger"
-                      onClick={() => handleDelete(req.id, req.subdomain)}
-                      disabled={isActing}
-                      title="Delete this request record"
-                    >
-                      <X size={14} />
-                      <span>Remove</span>
-                    </button>
+                    <>
+                      <button
+                        type="button"
+                        className="action-btn action-btn--approve"
+                        onClick={() => handleApprove(req)}
+                        disabled={isActing}
+                        title="Re-authorize this custom subdomain"
+                      >
+                        <Check size={14} />
+                        <span>Re-Authorize</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        className="action-btn action-btn--secondary"
+                        onClick={() => handleDelete(req.id, req.subdomain)}
+                        disabled={isActing}
+                        title="Remove record"
+                      >
+                        <X size={14} />
+                        <span>Remove</span>
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
@@ -518,7 +553,7 @@ export default function SubdomainRequests() {
         </div>
       )}
 
-      {/* Reject Modal */}
+      {/* Reject / Revoke Modal */}
       {rejectModal.open &&
         createPortal(
           <div
@@ -535,8 +570,18 @@ export default function SubdomainRequests() {
                   <XCircle size={22} />
                 </div>
                 <div>
-                  <h2>Reject Subdomain Request</h2>
-                  <p>Decline the requested custom prefix for this project.</p>
+                  <h2>
+                    {rejectModal.request?.status === "approved" ||
+                    rejectModal.request?.is_live_custom
+                      ? "Revoke Custom Subdomain"
+                      : "Reject Subdomain Request"}
+                  </h2>
+                  <p>
+                    {rejectModal.request?.status === "approved" ||
+                    rejectModal.request?.is_live_custom
+                      ? "Immediately unroute this custom subdomain and revert the project to standard domain."
+                      : "Decline the requested custom prefix for this project."}
+                  </p>
                 </div>
                 <button
                   type="button"
@@ -558,11 +603,17 @@ export default function SubdomainRequests() {
                   <span className="info-sub">
                     Project: {rejectModal.request?.project_name} ({rejectModal.request?.developer_username})
                   </span>
+                  {(rejectModal.request?.status === "approved" ||
+                    rejectModal.request?.is_live_custom) && (
+                    <div className="info-revert-notice">
+                      Project will automatically route to its standard default domain.
+                    </div>
+                  )}
                 </div>
 
                 <div className="modal-field">
                   <label htmlFor="reject-reason-input">
-                    Reason for Rejection <span className="optional-tag">(Optional)</span>:
+                    Reason for Revocation <span className="optional-tag">(Optional)</span>:
                   </label>
                   <textarea
                     id="reject-reason-input"
@@ -571,13 +622,13 @@ export default function SubdomainRequests() {
                     onChange={(e) =>
                       setRejectModal((prev) => ({ ...prev, reason: e.target.value }))
                     }
-                    placeholder="e.g. This subdomain is reserved for upcoming infrastructure or conflicts with another service."
+                    placeholder="e.g. Inappropriate content, trademark infringement, or administrative revocation."
                     className="modal-textarea"
                     disabled={rejectModal.submitting}
                     autoFocus
                   />
                   <span className="field-hint">
-                    This note will be visible to the developer in their project publication dashboard.
+                    This note will be emailed to the developer and displayed in their project publication tab.
                   </span>
                 </div>
               </div>
@@ -601,12 +652,17 @@ export default function SubdomainRequests() {
                   {rejectModal.submitting ? (
                     <span className="btn-spinner-wrap">
                       <span className="btn-spinner" />
-                      Rejecting...
+                      Processing...
                     </span>
                   ) : (
                     <>
                       <XCircle size={15} />
-                      <span>Confirm Rejection</span>
+                      <span>
+                        {rejectModal.request?.status === "approved" ||
+                        rejectModal.request?.is_live_custom
+                          ? "Revoke Custom Subdomain"
+                          : "Confirm Rejection"}
+                      </span>
                     </>
                   )}
                 </button>
