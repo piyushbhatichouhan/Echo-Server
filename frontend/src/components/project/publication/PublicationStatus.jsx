@@ -12,9 +12,15 @@ import {
   Pencil,
   Check,
   X,
+  Clock,
+  Send,
+  XCircle,
+  RotateCcw,
+  Sparkles,
 } from "lucide-react";
 import Button from "../../common/button/button";
 import useAuth from "../../../hooks/useAuth";
+import { useToast } from "../../../context/ToastContext";
 import * as publicationApi from "../../../services/publication.api";
 
 const formatStatus = (value) => {
@@ -33,8 +39,11 @@ export default function PublicationStatus({
   onUnpublish,
 }) {
   const { user, refreshUser } = useAuth();
+  const toast = useToast();
+
+  const isSuperAdmin = Boolean(user?.isOwner || user?.is_owner);
   const hasSubdomainPrivilege = Boolean(
-    user?.isOwner || user?.is_owner || user?.canCustomSubdomain || user?.can_custom_subdomain,
+    isSuperAdmin || user?.canCustomSubdomain || user?.can_custom_subdomain,
   );
 
   // Sync latest user privileges on mount so newly granted permissions appear immediately
@@ -43,6 +52,12 @@ export default function PublicationStatus({
       refreshUser();
     }
   }, [refreshUser]);
+
+  // Project Subdomain Request State
+  const [subdomainRequest, setSubdomainRequest] = useState(null);
+  const [loadingRequest, setLoadingRequest] = useState(false);
+  const [isRequesting, setIsRequesting] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   // Subdomain selection state for unpublished projects
   const [subdomainType, setSubdomainType] = useState("default"); // 'default' | 'custom'
@@ -59,6 +74,24 @@ export default function PublicationStatus({
   const [editChecking, setEditChecking] = useState(false);
   const [editCheckResult, setEditCheckResult] = useState(null);
   const [isUpdating, setIsUpdating] = useState(false);
+
+  // Load project's current subdomain request
+  const loadSubdomainRequest = useCallback(async () => {
+    if (!project?.id || !hasSubdomainPrivilege) return;
+    try {
+      setLoadingRequest(true);
+      const req = await publicationApi.getSubdomainRequest(project.id);
+      setSubdomainRequest(req || null);
+    } catch {
+      // not found / error
+    } finally {
+      setLoadingRequest(false);
+    }
+  }, [project?.id, hasSubdomainPrivilege]);
+
+  useEffect(() => {
+    loadSubdomainRequest();
+  }, [loadSubdomainRequest]);
 
   // Debounced availability check for INITIAL publishing
   useEffect(() => {
@@ -146,13 +179,53 @@ export default function PublicationStatus({
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleRequestSubdomain = async (customPrefix) => {
+    const sub = (customPrefix || customSubdomain).trim().toLowerCase();
+    if (!sub || sub.length < 3) return;
+
+    try {
+      setIsRequesting(true);
+      const res = await publicationApi.requestCustomSubdomain(project?.id, sub);
+      toast?.success(
+        "Request Submitted",
+        res.message || "Custom subdomain request submitted to Super Admin for approval.",
+      );
+      await loadSubdomainRequest();
+      setCustomSubdomain("");
+    } catch (err) {
+      toast?.error("Request Failed", err.response?.data?.message || err.message);
+    } finally {
+      setIsRequesting(false);
+    }
+  };
+
+  const handleCancelRequest = async () => {
+    try {
+      setIsCancelling(true);
+      await publicationApi.cancelSubdomainRequest(project?.id);
+      toast?.success("Request Cancelled", "Custom subdomain request has been removed.");
+      setSubdomainRequest(null);
+    } catch (err) {
+      toast?.error("Cancel Failed", err.response?.data?.message || err.message);
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
   const handlePublishSubmit = async () => {
     try {
       setIsPublishing(true);
       if (subdomainType === "custom") {
+        const targetSub = (isSuperAdmin
+          ? customSubdomain
+          : subdomainRequest?.subdomain || customSubdomain
+        )
+          .trim()
+          .toLowerCase();
+
         await onPublish({
           subdomainType: "custom",
-          customSubdomain: customSubdomain.trim().toLowerCase(),
+          customSubdomain: targetSub,
         });
       } else {
         await onPublish({
@@ -170,6 +243,7 @@ export default function PublicationStatus({
     const initialPrefix =
       publication?.custom_domain ||
       publication?.hostname?.replace(new RegExp(`\\.${BASE_DOMAIN}$`, "i"), "") ||
+      subdomainRequest?.subdomain ||
       "";
     setEditCustomSubdomain(initialPrefix);
     setEditCheckResult(null);
@@ -186,9 +260,16 @@ export default function PublicationStatus({
     try {
       setIsUpdating(true);
       if (editType === "custom") {
+        const targetSub = (isSuperAdmin
+          ? editCustomSubdomain
+          : subdomainRequest?.subdomain || editCustomSubdomain
+        )
+          .trim()
+          .toLowerCase();
+
         await onUpdateSubdomain({
           subdomainType: "custom",
-          customSubdomain: editCustomSubdomain.trim().toLowerCase(),
+          customSubdomain: targetSub,
         });
       } else {
         await onUpdateSubdomain({
@@ -216,6 +297,13 @@ export default function PublicationStatus({
     .toLowerCase()
     .replace(/[^a-z0-9]/g, "")}.${BASE_DOMAIN}`;
 
+  const hasApprovedSubdomain =
+    subdomainRequest && subdomainRequest.status === "approved";
+  const hasPendingSubdomain =
+    subdomainRequest && subdomainRequest.status === "pending";
+  const hasRejectedSubdomain =
+    subdomainRequest && subdomainRequest.status === "rejected";
+
   // State A: Project is NOT yet published
   if (!publication) {
     return (
@@ -235,7 +323,7 @@ export default function PublicationStatus({
           </div>
         </div>
 
-        {/* If user has privilege (or is Owner), show domain choice selector */}
+        {/* Domain choice selector */}
         {hasSubdomainPrivilege ? (
           <div className="subdomain-selector-block">
             <div className="subdomain-type-tabs" role="tablist">
@@ -266,14 +354,159 @@ export default function PublicationStatus({
                   <code>https://{defaultHostnamePreview}</code>
                 </div>
                 <span className="preview-hint">
-                  Automatically combines your username and project name.
+                  Standard format combining your username and project name.
                 </span>
               </div>
-            ) : (
+            ) : isSuperAdmin ? (
+              /* Super Admin can publish directly to any custom subdomain */
               <div className="custom-subdomain-input-box">
                 <label className="custom-subdomain-label" htmlFor="custom-subdomain-input">
-                  Choose Your Exclusive Subdomain:
+                  Choose Custom Subdomain (Super Admin):
                 </label>
+
+                <div className="custom-subdomain-input-wrap">
+                  <span className="subdomain-prefix">https://</span>
+                  <input
+                    id="custom-subdomain-input"
+                    type="text"
+                    value={customSubdomain}
+                    onChange={(e) => setCustomSubdomain(e.target.value.toLowerCase().trim())}
+                    placeholder="my-cool-app"
+                    className="custom-subdomain-field"
+                    maxLength={63}
+                    autoComplete="off"
+                    autoFocus
+                  />
+                  <span className="subdomain-suffix">.{BASE_DOMAIN}</span>
+                </div>
+
+                <div className="subdomain-validation-row">
+                  {checking ? (
+                    <div className="subdomain-feedback checking">
+                      <Loader2 size={13} className="spin" />
+                      <span>Checking availability on {BASE_DOMAIN}...</span>
+                    </div>
+                  ) : checkResult ? (
+                    checkResult.available ? (
+                      <div className="subdomain-feedback available">
+                        <CheckCircle2 size={13} />
+                        <span>Available! Will publish as <strong>{checkResult.hostname}</strong></span>
+                      </div>
+                    ) : (
+                      <div className="subdomain-feedback unavailable">
+                        <AlertCircle size={13} />
+                        <span>{checkResult.message || "This subdomain cannot be used."}</span>
+                      </div>
+                    )
+                  ) : (
+                    <span className="subdomain-hint">
+                      Super Admin instant publishing enabled. 3-63 characters, numbers, and hyphens.
+                    </span>
+                  )}
+                </div>
+              </div>
+            ) : hasApprovedSubdomain ? (
+              /* Developer has an approved custom subdomain! */
+              <div className="subdomain-request-card card--approved">
+                <div className="req-card-header">
+                  <div className="req-status-badge badge--approved">
+                    <CheckCircle2 size={15} />
+                    <span>Approved by Super Admin</span>
+                  </div>
+                  <button
+                    type="button"
+                    className="req-cancel-link"
+                    onClick={handleCancelRequest}
+                    disabled={isCancelling}
+                  >
+                    Request Different Subdomain
+                  </button>
+                </div>
+
+                <div className="req-domain-highlight">
+                  <Crown size={20} className="req-crown-icon" />
+                  <code>https://{subdomainRequest.hostname}</code>
+                </div>
+
+                <p className="req-desc-text">
+                  Your requested subdomain is authorized and ready for deployment. Click below to publish this project with this exclusive domain.
+                </p>
+              </div>
+            ) : hasPendingSubdomain ? (
+              /* Developer request is currently pending review */
+              <div className="subdomain-request-card card--pending">
+                <div className="req-card-header">
+                  <div className="req-status-badge badge--pending">
+                    <Clock size={15} />
+                    <span>Pending Super Admin Approval</span>
+                  </div>
+                  <button
+                    type="button"
+                    className="req-cancel-btn"
+                    onClick={handleCancelRequest}
+                    disabled={isCancelling}
+                  >
+                    {isCancelling ? "Cancelling..." : "Cancel Request"}
+                  </button>
+                </div>
+
+                <div className="req-domain-highlight">
+                  <code>https://{subdomainRequest.hostname}</code>
+                </div>
+
+                <p className="req-desc-text">
+                  Your request has been submitted to the Super Admin. You can publish with the <strong>Standard Domain</strong> in the meantime, and switch once approved.
+                </p>
+              </div>
+            ) : hasRejectedSubdomain ? (
+              /* Developer request was declined */
+              <div className="subdomain-request-card card--rejected">
+                <div className="req-card-header">
+                  <div className="req-status-badge badge--rejected">
+                    <XCircle size={15} />
+                    <span>Request Declined</span>
+                  </div>
+                  <button
+                    type="button"
+                    className="req-cancel-link"
+                    onClick={handleCancelRequest}
+                    disabled={isCancelling}
+                  >
+                    Dismiss
+                  </button>
+                </div>
+
+                <div className="req-domain-highlight">
+                  <code>https://{subdomainRequest.hostname}</code>
+                </div>
+
+                {subdomainRequest.admin_notes && (
+                  <p className="req-rejection-note">
+                    <strong>Admin Note:</strong> {subdomainRequest.admin_notes}
+                  </p>
+                )}
+
+                <div className="req-action-wrap">
+                  <button
+                    type="button"
+                    className="req-retry-btn"
+                    onClick={() => setSubdomainRequest(null)}
+                  >
+                    <RotateCcw size={14} />
+                    <span>Request Another Subdomain</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* No request submitted yet: Show request submission form */
+              <div className="custom-subdomain-input-box">
+                <div className="subdomain-request-prompt">
+                  <Crown size={18} className="prompt-crown" />
+                  <div>
+                    <strong>Request Your Exclusive Subdomain</strong>
+                    <p>Enter the subdomain you'd like. The Super Admin will review and authorize it for this project.</p>
+                  </div>
+                </div>
 
                 <div className="custom-subdomain-input-wrap">
                   <span className="subdomain-prefix">https://</span>
@@ -302,7 +535,7 @@ export default function PublicationStatus({
                     checkResult.available ? (
                       <div className="subdomain-feedback available">
                         <CheckCircle2 size={13} />
-                        <span>Available! Will publish as <strong>{checkResult.hostname}</strong></span>
+                        <span>Available to request: <strong>{checkResult.hostname}</strong></span>
                       </div>
                     ) : (
                       <div className="subdomain-feedback unavailable">
@@ -312,9 +545,20 @@ export default function PublicationStatus({
                     )
                   ) : (
                     <span className="subdomain-hint">
-                      3-63 characters, letters, numbers, and hyphens. Certain names are reserved for the Super Admin.
+                      3-63 characters, letters, numbers, and hyphens. Reserved hostnames are restricted.
                     </span>
                   )}
+                </div>
+
+                <div className="subdomain-request-submit-row">
+                  <Button
+                    onClick={() => handleRequestSubdomain()}
+                    loading={isRequesting}
+                    disabled={!checkResult?.available || checking || isRequesting}
+                  >
+                    <Send size={14} />
+                    <span>Request Subdomain from Super Admin</span>
+                  </Button>
                 </div>
               </div>
             )}
@@ -330,7 +574,7 @@ export default function PublicationStatus({
             <div className="exclusive-info-callout">
               <Crown size={14} className="exclusive-callout-icon" />
               <span>
-                Want a custom subdomain like <code>app.{BASE_DOMAIN}</code>? Custom subdomains are an exclusive feature directly approved by the Super Admin.
+                Want an exclusive custom subdomain like <code>app.{BASE_DOMAIN}</code>? Custom subdomains can be granted by the Super Admin in Server Settings.
               </span>
             </div>
           </div>
@@ -342,11 +586,18 @@ export default function PublicationStatus({
             loading={isPublishing}
             disabled={
               isPublishing ||
-              (subdomainType === "custom" && (!checkResult?.available || checking))
+              (subdomainType === "custom" &&
+                !isSuperAdmin &&
+                !hasApprovedSubdomain) ||
+              (subdomainType === "custom" &&
+                isSuperAdmin &&
+                (!checkResult?.available || checking))
             }
           >
             {subdomainType === "custom"
-              ? "Publish with Custom Subdomain"
+              ? hasApprovedSubdomain
+                ? `Publish with Approved Domain (${subdomainRequest.subdomain})`
+                : "Publish with Custom Subdomain"
               : "Publish Project"}
           </Button>
         </div>
@@ -407,6 +658,34 @@ export default function PublicationStatus({
         />
       </div>
 
+      {/* Prominent Approved Subdomain Notification if currently on standard domain */}
+      {!isCustomSubdomain && hasApprovedSubdomain && !isEditing && (
+        <div className="approved-ready-banner">
+          <div className="banner-left">
+            <Sparkles size={20} className="banner-sparkle" />
+            <div>
+              <strong>Approved Custom Subdomain Ready</strong>
+              <p>
+                The Super Admin approved <code>https://{subdomainRequest.hostname}</code> for this project.
+              </p>
+            </div>
+          </div>
+
+          <Button
+            onClick={() =>
+              onUpdateSubdomain({
+                subdomainType: "custom",
+                customSubdomain: subdomainRequest.subdomain,
+              })
+            }
+            loading={isUpdating}
+          >
+            <Crown size={14} />
+            <span>Switch to Approved Subdomain</span>
+          </Button>
+        </div>
+      )}
+
       {/* Endpoint & Edit Section */}
       <div className="publication-info">
         <div className="publication-info-header">
@@ -455,13 +734,13 @@ export default function PublicationStatus({
                     <code>https://{defaultHostnamePreview}</code>
                   </div>
                   <span className="preview-hint">
-                    Reverts to the system standard username-project domain format.
+                    Reverts this project to the standard username-project domain format.
                   </span>
                 </div>
-              ) : (
+              ) : isSuperAdmin ? (
                 <div className="custom-subdomain-input-box">
                   <label className="custom-subdomain-label" htmlFor="edit-custom-subdomain-input">
-                    Choose Your New Exclusive Subdomain:
+                    Choose New Custom Subdomain (Super Admin):
                   </label>
 
                   <div className="custom-subdomain-input-wrap">
@@ -505,9 +784,112 @@ export default function PublicationStatus({
                       )
                     ) : (
                       <span className="subdomain-hint">
-                        3-63 characters, letters, numbers, and hyphens. Certain names are reserved for the Super Admin.
+                        3-63 characters, letters, numbers, and hyphens. Reserved hostnames are restricted.
                       </span>
                     )}
+                  </div>
+                </div>
+              ) : hasApprovedSubdomain ? (
+                <div className="subdomain-request-card card--approved">
+                  <div className="req-card-header">
+                    <div className="req-status-badge badge--approved">
+                      <CheckCircle2 size={14} />
+                      <span>Approved Subdomain Ready</span>
+                    </div>
+                    <button
+                      type="button"
+                      className="req-cancel-link"
+                      onClick={handleCancelRequest}
+                    >
+                      Request Different
+                    </button>
+                  </div>
+                  <div className="req-domain-highlight">
+                    <code>https://{subdomainRequest.hostname}</code>
+                  </div>
+                </div>
+              ) : hasPendingSubdomain ? (
+                <div className="subdomain-request-card card--pending">
+                  <div className="req-card-header">
+                    <div className="req-status-badge badge--pending">
+                      <Clock size={14} />
+                      <span>Pending Super Admin Approval</span>
+                    </div>
+                    <button
+                      type="button"
+                      className="req-cancel-btn"
+                      onClick={handleCancelRequest}
+                    >
+                      Cancel Request
+                    </button>
+                  </div>
+                  <div className="req-domain-highlight">
+                    <code>https://{subdomainRequest.hostname}</code>
+                  </div>
+                  <p className="req-desc-text">
+                    Awaiting Super Admin review. You will be able to apply it as soon as it is approved.
+                  </p>
+                </div>
+              ) : (
+                <div className="custom-subdomain-input-box">
+                  <div className="subdomain-request-prompt">
+                    <Crown size={16} className="prompt-crown" />
+                    <div>
+                      <strong>Request a New Custom Subdomain</strong>
+                      <p>Submit a new subdomain prefix to the Super Admin for approval.</p>
+                    </div>
+                  </div>
+
+                  <div className="custom-subdomain-input-wrap">
+                    <span className="subdomain-prefix">https://</span>
+                    <input
+                      id="edit-custom-subdomain-input"
+                      type="text"
+                      value={editCustomSubdomain}
+                      onChange={(e) => setEditCustomSubdomain(e.target.value.toLowerCase().trim())}
+                      placeholder="my-cool-app"
+                      className="custom-subdomain-field"
+                      maxLength={63}
+                      autoComplete="off"
+                      autoFocus
+                    />
+                    <span className="subdomain-suffix">.{BASE_DOMAIN}</span>
+                  </div>
+
+                  <div className="subdomain-validation-row">
+                    {editChecking ? (
+                      <div className="subdomain-feedback checking">
+                        <Loader2 size={13} className="spin" />
+                        <span>Checking availability on {BASE_DOMAIN}...</span>
+                      </div>
+                    ) : editCheckResult ? (
+                      editCheckResult.available ? (
+                        <div className="subdomain-feedback available">
+                          <CheckCircle2 size={13} />
+                          <span>Available to request: <strong>{editCheckResult.hostname}</strong></span>
+                        </div>
+                      ) : (
+                        <div className="subdomain-feedback unavailable">
+                          <AlertCircle size={13} />
+                          <span>{editCheckResult.message || "This subdomain cannot be used."}</span>
+                        </div>
+                      )
+                    ) : (
+                      <span className="subdomain-hint">
+                        3-63 characters, letters, numbers, and hyphens.
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="subdomain-request-submit-row">
+                    <Button
+                      onClick={() => handleRequestSubdomain(editCustomSubdomain)}
+                      loading={isRequesting}
+                      disabled={!editCheckResult?.available || editChecking || isRequesting}
+                    >
+                      <Send size={14} />
+                      <span>Submit Request for Approval</span>
+                    </Button>
                   </div>
                 </div>
               )}
@@ -518,11 +900,20 @@ export default function PublicationStatus({
                   loading={isUpdating}
                   disabled={
                     isUpdating ||
-                    (editType === "custom" && (!editCheckResult?.available || editChecking))
+                    (editType === "custom" &&
+                      !isSuperAdmin &&
+                      !hasApprovedSubdomain) ||
+                    (editType === "custom" &&
+                      isSuperAdmin &&
+                      (!editCheckResult?.available || editChecking))
                   }
                 >
                   <Check size={14} />
-                  <span>Apply New Subdomain</span>
+                  <span>
+                    {editType === "custom" && hasApprovedSubdomain
+                      ? "Apply Approved Subdomain"
+                      : "Apply Subdomain"}
+                  </span>
                 </Button>
 
                 <Button

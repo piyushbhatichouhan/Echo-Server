@@ -34,3 +34,30 @@ export const toggleCustomSubdomain = async (id, enabled) => {
   return data;
 };
 
+export const getSubdomainRequests = async (params = {}) => {
+  const { data } = await api.get("/admin/subdomain-requests", { params });
+  return data.data;
+};
+
+export const getSubdomainRequestStats = async () => {
+  const { data } = await api.get("/admin/subdomain-requests/stats");
+  return data.data;
+};
+
+export const approveSubdomainRequest = async (id) => {
+  const { data } = await api.post(`/admin/subdomain-requests/${id}/approve`);
+  return data;
+};
+
+export const rejectSubdomainRequest = async (id, reason) => {
+  const { data } = await api.post(`/admin/subdomain-requests/${id}/reject`, {
+    reason,
+  });
+  return data;
+};
+
+export const deleteSubdomainRequest = async (id) => {
+  const { data } = await api.delete(`/admin/subdomain-requests/${id}`);
+  return data;
+};
+

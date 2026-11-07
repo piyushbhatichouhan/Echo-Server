@@ -1,13 +1,21 @@
 import "./server.css";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "../../context/ToastContext";
 import { cleanupPorts } from "../../services/server.api";
+import { getSubdomainRequestStats } from "../../services/admin.api";
 
 export default function Server() {
   const navigate = useNavigate();
   const toast = useToast();
   const [cleaning, setCleaning] = useState(false);
+  const [subdomainStats, setSubdomainStats] = useState(null);
+
+  useEffect(() => {
+    getSubdomainRequestStats()
+      .then((data) => setSubdomainStats(data))
+      .catch(() => {});
+  }, []);
 
   const handleCleanupPorts = async () => {
     if (cleaning) return;
@@ -37,6 +45,13 @@ export default function Server() {
       description: "Manage existing users.",
       available: true,
       route: "/server/users",
+    },
+    {
+      title: "Subdomain Requests",
+      description: "Review and approve custom subdomain requests from developers.",
+      available: true,
+      route: "/server/subdomains",
+      iconText: subdomainStats?.pending ? `${subdomainStats.pending} ⚡` : "🌐",
     },
     { 
       title: "Storage",

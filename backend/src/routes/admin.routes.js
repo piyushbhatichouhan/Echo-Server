@@ -35,4 +35,10 @@ router.patch(
   controller.toggleCustomSubdomainAccess,
 );
 
+router.get("/subdomain-requests", controller.getSubdomainRequests);
+router.get("/subdomain-requests/stats", controller.getSubdomainRequestStats);
+router.post("/subdomain-requests/:id/approve", controller.approveSubdomainRequest);
+router.post("/subdomain-requests/:id/reject", controller.rejectSubdomainRequest);
+router.delete("/subdomain-requests/:id", controller.deleteSubdomainRequest);
+
 module.exports = router;
