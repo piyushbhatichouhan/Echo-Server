@@ -39,6 +39,8 @@ router.get("/subdomain-requests", controller.getSubdomainRequests);
 router.get("/subdomain-requests/stats", controller.getSubdomainRequestStats);
 router.post("/subdomain-requests/:id/approve", controller.approveSubdomainRequest);
 router.post("/subdomain-requests/:id/reject", controller.rejectSubdomainRequest);
+router.post("/subdomain-requests/:id/revoke", controller.revokeCustomSubdomain);
+router.post("/projects/:id/revoke-subdomain", controller.revokeCustomSubdomain);
 router.delete("/subdomain-requests/:id", controller.deleteSubdomainRequest);
 
 router.post("/notifications/test", controller.testNotification);

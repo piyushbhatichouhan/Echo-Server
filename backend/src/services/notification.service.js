@@ -245,6 +245,305 @@ ${reviewUrl}
   }
 };
 
+/**
+ * Sends an email notification to the Super Admin whenever a privileged user assigns or updates a custom subdomain.
+ */
+const notifyCustomSubdomainAssigned = async ({
+  project = {},
+  user = {},
+  subdomain,
+  hostname,
+  action = "assigned",
+}) => {
+  const recipient = getAdminRecipient();
+  const frontendUrl = getFrontendUrl();
+  const reviewUrl = `${frontendUrl}/server/subdomains`;
+  const liveUrl = `https://${hostname}`;
+  const timestamp = new Date().toUTCString();
+
+  const projectName = project.name || "Untitled Project";
+  const projectId = project.id || "N/A";
+  const developerName = user.username || "Developer";
+  const developerEmail = user.email || "No email available";
+
+  const actionVerb = action === "updated" ? "Updated" : "Assigned & Published";
+  const subject = `🌐 [EchoHub] Custom Subdomain ${actionVerb}: ${subdomain}`;
+
+  const plainText = `[EchoHub Platform] Custom Subdomain ${actionVerb}
+
+A user with custom subdomain privileges has ${action === "updated" ? "updated their project to" : "assigned and published"} a custom subdomain:
+
+• Subdomain:  ${liveUrl} (${subdomain})
+• Project:    ${projectName} (ID: ${projectId})
+• Developer:  ${developerName} (${developerEmail})
+• Action:     ${actionVerb}
+• Timestamp:  ${timestamp}
+
+Manage all custom subdomains in Server Settings:
+${reviewUrl}
+`;
+
+  const html = `
+    <div style="
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        max-width: 620px;
+        margin: 0 auto;
+        padding: 32px 24px;
+        background: #0d1117;
+        color: #f0f6fc;
+        border-radius: 16px;
+        border: 1px solid #283042;
+    ">
+      <!-- Header -->
+      <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #21262d; padding-bottom: 20px; margin-bottom: 24px;">
+        <div>
+          <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #38bdf8; background: rgba(56, 189, 248, 0.12); padding: 4px 10px; border-radius: 999px; border: 1px solid rgba(56, 189, 248, 0.3);">
+            Domain Assigned
+          </span>
+          <h2 style="color: #f0f6fc; margin: 12px 0 0; font-size: 22px; font-weight: 700;">
+            Custom Subdomain ${actionVerb}
+          </h2>
+        </div>
+      </div>
+
+      <p style="color: #8b949e; font-size: 15px; line-height: 1.5; margin: 0 0 24px;">
+        A developer with custom subdomain privileges has claimed and activated an exclusive custom subdomain on <strong>EchoHub</strong>.
+      </p>
+
+      <!-- Subdomain Highlight Box -->
+      <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 12px; padding: 18px 20px; margin-bottom: 24px;">
+        <span style="font-size: 12px; font-weight: 600; text-transform: uppercase; color: #7dd3fc; letter-spacing: 0.05em; display: block; margin-bottom: 6px;">
+          Active Custom Subdomain
+        </span>
+        <div style="font-size: 20px; font-weight: 700; color: #38bdf8; font-family: ui-monospace, SFMono-Regular, monospace; word-break: break-all;">
+          ${liveUrl}
+        </div>
+      </div>
+
+      <!-- Details Table -->
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 28px; font-size: 14px;">
+        <tbody>
+          <tr style="border-bottom: 1px solid #21262d;">
+            <td style="padding: 10px 0; color: #8b949e; width: 140px; font-weight: 500;">Developer</td>
+            <td style="padding: 10px 0; color: #f0f6fc; font-weight: 600;">
+              ${developerName} <span style="color: #8b949e; font-weight: 400;">(${developerEmail})</span>
+            </td>
+          </tr>
+          <tr style="border-bottom: 1px solid #21262d;">
+            <td style="padding: 10px 0; color: #8b949e; font-weight: 500;">Project</td>
+            <td style="padding: 10px 0; color: #f0f6fc; font-weight: 600;">
+              ${projectName} <span style="color: #6e7681; font-size: 12px; font-family: monospace;">(${projectId})</span>
+            </td>
+          </tr>
+          <tr style="border-bottom: 1px solid #21262d;">
+            <td style="padding: 10px 0; color: #8b949e; font-weight: 500;">Subdomain Prefix</td>
+            <td style="padding: 10px 0; color: #38bdf8; font-weight: 600; font-family: monospace;">
+              ${subdomain}
+            </td>
+          </tr>
+          <tr style="border-bottom: 1px solid #21262d;">
+            <td style="padding: 10px 0; color: #8b949e; font-weight: 500;">Action Type</td>
+            <td style="padding: 10px 0; color: #a78bfa; font-weight: 600;">
+              ${actionVerb} (No approval required)
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 0; color: #8b949e; font-weight: 500;">Assigned Time</td>
+            <td style="padding: 10px 0; color: #c9d1d9;">${timestamp}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Action Buttons -->
+      <div style="display: flex; gap: 12px; margin: 28px 0; flex-wrap: wrap;">
+        <a
+          href="${reviewUrl}"
+          style="
+            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+            color: #ffffff;
+            padding: 12px 22px;
+            text-decoration: none;
+            border-radius: 10px;
+            display: inline-block;
+            font-weight: 600;
+            font-size: 14px;
+            box-shadow: 0 4px 16px rgba(2, 132, 199, 0.3);
+          "
+        >
+          Manage in Server Settings →
+        </a>
+        <a
+          href="${liveUrl}"
+          target="_blank"
+          style="
+            background: #21262d;
+            color: #f0f6fc;
+            padding: 12px 22px;
+            text-decoration: none;
+            border-radius: 10px;
+            display: inline-block;
+            font-weight: 600;
+            font-size: 14px;
+            border: 1px solid #30363d;
+          "
+        >
+          Open Live Website ↗
+        </a>
+      </div>
+
+      <hr style="border: none; border-top: 1px solid #21262d; margin: 24px 0;" />
+
+      <p style="color: #6e7681; font-size: 12px; line-height: 1.5; margin: 0;">
+        You received this notification because you are the Super Administrator of this EchoHub platform.<br />
+        If you wish to revoke or reassign this subdomain, you can do so at any time in Server Settings.
+      </p>
+    </div>
+  `;
+
+  try {
+    const info = await sendMail({
+      to: recipient,
+      subject,
+      text: plainText,
+      html,
+    });
+    console.log(`[Notification] Custom subdomain assigned email sent to ${recipient} (subdomain: ${subdomain})`);
+    return { ok: true, recipient, messageId: info?.messageId };
+  } catch (err) {
+    console.error(`[Notification] Failed to send custom subdomain assigned email to ${recipient}:`, err.message);
+    return { ok: false, error: err.message };
+  }
+};
+
+/**
+ * Sends an email notification to the project owner when an individual custom domain is revoked by the Super Admin.
+ */
+const notifyDeveloperSubdomainRevoked = async ({
+  project = {},
+  user = {},
+  subdomain,
+  hostname,
+  standardHostname,
+  reason = null,
+}) => {
+  if (!user?.email) return { ok: false, error: "No user email" };
+
+  const frontendUrl = getFrontendUrl();
+  const projectUrl = `${frontendUrl}/projects/${project.id}`;
+  const timestamp = new Date().toUTCString();
+
+  const projectName = project.name || "Your Project";
+  const developerName = user.username || "Developer";
+  const rejectionReason = reason?.trim() || "Revoked by Super Administrator.";
+
+  const subject = `⚠️ [EchoHub] Custom Subdomain Revoked for "${projectName}"`;
+
+  const plainText = `[EchoHub Platform] Custom Subdomain Revoked
+
+Hello ${developerName},
+
+The custom subdomain https://${hostname} assigned to your project "${projectName}" has been revoked by the Super Administrator.
+
+• Revoked Subdomain:  https://${hostname}
+• Active Standard URL: https://${standardHostname}
+• Reason:              ${rejectionReason}
+• Timestamp:           ${timestamp}
+
+Your project has been automatically reverted to its standard domain and remains live.
+View your project settings:
+${projectUrl}
+`;
+
+  const html = `
+    <div style="
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        max-width: 620px;
+        margin: 0 auto;
+        padding: 32px 24px;
+        background: #0d1117;
+        color: #f0f6fc;
+        border-radius: 16px;
+        border: 1px solid #283042;
+    ">
+      <div style="border-bottom: 1px solid #21262d; padding-bottom: 20px; margin-bottom: 24px;">
+        <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #f87171; background: rgba(248, 113, 113, 0.12); padding: 4px 10px; border-radius: 999px; border: 1px solid rgba(248, 113, 113, 0.3);">
+          Domain Revoked
+        </span>
+        <h2 style="color: #f0f6fc; margin: 12px 0 0; font-size: 22px; font-weight: 700;">
+          Custom Subdomain Revoked
+        </h2>
+      </div>
+
+      <p style="color: #8b949e; font-size: 15px; line-height: 1.5; margin: 0 0 20px;">
+        Hello <strong>${developerName}</strong>, the custom subdomain for your project <strong>${projectName}</strong> was revoked by the platform Super Administrator.
+      </p>
+
+      <div style="background: rgba(248, 113, 113, 0.08); border: 1px solid rgba(248, 113, 113, 0.25); border-radius: 12px; padding: 18px 20px; margin-bottom: 20px;">
+        <span style="font-size: 12px; font-weight: 600; text-transform: uppercase; color: #fca5a5; display: block; margin-bottom: 6px;">
+          Revoked Subdomain
+        </span>
+        <div style="font-size: 18px; font-weight: 700; color: #f87171; font-family: monospace; text-decoration: line-through;">
+          https://${hostname}
+        </div>
+      </div>
+
+      ${
+        rejectionReason
+          ? `
+      <div style="background: #161b22; border-left: 4px solid #f87171; border-radius: 4px 10px 10px 4px; padding: 14px 18px; margin-bottom: 24px;">
+        <strong style="color: #f0f6fc; font-size: 13px; display: block; margin-bottom: 4px;">Reason / Admin Note:</strong>
+        <span style="color: #c9d1d9; font-size: 14px; line-height: 1.5;">${rejectionReason}</span>
+      </div>`
+          : ""
+      }
+
+      <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 12px; padding: 18px 20px; margin-bottom: 28px;">
+        <span style="font-size: 12px; font-weight: 600; text-transform: uppercase; color: #6ee7b7; display: block; margin-bottom: 6px;">
+          Active Replacement Endpoint
+        </span>
+        <div style="font-size: 16px; font-weight: 700; color: #10b981; font-family: monospace;">
+          https://${standardHostname}
+        </div>
+        <p style="color: #8b949e; font-size: 12px; margin: 6px 0 0;">
+          Your project remains active and online via this standard hostname.
+        </p>
+      </div>
+
+      <div style="margin: 28px 0;">
+        <a
+          href="${projectUrl}"
+          style="
+            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+            color: #ffffff;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 10px;
+            display: inline-block;
+            font-weight: 600;
+            font-size: 14px;
+          "
+        >
+          Open Project Settings →
+        </a>
+      </div>
+    </div>
+  `;
+
+  try {
+    const info = await sendMail({
+      to: user.email,
+      subject,
+      text: plainText,
+      html,
+    });
+    console.log(`[Notification] Custom subdomain revocation email sent to ${user.email}`);
+    return { ok: true, recipient: user.email, messageId: info?.messageId };
+  } catch (err) {
+    console.error(`[Notification] Failed to send revocation email to ${user.email}:`, err.message);
+    return { ok: false, error: err.message };
+  }
+};
+
 // -------------------------------------------------------------
 // Critical Error Notification
 // -------------------------------------------------------------
@@ -506,6 +805,8 @@ const sendTestNotification = async (type = "subdomain") => {
 module.exports = {
   getAdminRecipient,
   notifySubdomainRequest,
+  notifyCustomSubdomainAssigned,
+  notifyDeveloperSubdomainRevoked,
   notifyCriticalError,
   sendTestNotification,
 };

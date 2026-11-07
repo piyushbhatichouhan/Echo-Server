@@ -130,7 +130,30 @@ const getSubdomainRequestById = async (id) => {
     `,
     [id],
   );
-  return rows[0] || null;
+  if (rows[0]) return rows[0];
+
+  // Fallback: If id matches a project_domains row with is_custom = TRUE
+  const pdRes = await pool.query(
+    `
+    SELECT
+      pd.id,
+      pd.project_id,
+      p.owner_id AS user_id,
+      COALESCE(pd.custom_domain, SPLIT_PART(pd.hostname, '.', 1)) AS subdomain,
+      pd.hostname,
+      'approved' AS status,
+      p.name AS project_name,
+      u.username,
+      u.email
+    FROM project_domains pd
+    JOIN projects p ON p.id = pd.project_id
+    JOIN users u ON u.id = p.owner_id
+    WHERE pd.id = $1 AND pd.is_custom = TRUE
+    LIMIT 1
+    `,
+    [id],
+  );
+  return pdRes.rows[0] || null;
 };
 
 const getApprovedSubdomainRequest = async (projectId, subdomain) => {
@@ -247,56 +270,89 @@ const listSubdomainRequests = async (filters = {}) => {
 
   if (status && status !== "all") {
     params.push(status);
-    whereClauses.push(`sr.status = $${params.length}`);
+    whereClauses.push(`rec.status = $${params.length}`);
   }
 
   if (search && search.trim()) {
     params.push(`%${search.trim().toLowerCase()}%`);
     whereClauses.push(`(
-      LOWER(sr.subdomain) LIKE $${params.length} OR
-      LOWER(sr.hostname) LIKE $${params.length} OR
-      LOWER(p.name) LIKE $${params.length} OR
-      LOWER(u.username) LIKE $${params.length} OR
-      LOWER(u.email) LIKE $${params.length}
+      LOWER(rec.subdomain) LIKE $${params.length} OR
+      LOWER(rec.hostname) LIKE $${params.length} OR
+      LOWER(rec.project_name) LIKE $${params.length} OR
+      LOWER(rec.developer_username) LIKE $${params.length} OR
+      LOWER(rec.developer_email) LIKE $${params.length}
     )`);
   }
 
   const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(" AND ")}` : "";
 
-  const { rows } = await pool.query(
-    `
-    SELECT
-      sr.*,
-      p.name as project_name,
-      u.username as developer_username,
-      u.email as developer_email,
-      reviewer.username as reviewer_username
-    FROM subdomain_requests sr
-    JOIN projects p ON p.id = sr.project_id
-    JOIN users u ON u.id = sr.user_id
-    LEFT JOIN users reviewer ON reviewer.id = sr.reviewed_by
+  const query = `
+    WITH unified_subdomains AS (
+      SELECT
+        COALESCE(sr.id, pd.id) AS id,
+        sr.id AS request_id,
+        pd.id AS domain_id,
+        COALESCE(sr.subdomain, pd.custom_domain, SPLIT_PART(pd.hostname, '.', 1)) AS subdomain,
+        COALESCE(sr.hostname, pd.hostname) AS hostname,
+        COALESCE(sr.status, CASE WHEN pd.is_custom THEN 'approved' ELSE 'pending' END) AS status,
+        sr.admin_notes,
+        COALESCE(sr.created_at, pd.created_at) AS created_at,
+        COALESCE(sr.updated_at, pd.updated_at) AS updated_at,
+        sr.reviewed_at,
+        p.id AS project_id,
+        p.name AS project_name,
+        u.id AS user_id,
+        u.username AS developer_username,
+        u.email AS developer_email,
+        u.can_custom_subdomain,
+        u.is_owner,
+        reviewer.username AS reviewer_username,
+        pd.hostname AS live_hostname,
+        pd.publication_status AS live_publication_status,
+        pd.ssl_status AS live_ssl_status,
+        (pd.is_custom = TRUE AND pd.publication_status = 'active') AS is_live_custom
+      FROM projects p
+      JOIN users u ON u.id = p.owner_id
+      LEFT JOIN project_domains pd ON pd.project_id = p.id
+      LEFT JOIN subdomain_requests sr ON sr.project_id = p.id
+      LEFT JOIN users reviewer ON reviewer.id = sr.reviewed_by
+      WHERE (sr.id IS NOT NULL OR (pd.is_custom = TRUE))
+    )
+    SELECT *
+    FROM unified_subdomains rec
     ${whereSql}
     ORDER BY
-      CASE WHEN sr.status = 'pending' THEN 0 ELSE 1 END,
-      sr.created_at DESC
-    `,
-    params,
-  );
+      CASE WHEN rec.is_live_custom THEN 0 WHEN rec.status = 'approved' THEN 1 WHEN rec.status = 'pending' THEN 2 ELSE 3 END,
+      rec.created_at DESC
+  `;
+
+  const { rows } = await pool.query(query, params);
   return rows;
 };
 
 const getSubdomainRequestStats = async () => {
-  const { rows } = await pool.query(
-    `
+  const query = `
+    WITH unified_subdomains AS (
+      SELECT
+        COALESCE(sr.status, CASE WHEN pd.is_custom THEN 'approved' ELSE 'pending' END) AS status,
+        (pd.is_custom = TRUE AND pd.publication_status = 'active') AS is_live_custom
+      FROM projects p
+      JOIN users u ON u.id = p.owner_id
+      LEFT JOIN project_domains pd ON pd.project_id = p.id
+      LEFT JOIN subdomain_requests sr ON sr.project_id = p.id
+      WHERE (sr.id IS NOT NULL OR (pd.is_custom = TRUE))
+    )
     SELECT
       COUNT(*)::INT as total,
       COUNT(*) FILTER (WHERE status = 'pending')::INT as pending,
       COUNT(*) FILTER (WHERE status = 'approved')::INT as approved,
-      COUNT(*) FILTER (WHERE status = 'rejected')::INT as rejected
-    FROM subdomain_requests
-    `,
-  );
-  return rows[0] || { total: 0, pending: 0, approved: 0, rejected: 0 };
+      COUNT(*) FILTER (WHERE status = 'rejected')::INT as rejected,
+      COUNT(*) FILTER (WHERE is_live_custom = TRUE)::INT as active
+    FROM unified_subdomains
+  `;
+
+  const { rows } = await pool.query(query);
+  return rows[0] || { total: 0, pending: 0, approved: 0, rejected: 0, active: 0 };
 };
 
 const getUserCustomPublishedProjects = async (userId) => {

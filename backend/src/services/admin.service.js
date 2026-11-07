@@ -173,35 +173,79 @@ const approveSubdomainRequest = async (requestId, adminId) => {
   return updatedRequest;
 };
 
-const rejectSubdomainRequest = async (requestId, adminId, reason = null) => {
-  const req = await publicationRepository.getSubdomainRequestById(requestId);
+const revokeCustomSubdomain = async (identifier, adminId, reason = null) => {
+  // identifier can be a requestId (UUID from subdomain_requests or project_domains) or a projectId
+  let req = await publicationRepository.getSubdomainRequestById(identifier);
   if (!req) {
-    const err = new Error("Subdomain request not found.");
+    req = await publicationRepository.getSubdomainRequestByProject(identifier);
+  }
+  if (!req) {
+    // Check if there is an active project_domain for this project
+    const pub = await publicationRepository.getProjectDomain(identifier);
+    if (pub && pub.is_custom) {
+      const { pool } = require("../config/database");
+      const projRes = await pool.query(
+        `SELECT p.name, p.owner_id, u.username, u.email FROM projects p JOIN users u ON u.id = p.owner_id WHERE p.id = $1`,
+        [pub.project_id],
+      );
+      if (projRes.rows[0]) {
+        req = {
+          id: pub.id,
+          project_id: pub.project_id,
+          user_id: projRes.rows[0].owner_id,
+          subdomain: pub.custom_domain || pub.hostname.split(".")[0],
+          hostname: pub.hostname,
+          project_name: projRes.rows[0].name,
+          username: projRes.rows[0].username,
+          email: projRes.rows[0].email,
+        };
+      }
+    }
+  }
+
+  if (!req) {
+    const err = new Error("Custom subdomain or project not found.");
     err.status = 404;
     throw err;
   }
 
-  const rejectionReason = reason?.trim() || "Declined by administrator.";
+  const rejectionReason =
+    reason?.trim() || "Custom subdomain revoked by Super Administrator.";
 
-  const updatedRequest = await publicationRepository.updateSubdomainRequestStatus(requestId, {
+  // 1. Upsert or update status in subdomain_requests
+  const updatedRequest = await publicationRepository.createOrUpdateSubdomainRequest(
+    req.project_id,
+    req.user_id,
+    req.subdomain,
+    req.hostname,
+    "rejected",
+    rejectionReason,
+  );
+
+  await publicationRepository.updateSubdomainRequestStatus(updatedRequest.id, {
     status: "rejected",
     adminNotes: rejectionReason,
     reviewedBy: adminId,
     reviewedAt: new Date(),
   });
 
-  // If the project is currently published and using this custom subdomain (or any custom subdomain),
-  // immediately revert it back to the standard default domain!
+  // 2. Revert project's live reverse proxy and domain to default standard domain (username-project.devpiyush.in)
+  let standardHostname = null;
   try {
     const pub = await publicationRepository.getProjectDomain(req.project_id);
     if (pub && (pub.is_custom || pub.hostname === req.hostname)) {
-      await publicationService.updateSubdomain(req.project_id, req.user_id, {
-        subdomainType: "default",
-        bypassApprovalCheck: true,
-        bypassOwnershipCheck: true,
-      });
+      const revertedPub = await publicationService.updateSubdomain(
+        req.project_id,
+        req.user_id,
+        {
+          subdomainType: "default",
+          bypassApprovalCheck: true,
+          bypassOwnershipCheck: true,
+        },
+      );
+      standardHostname = revertedPub?.hostname || null;
       console.log(
-        `[AdminService] Reverted project ${req.project_id} from revoked custom subdomain (${pub.hostname}) to standard domain.`,
+        `[AdminService] Reverted project ${req.project_id} from revoked custom subdomain (${pub.hostname}) to standard domain (${standardHostname}).`,
       );
     }
   } catch (err) {
@@ -211,7 +255,41 @@ const rejectSubdomainRequest = async (requestId, adminId, reason = null) => {
     );
   }
 
-  return updatedRequest;
+  // 3. Notify the project owner via email about the revocation
+  try {
+    const notificationService = require("./notification.service");
+    notificationService
+      .notifyDeveloperSubdomainRevoked({
+        project: { id: req.project_id, name: req.project_name || "Project" },
+        user: {
+          id: req.user_id,
+          username: req.username || req.developer_username || "developer",
+          email: req.email || req.developer_email,
+        },
+        subdomain: req.subdomain,
+        hostname: req.hostname,
+        standardHostname: standardHostname || "standard project domain",
+        reason: rejectionReason,
+      })
+      .catch((mailErr) => {
+        console.warn(
+          "[AdminService] Developer revocation notice mail warning:",
+          mailErr.message,
+        );
+      });
+  } catch (_) {}
+
+  return {
+    ...updatedRequest,
+    subdomain: req.subdomain,
+    hostname: req.hostname,
+    status: "rejected",
+    adminNotes: rejectionReason,
+  };
+};
+
+const rejectSubdomainRequest = async (requestId, adminId, reason = null) => {
+  return await revokeCustomSubdomain(requestId, adminId, reason);
 };
 
 const deleteSubdomainRequest = async (requestId) => {
@@ -254,5 +332,6 @@ module.exports = {
   getSubdomainRequestStats,
   approveSubdomainRequest,
   rejectSubdomainRequest,
+  revokeCustomSubdomain,
   deleteSubdomainRequest,
 };

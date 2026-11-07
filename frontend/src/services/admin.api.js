@@ -56,6 +56,20 @@ export const rejectSubdomainRequest = async (id, reason) => {
   return data;
 };
 
+export const revokeCustomSubdomain = async (id, reason) => {
+  const { data } = await api.post(`/admin/subdomain-requests/${id}/revoke`, {
+    reason,
+  });
+  return data;
+};
+
+export const revokeProjectSubdomain = async (projectId, reason) => {
+  const { data } = await api.post(`/admin/projects/${projectId}/revoke-subdomain`, {
+    reason,
+  });
+  return data;
+};
+
 export const deleteSubdomainRequest = async (id) => {
   const { data } = await api.delete(`/admin/subdomain-requests/${id}`);
   return data;
