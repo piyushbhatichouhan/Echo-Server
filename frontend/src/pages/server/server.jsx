@@ -1,15 +1,23 @@
 import "./server.css";
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Navigate } from "react-router-dom";
+import useAuth from "../../hooks/useAuth";
 import { useToast } from "../../context/ToastContext";
 import { cleanupPorts } from "../../services/server.api";
 import { getSubdomainRequestStats } from "../../services/admin.api";
 
 export default function Server() {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const toast = useToast();
   const [cleaning, setCleaning] = useState(false);
   const [subdomainStats, setSubdomainStats] = useState(null);
+
+  const isOwner = Boolean(user?.is_owner || user?.isOwner);
+
+  if (!isOwner) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   useEffect(() => {
     getSubdomainRequestStats()

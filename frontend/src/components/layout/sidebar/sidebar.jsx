@@ -22,6 +22,7 @@ import ThemeSwitcher from "../../common/ThemeSwitcher/ThemeSwitcher";
 
 export default function Sidebar({ mobileOpen = false, onCloseMobile = () => {} }) {
   const { user, logout } = useAuth();
+  const isOwner = Boolean(user?.is_owner || user?.isOwner);
 
   const [collapsed, setCollapsed] = useState(() => {
     try {
@@ -186,7 +187,7 @@ export default function Sidebar({ mobileOpen = false, onCloseMobile = () => {} }
           </div>
 
           {/* Management Group (Only for Owner) */}
-          {user?.isOwner && (
+          {isOwner && (
             <div className="eh-nav-group">
               {!collapsed && (
                 <div className="eh-nav-section-title">Management</div>
@@ -251,7 +252,7 @@ export default function Sidebar({ mobileOpen = false, onCloseMobile = () => {} }
                   <span className="eh-user-name" title={user?.username || "User"}>
                     {user?.username || "User"}
                   </span>
-                  {user?.isOwner && (
+                  {isOwner && (
                     <span className="eh-owner-badge" title="Platform Owner">
                       <Crown size={11} />
                       <span>Owner</span>

@@ -616,7 +616,6 @@ const updateUsername = async (userId, newUsername) => {
   );
 
   const updatedUser = updateRes.rows[0];
-  const isOwner = Boolean(updatedUser.is_owner);
   const canCustom = Boolean(
     updatedUser.is_owner || updatedUser.can_custom_subdomain,
   );

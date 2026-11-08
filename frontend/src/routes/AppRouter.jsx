@@ -6,6 +6,7 @@ import Projects from "../pages/projects/projects";
 import Project from "../pages/project/project";
 import DashboardLayout from "../layouts/DashboardLayout";
 import ProtectedRoute from "./ProtectedRoute";
+import OwnerRoute from "./OwnerRoute";
 import Settings from "../pages/settings/settings";
 import Server from "../pages/server/server";
 import PendingUsers from "../pages/server/pendingUsers/pendingUsers";
@@ -55,16 +56,22 @@ export default function AppRouter() {
           <Route path="/projects" element={<Projects />} />
           <Route path="/projects/:id" element={<Project />} />
           <Route path="/settings" element={<Settings />} />
-          <Route path="/server" element={<Server />} />
-          <Route path="/server/pending-users" element={<PendingUsers />} />
-          <Route path="/server/users" element={<ManageUsers />} />
-          <Route path="/server/storage" element={<Storage />} />
-          <Route path="/server/subdomains" element={<SubdomainRequests />} />
-          <Route path="/server/mailer" element={<Mailer />} />
-          <Route path="/server/health" element={<Health />} />
-          <Route path="/server/logs" element={<ServerLogs />} />
           <Route path="/cloud-storage" element={<CloudStorage />} />
+
+          {/* Super Admin Restricted Routes */}
+          <Route element={<OwnerRoute />}>
+            <Route path="/server" element={<Server />} />
+            <Route path="/server/pending-users" element={<PendingUsers />} />
+            <Route path="/server/users" element={<ManageUsers />} />
+            <Route path="/server/storage" element={<Storage />} />
+            <Route path="/server/subdomains" element={<SubdomainRequests />} />
+            <Route path="/server/mailer" element={<Mailer />} />
+            <Route path="/server/health" element={<Health />} />
+            <Route path="/server/logs" element={<ServerLogs />} />
+          </Route>
         </Route>
+
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </BrowserRouter>
   );
