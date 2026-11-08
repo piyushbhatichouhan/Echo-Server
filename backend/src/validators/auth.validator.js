@@ -1,4 +1,5 @@
 const { body } = require("express-validator");
+const { validateUsernameReservation } = require("../publication/reservedHostnames");
 
 const registerValidation = [
   body("username")
@@ -6,7 +7,18 @@ const registerValidation = [
     .notEmpty()
     .withMessage("Username is required")
     .isLength({ min: 3, max: 30 })
-    .withMessage("Username must be between 3 and 30 characters"),
+    .withMessage("Username must be between 3 and 30 characters")
+    .matches(/^[a-zA-Z0-9_-]+$/)
+    .withMessage(
+      "Username can only contain letters, numbers, hyphens, and underscores",
+    )
+    .custom((val) => {
+      const reservation = validateUsernameReservation(val, false);
+      if (!reservation.valid) {
+        throw new Error(reservation.error);
+      }
+      return true;
+    }),
 
   body("email")
     .trim()
@@ -56,7 +68,15 @@ const updateUsernameValidation = [
     .matches(/^[a-zA-Z0-9_-]+$/)
     .withMessage(
       "Username can only contain letters, numbers, hyphens, and underscores",
-    ),
+    )
+    .custom((val, { req }) => {
+      const isOwner = Boolean(req.user?.is_owner);
+      const reservation = validateUsernameReservation(val, isOwner);
+      if (!reservation.valid) {
+        throw new Error(reservation.error);
+      }
+      return true;
+    }),
 ];
 
 module.exports = {

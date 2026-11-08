@@ -142,6 +142,10 @@ const publishProject = async (projectId, ownerId, options = {}) => {
     hostname = await hostnameGenerator.generateHostname(
       project.username,
       project.name,
+      {
+        isOwner: Boolean(user?.is_owner),
+        canCustomSubdomain: Boolean(user?.is_owner || user?.can_custom_subdomain),
+      },
     );
   }
 
@@ -362,6 +366,7 @@ const updateSubdomain = async (projectId, ownerId, options = {}) => {
     targetHostname = await hostnameGenerator.generateHostname(
       project.username,
       project.name,
+      { isOwner, canCustomSubdomain: canCustom },
     );
   }
 

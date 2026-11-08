@@ -314,7 +314,11 @@ const revokeCustomSubdomain = async (identifier, adminId, reason = null) => {
       const uname = recipientUser.username;
       const pname = req.project_name || "project";
       if (uname && pname) {
-        standardHostname = await hostnameGenerator.generateHostname(uname, pname);
+        standardHostname = await hostnameGenerator.generateHostname(
+          uname,
+          pname,
+          { isOwner: true, canCustomSubdomain: true },
+        );
       }
     } catch (_) {}
     if (!standardHostname) {

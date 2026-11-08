@@ -16,6 +16,14 @@ const registerUser = async (userData) => {
   const { username, password } = userData;
   const email = userData.email.trim().toLowerCase();
 
+  const { validateUsernameReservation } = require("../publication/reservedHostnames");
+  const reservation = validateUsernameReservation(username, false);
+  if (!reservation.valid) {
+    const error = new Error(reservation.error);
+    error.status = 400;
+    throw error;
+  }
+
   const existingUser = await pool.query(
     "SELECT id FROM users WHERE username = $1",
     [username],
@@ -549,6 +557,15 @@ const updateUsername = async (userId, newUsername) => {
   }
 
   const currentUser = userRes.rows[0];
+  const isOwner = Boolean(currentUser.is_owner);
+
+  const { validateUsernameReservation } = require("../publication/reservedHostnames");
+  const reservation = validateUsernameReservation(clean, isOwner);
+  if (!reservation.valid) {
+    const error = new Error(reservation.error);
+    error.status = 400;
+    throw error;
+  }
 
   // If identical, return current user
   if (currentUser.username === clean) {

@@ -1,5 +1,8 @@
 const publicationRepository = require("./publication.repository");
-const { validateSubdomainReservation } = require("./reservedHostnames");
+const {
+  validateSubdomainReservation,
+  validateDefaultSubdomainReservation,
+} = require("./reservedHostnames");
 
 const BASE_DOMAIN = process.env.DEFAULT_DOMAIN || "devpiyush.in";
 const MAX_HOSTNAME_LENGTH = 63;
@@ -125,9 +128,25 @@ const validateCustomSubdomain = async (rawSubdomain, isOwner = false, excludePro
 
 /**
  * Generates default hostname: username-project.devpiyush.in
+ * Validates that the synthesized slug does not exploit vanity or reserved namespaces.
  */
-const generateHostname = async (username, projectName) => {
+const generateHostname = async (username, projectName, options = {}) => {
+  const { isOwner = false, canCustomSubdomain = false } = options;
   const base = `${slugify(username)}-${slugify(projectName)}`;
+
+  // Intercept compound vanity handles and reserved keyword combinations
+  const reservation = validateDefaultSubdomainReservation(
+    base,
+    username,
+    isOwner,
+    canCustomSubdomain,
+  );
+  if (!reservation.valid) {
+    const error = new Error(reservation.error);
+    error.status = 403;
+    error.code = "VANITY_RESERVED";
+    throw error;
+  }
 
   let hostname = base;
   let counter = 2;
