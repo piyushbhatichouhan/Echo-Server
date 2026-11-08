@@ -26,6 +26,8 @@ import VerifyEmailSuccess from "../pages/auth/verify-email/VerifyEmailSuccess";
 import VerifyEmail from "../pages/auth/verify-email/VerifyEmail";
 import ForgotPassword from "../pages/auth/forgotpassword/ForgotPassword";
 import ResetPassword from "../pages/auth/forgotpassword/ResetPassword";
+import Terms from "../pages/legal/Terms";
+import Privacy from "../pages/legal/Privacy";
 
 export default function AppRouter() {
   return (
@@ -36,6 +38,8 @@ export default function AppRouter() {
         <Route path="/login" element={<Login />} />
 
         <Route path="/register" element={<Register />} />
+        <Route path="/terms" element={<Terms />} />
+        <Route path="/privacy" element={<Privacy />} />
 
         <Route path="/verify-email-success" element={<VerifyEmailSuccess />} />
 

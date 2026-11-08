@@ -170,6 +170,12 @@ export default function Login() {
             </Link>
           </div>
         </div>
+
+        <div className="login__legal-links">
+          <Link to="/terms">Terms of Service</Link>
+          <span>•</span>
+          <Link to="/privacy">Privacy Policy</Link>
+        </div>
       </div>
     </div>
   );

@@ -146,6 +146,18 @@ export default function Register() {
               </div>
             </div>
 
+            <div className="register__terms-notice">
+              By creating an account, you agree to our{" "}
+              <Link to="/terms" target="_blank" rel="noopener noreferrer">
+                Terms of Service
+              </Link>{" "}
+              and{" "}
+              <Link to="/privacy" target="_blank" rel="noopener noreferrer">
+                Privacy Policy
+              </Link>
+              .
+            </div>
+
             <button className="login__button" type="submit" disabled={loading}>
               {loading ? "Creating Account..." : "Create Account"}
             </button>
@@ -158,6 +170,12 @@ export default function Register() {
               Sign In
             </Link>
           </div>
+        </div>
+
+        <div className="login__legal-links">
+          <Link to="/terms">Terms of Service</Link>
+          <span>•</span>
+          <Link to="/privacy">Privacy Policy</Link>
         </div>
       </div>
     </div>
