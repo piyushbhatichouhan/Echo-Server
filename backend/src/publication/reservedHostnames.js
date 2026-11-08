@@ -142,6 +142,13 @@ const SUPERADMIN_RESERVED = new Set([
   "server1",
   "control",
   "echoserver",
+  "devpiyush",
+  "dev-piyush",
+  "piyush-dev",
+  "piyush-shende",
+  "shende-piyush",
+  "palak-mishra",
+  "mishra-palak",
 ]);
 
 // 3. Generic vocabulary and nouns restricted from standard user registration
