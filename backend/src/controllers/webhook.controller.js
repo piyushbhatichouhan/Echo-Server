@@ -5,6 +5,13 @@ const deploymentService = require("../services/deployment.service");
 
 const githubWebhook = async (req, res) => {
   const secret = process.env.GITHUB_WEBHOOK_SECRET;
+  const rawPayload =
+    req.rawBody ||
+    (Buffer.isBuffer(req.body)
+      ? req.body
+      : Buffer.from(
+          typeof req.body === "string" ? req.body : JSON.stringify(req.body || {}),
+        ));
 
   if (secret) {
     const signature = req.headers["x-hub-signature-256"];
@@ -20,7 +27,7 @@ const githubWebhook = async (req, res) => {
       "sha256=" +
       crypto
         .createHmac("sha256", secret)
-        .update(req.body)
+        .update(rawPayload)
         .digest("hex");
 
     const valid =
@@ -45,10 +52,20 @@ const githubWebhook = async (req, res) => {
   }
 
   let payload;
-  try {
-    payload = JSON.parse(req.body.toString("utf8"));
-  } catch (err) {
-    return res.status(400).json({ success: false, message: "Invalid JSON payload" });
+  if (
+    typeof req.body === "object" &&
+    !Buffer.isBuffer(req.body) &&
+    req.body !== null
+  ) {
+    payload = req.body;
+  } else {
+    try {
+      payload = JSON.parse(rawPayload.toString("utf8"));
+    } catch (err) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid JSON payload" });
+    }
   }
 
   const event = req.headers["x-github-event"];

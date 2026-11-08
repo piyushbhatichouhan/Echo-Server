@@ -296,6 +296,8 @@ const createContainer = async (
       MemorySwap: limits.memoryLimitBytes * 2,
       NanoCpus: limits.nanoCpus,
       OomScoreAdj: 500,
+      PidsLimit: 256, // Prevent fork bomb DoS from exhausting host kernel process table
+      SecurityOpt: ["no-new-privileges:true"], // Block privilege escalation inside container
     },
   };
 
@@ -713,6 +715,9 @@ const getContainerTelemetry = async (projectId) => {
   }
 };
 
+const MAX_TERMINAL_OUTPUT_BYTES = 256 * 1024; // 256 KB max output buffer to prevent OOM DoS
+const TERMINAL_TIMEOUT_MS = 25000; // 25 seconds timeout to prevent process stall DoS
+
 const executeTerminalCommand = async (projectId, command) => {
   const container = await findActiveContainer(projectId);
   const exec = await container.exec({
@@ -725,28 +730,75 @@ const executeTerminalCommand = async (projectId, command) => {
 
   return new Promise((resolve, reject) => {
     let output = "";
+    let isSettled = false;
+    let outputExceeded = false;
+
+    const cleanupAndResolve = (finalData) => {
+      if (isSettled) return;
+      isSettled = true;
+      clearTimeout(timer);
+      try {
+        if (typeof stream.destroy === "function") {
+          stream.destroy();
+        }
+      } catch {}
+      resolve(finalData);
+    };
+
+    const timer = setTimeout(() => {
+      cleanupAndResolve({
+        output:
+          (output.trim() ? output.trim() + "\n" : "") +
+          "[Execution timed out after 25 seconds]",
+        exitCode: 124,
+      });
+    }, TERMINAL_TIMEOUT_MS);
+
     stream.on("data", (chunk) => {
-      // Strip docker multiplex header (first 8 bytes per frame) if present
+      if (outputExceeded || isSettled) return;
+
+      let text = "";
       if (chunk.length > 8 && (chunk[0] === 1 || chunk[0] === 2)) {
-        output += chunk.slice(8).toString("utf8");
+        text = chunk.slice(8).toString("utf8");
       } else {
-        output += chunk.toString("utf8");
+        text = chunk.toString("utf8");
       }
+
+      if (Buffer.byteLength(output + text, "utf8") > MAX_TERMINAL_OUTPUT_BYTES) {
+        outputExceeded = true;
+        output += text;
+        output =
+          output.slice(0, MAX_TERMINAL_OUTPUT_BYTES) +
+          "\n[Output truncated: exceeded 256KB buffer limit]";
+        cleanupAndResolve({
+          output: output.trim(),
+          exitCode: 0,
+        });
+        return;
+      }
+
+      output += text;
     });
 
     stream.on("end", async () => {
+      if (isSettled) return;
       try {
         const inspect = await exec.inspect();
-        resolve({
+        cleanupAndResolve({
           output: output.trim() || "(Command executed with no output)",
           exitCode: inspect.ExitCode ?? 0,
         });
       } catch (err) {
-        resolve({ output: output.trim(), exitCode: 0 });
+        cleanupAndResolve({ output: output.trim(), exitCode: 0 });
       }
     });
 
-    stream.on("error", (err) => reject(err));
+    stream.on("error", (err) => {
+      if (isSettled) return;
+      clearTimeout(timer);
+      isSettled = true;
+      reject(err);
+    });
   });
 };
 

@@ -3,6 +3,7 @@ const express = require("express");
 const router = express.Router();
 
 const authenticate = require("../middleware/auth.middleware");
+const { terminalLimiter } = require("../middleware/rateLimit.middleware");
 
 const validate = require("../middleware/validation.middleware");
 
@@ -63,6 +64,7 @@ router.get(
 router.post(
   "/:projectId/terminal",
   authenticate,
+  terminalLimiter,
   projectController.executeTerminal,
 );
 

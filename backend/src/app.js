@@ -4,7 +4,9 @@ const helmet = require("helmet");
 
 const routes = require("./routes");
 const errorHandler = require("./middleware/error.middleware");
+const { apiLimiter } = require("./middleware/rateLimit.middleware");
 const app = express();
+app.disable("x-powered-by");
 app.set("trust proxy", 1);
 const runtimeMonitor = require("./services/runtime-monitor.service");
 
@@ -20,6 +22,7 @@ app.use(
 );
 
 // CORS configuration
+const defaultBaseDomain = (process.env.DEFAULT_DOMAIN || "devpiyush.in").toLowerCase();
 const allowedOrigins = [
   process.env.CLIENT_URL,
   process.env.FRONTEND_URL,
@@ -36,11 +39,19 @@ app.use(
       if (
         !process.env.NODE_ENV ||
         process.env.NODE_ENV === "development" ||
-        allowedOrigins.includes(origin) ||
-        origin.endsWith(".devpiyush.in")
+        allowedOrigins.includes(origin)
       ) {
         return callback(null, true);
       }
+      try {
+        const originHostname = new URL(origin).hostname.toLowerCase();
+        if (
+          originHostname === defaultBaseDomain ||
+          originHostname.endsWith(`.${defaultBaseDomain}`)
+        ) {
+          return callback(null, true);
+        }
+      } catch {}
       return callback(null, false);
     },
     credentials: true,
@@ -48,13 +59,20 @@ app.use(
   }),
 );
 
-app.use(express.json({ limit: "15mb" }));
+app.use(
+  express.json({
+    limit: "15mb",
+    verify: (req, _res, buf) => {
+      req.rawBody = buf;
+    },
+  }),
+);
 app.use(express.urlencoded({ extended: true, limit: "15mb" }));
 app.use(requestLogger);
 
 
 // API Routes
-app.use("/api", routes);
+app.use("/api", apiLimiter, routes);
 
 app.use((req, res) => {
   res.status(404).json({

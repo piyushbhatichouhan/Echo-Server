@@ -513,6 +513,120 @@ const deleteOwnAccount = async (userId) => {
   return adminService.deleteUser(userId);
 };
 
+const updateUsername = async (userId, newUsername) => {
+  if (!newUsername || typeof newUsername !== "string") {
+    const error = new Error("Username is required.");
+    error.status = 400;
+    throw error;
+  }
+
+  const clean = newUsername.trim();
+
+  if (clean.length < 3 || clean.length > 30) {
+    const error = new Error("Username must be between 3 and 30 characters.");
+    error.status = 400;
+    throw error;
+  }
+
+  const USERNAME_REGEX = /^[a-zA-Z0-9_-]+$/;
+  if (!USERNAME_REGEX.test(clean)) {
+    const error = new Error(
+      "Username can only contain letters, numbers, hyphens, and underscores.",
+    );
+    error.status = 400;
+    throw error;
+  }
+
+  const userRes = await pool.query(
+    `SELECT id, username, email, is_owner, can_custom_subdomain, status FROM users WHERE id = $1`,
+    [userId],
+  );
+
+  if (userRes.rows.length === 0) {
+    const error = new Error("User not found.");
+    error.status = 404;
+    throw error;
+  }
+
+  const currentUser = userRes.rows[0];
+
+  // If identical, return current user
+  if (currentUser.username === clean) {
+    const freshToken = generateToken1(currentUser);
+    return {
+      user: {
+        id: currentUser.id,
+        username: currentUser.username,
+        email: currentUser.email,
+        status: currentUser.status,
+        is_owner: Boolean(currentUser.is_owner),
+        isOwner: Boolean(currentUser.is_owner),
+        can_custom_subdomain: Boolean(
+          currentUser.is_owner || currentUser.can_custom_subdomain,
+        ),
+        canCustomSubdomain: Boolean(
+          currentUser.is_owner || currentUser.can_custom_subdomain,
+        ),
+        created_at: currentUser.created_at,
+      },
+      token: freshToken,
+    };
+  }
+
+  // Check uniqueness across other accounts (case-insensitive)
+  const collision = await pool.query(
+    `SELECT id FROM users WHERE LOWER(username) = LOWER($1) AND id != $2 LIMIT 1`,
+    [clean, userId],
+  );
+
+  if (collision.rows.length > 0) {
+    const error = new Error(
+      "This username is already taken by another account.",
+    );
+    error.status = 409;
+    throw error;
+  }
+
+  // Update username in users table
+  const updateRes = await pool.query(
+    `
+    UPDATE users
+    SET username = $1, updated_at = NOW()
+    WHERE id = $2
+    RETURNING id, username, email, is_owner, can_custom_subdomain, status, created_at
+    `,
+    [clean, userId],
+  );
+
+  const updatedUser = updateRes.rows[0];
+  const isOwner = Boolean(updatedUser.is_owner);
+  const canCustom = Boolean(
+    updatedUser.is_owner || updatedUser.can_custom_subdomain,
+  );
+
+  const userPayload = {
+    id: updatedUser.id,
+    username: updatedUser.username,
+    email: updatedUser.email,
+    status: updatedUser.status,
+    is_owner: isOwner,
+    isOwner: isOwner,
+    can_custom_subdomain: canCustom,
+    canCustomSubdomain: canCustom,
+    created_at: updatedUser.created_at,
+  };
+
+  const freshToken = generateToken1(userPayload);
+
+  // NOTE: Existing default project domains in project_domains remain completely untouched
+  // so all previously published projects and live URLs continue serving traffic seamlessly.
+
+  return {
+    user: userPayload,
+    token: freshToken,
+  };
+};
+
 module.exports = {
   registerUser,
   verifyEmail,
@@ -523,4 +637,5 @@ module.exports = {
   resetPasswordUser,
   validateResetPasswordToken,
   deleteOwnAccount,
+  updateUsername,
 };

@@ -19,9 +19,15 @@ const errorHandler = (err, req, res, next) => {
     } catch (_) {}
   }
 
+  const isProduction = process.env.NODE_ENV === "production";
+  const safeMessage =
+    statusCode >= 500 && isProduction
+      ? "An internal server error occurred. Our team has been notified."
+      : err.message || "Internal Server Error";
+
   const response = {
     success: false,
-    message: err.message || "Internal Server Error",
+    message: safeMessage,
   };
 
   if (err.code) {

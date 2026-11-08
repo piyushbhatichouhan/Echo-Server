@@ -9,6 +9,7 @@ const {
 } = require("../services/auth.service");
 const { validateResetPasswordToken } = require("../services/auth.service");
 const { deleteOwnAccount } = require("../services/auth.service");
+const { updateUsername: updateUsernameService } = require("../services/auth.service");
 
 const register = async (req, res, next) => {
   try {
@@ -145,6 +146,21 @@ const deleteAccount = async (req, res, next) => {
   }
 };
 
+const updateUsername = async (req, res, next) => {
+  try {
+    const { username } = req.body;
+    const result = await updateUsernameService(req.user.id, username);
+
+    res.json({
+      success: true,
+      message: "Username updated successfully.",
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -155,4 +171,5 @@ module.exports = {
   resetPassword,
   validateResetToken,
   deleteAccount,
+  updateUsername,
 };

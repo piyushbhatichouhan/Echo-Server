@@ -1,7 +1,12 @@
 import "./Settings.css";
 import { useEffect, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { forgotPassword, getCurrentUser, deleteAccount } from "../../services/auth.api";
+import {
+  forgotPassword,
+  getCurrentUser,
+  deleteAccount,
+  updateUsername as updateUsernameApi,
+} from "../../services/auth.api";
 import cloudWorkspace from "../../services/cloudWorkspace";
 import ConfirmationModal from "../../components/common/modal/ConfirmationModal";
 import useAuth from "../../hooks/useAuth";
@@ -34,16 +39,25 @@ import {
   Flame,
   Sun,
   Zap,
+  Pencil,
+  Globe,
+  Info,
 } from "lucide-react";
 
 export default function Settings() {
-  const { logout } = useAuth();
+  const { logout, refreshUser, updateUserSession } = useAuth();
   const toast = useToast();
   const { theme: currentTheme, setTheme, themes } = useTheme();
 
   const [resetModalOpen, setResetModalOpen] = useState(false);
   const [sendingReset, setSendingReset] = useState(false);
   const [resetSent, setResetSent] = useState(false);
+
+  const [usernameModalOpen, setUsernameModalOpen] = useState(false);
+  const [newUsername, setNewUsername] = useState("");
+  const [usernameError, setUsernameError] = useState("");
+  const [savingUsername, setSavingUsername] = useState(false);
+
   const [user, setUser] = useState(null);
   const [stats, setStats] = useState(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -97,27 +111,77 @@ export default function Settings() {
     loadUser();
   }, []);
 
-  // Prevent background scrolling when reset modal is open
+  const handleSaveUsername = async (e) => {
+    e?.preventDefault();
+    const clean = newUsername.trim();
+    if (!clean) {
+      setUsernameError("Username cannot be empty.");
+      return;
+    }
+    if (clean.length < 3 || clean.length > 30) {
+      setUsernameError("Username must be between 3 and 30 characters.");
+      return;
+    }
+    if (!/^[a-zA-Z0-9_-]+$/.test(clean)) {
+      setUsernameError(
+        "Username can only contain letters, numbers, hyphens, and underscores.",
+      );
+      return;
+    }
+    if (clean === user?.username) {
+      setUsernameModalOpen(false);
+      return;
+    }
+
+    setSavingUsername(true);
+    setUsernameError("");
+    try {
+      const res = await updateUsernameApi(clean);
+      const updatedUser = res.data?.user || res.data;
+      const freshToken = res.data?.token;
+
+      setUser(updatedUser);
+      updateUserSession?.(updatedUser, freshToken);
+      await refreshUser?.();
+
+      toast?.success(
+        "Username Updated",
+        `Your username is now @${updatedUser.username}. Existing project domains remain unchanged.`,
+      );
+      setUsernameModalOpen(false);
+    } catch (err) {
+      const msg =
+        err.response?.data?.message ||
+        err.message ||
+        "Failed to update username";
+      setUsernameError(msg);
+    } finally {
+      setSavingUsername(false);
+    }
+  };
+
+  // Prevent background scrolling when reset or username modal is open
   useEffect(() => {
-    if (!resetModalOpen) return;
+    if (!resetModalOpen && !usernameModalOpen) return;
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = originalOverflow;
     };
-  }, [resetModalOpen]);
+  }, [resetModalOpen, usernameModalOpen]);
 
-  // Handle escape key for reset modal
+  // Handle escape key for modals
   useEffect(() => {
-    if (!resetModalOpen) return;
+    if (!resetModalOpen && !usernameModalOpen) return;
     const handleKeyDown = (e) => {
       if (e.key === "Escape") {
-        setResetModalOpen(false);
+        if (resetModalOpen) setResetModalOpen(false);
+        if (usernameModalOpen && !savingUsername) setUsernameModalOpen(false);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [resetModalOpen]);
+  }, [resetModalOpen, usernameModalOpen, savingUsername]);
 
   const formatBytes = (bytes) => {
     if (bytes == null) return "Unlimited";
@@ -259,14 +323,35 @@ export default function Settings() {
             <div className="settings-tile">
               <div className="settings-tile-header">
                 <span className="settings-tile-label">Username</span>
-                <button
-                  type="button"
-                  className="settings-tile-copy-btn"
-                  onClick={() => handleCopy(user.username, "tile-username")}
-                  aria-label="Copy username"
-                >
-                  {copiedField === "tile-username" ? <Check size={14} /> : <Copy size={14} />}
-                </button>
+                <div className="settings-tile-header-actions">
+                  <button
+                    type="button"
+                    className="settings-tile-edit-btn"
+                    onClick={() => {
+                      setNewUsername(user.username);
+                      setUsernameError("");
+                      setUsernameModalOpen(true);
+                    }}
+                    aria-label="Edit username"
+                    title="Change your account username"
+                  >
+                    <Pencil size={12} />
+                    <span>Edit</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="settings-tile-copy-btn"
+                    onClick={() => handleCopy(user.username, "tile-username")}
+                    aria-label="Copy username"
+                    title="Copy username"
+                  >
+                    {copiedField === "tile-username" ? (
+                      <Check size={14} />
+                    ) : (
+                      <Copy size={14} />
+                    )}
+                  </button>
+                </div>
               </div>
               <div className="settings-tile-value">@{user.username}</div>
               <span className="settings-tile-sub">Public platform handle</span>
@@ -674,6 +759,126 @@ export default function Settings() {
             </div>
           </div>,
           document.body
+        )}
+
+      {/* Edit Username Modal */}
+      {usernameModalOpen &&
+        createPortal(
+          <div
+            className="settings-modal-overlay"
+            onClick={(e) => {
+              if (e.target === e.currentTarget && !savingUsername) {
+                setUsernameModalOpen(false);
+              }
+            }}
+            role="dialog"
+            aria-modal="true"
+          >
+            <div className="settings-modal settings-modal--username">
+              <div className="settings-modal-header">
+                <div className="settings-modal-icon-badge">
+                  <User size={22} />
+                </div>
+                <button
+                  type="button"
+                  className="settings-modal-close"
+                  onClick={() => setUsernameModalOpen(false)}
+                  disabled={savingUsername}
+                  aria-label="Close"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <h2>Change Username</h2>
+              <p>Choose a new handle for your EchoServer account profile.</p>
+
+              <form onSubmit={handleSaveUsername} className="settings-username-form">
+                <div className="settings-username-field">
+                  <label htmlFor="new-username-input" className="settings-input-label">
+                    New Username
+                  </label>
+                  <div className="settings-username-input-wrap">
+                    <span className="settings-username-prefix">@</span>
+                    <input
+                      id="new-username-input"
+                      type="text"
+                      className="settings-username-input"
+                      value={newUsername}
+                      onChange={(e) => {
+                        setNewUsername(e.target.value);
+                        if (usernameError) setUsernameError("");
+                      }}
+                      placeholder="username"
+                      autoFocus
+                      maxLength={30}
+                      disabled={savingUsername}
+                    />
+                    <span className="settings-username-counter">
+                      {newUsername.length}/30
+                    </span>
+                  </div>
+                </div>
+
+                {/* Reassurance Notice Banner for Existing Domains */}
+                <div className="settings-domain-notice-banner">
+                  <div className="settings-domain-notice-icon">
+                    <Globe size={18} />
+                  </div>
+                  <div className="settings-domain-notice-text">
+                    <strong>Default domains stay active</strong>
+                    <span>
+                      All existing default project domains (such as{" "}
+                      <code>{user.username}-project.devpiyush.in</code>) and custom
+                      subdomains will remain exactly the same so your live websites
+                      keep running without interruption.
+                    </span>
+                  </div>
+                </div>
+
+                {usernameError && (
+                  <div className="settings-modal-error-banner">
+                    <AlertTriangle size={15} />
+                    <span>{usernameError}</span>
+                  </div>
+                )}
+
+                <div className="settings-modal-actions">
+                  <button
+                    type="button"
+                    className="settings-secondary-btn"
+                    onClick={() => setUsernameModalOpen(false)}
+                    disabled={savingUsername}
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    type="submit"
+                    className="settings-primary-btn"
+                    disabled={
+                      savingUsername ||
+                      !newUsername.trim() ||
+                      newUsername.trim() === user.username
+                    }
+                  >
+                    {savingUsername ? (
+                      <span className="settings-btn-spinner-wrap">
+                        <span className="settings-btn-spinner" />
+                        Updating...
+                      </span>
+                    ) : (
+                      <>
+                        <Check size={16} />
+                        <span>Save Changes</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>,
+          document.body,
         )}
 
       {/* Account Deletion Confirmation Modal */}

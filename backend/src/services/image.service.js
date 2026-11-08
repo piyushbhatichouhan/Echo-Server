@@ -34,11 +34,32 @@ const buildImage = async (projectId, settings, log, version = null) => {
     t: imageName,
   });
 
+  const BUILD_TIMEOUT_MS =
+    Number(process.env.DOCKER_BUILD_TIMEOUT_MS) || 10 * 60 * 1000;
+
   await new Promise((resolve, reject) => {
+    let finished = false;
+    const timer = setTimeout(() => {
+      if (finished) return;
+      finished = true;
+      try {
+        if (typeof stream.destroy === "function") stream.destroy();
+      } catch {}
+      reject(
+        new Error(
+          `Docker build timed out after ${Math.round(BUILD_TIMEOUT_MS / 1000)} seconds`,
+        ),
+      );
+    }, BUILD_TIMEOUT_MS);
+
     docker.modem.followProgress(
       stream,
 
       (err, output) => {
+        if (finished) return;
+        finished = true;
+        clearTimeout(timer);
+
         if (err) {
           return reject(err);
         }
@@ -53,6 +74,8 @@ const buildImage = async (projectId, settings, log, version = null) => {
       },
 
       async (event) => {
+        if (finished) return;
+
         if (log && event.stream) {
           const trimmed = event.stream.trim();
           if (trimmed) {

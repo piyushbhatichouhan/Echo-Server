@@ -85,6 +85,17 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
+  const updateUserSession = useCallback((updatedUser, newToken) => {
+    if (updatedUser) {
+      setUser(updatedUser);
+      localStorage.setItem("echoserver_user", JSON.stringify(updatedUser));
+    }
+    if (newToken) {
+      setToken(newToken);
+      localStorage.setItem("echoserver_token", newToken);
+    }
+  }, []);
+
   const value = {
     user,
     token,
@@ -92,6 +103,7 @@ export function AuthProvider({ children }) {
     login,
     logout,
     refreshUser,
+    updateUserSession,
     isAuthenticated: !!token,
   };
 

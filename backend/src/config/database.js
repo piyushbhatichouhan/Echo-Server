@@ -6,6 +6,14 @@ const pool = new Pool({
   database: process.env.DB_NAME,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
+  max: Number(process.env.DB_POOL_MAX) || 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 10000,
+});
+
+// Guard against unhandled error events on idle pooled clients crashing the Node.js process
+pool.on("error", (err) => {
+  console.error("[PostgreSQL Pool Unexpected Client Error]:", err.message);
 });
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));

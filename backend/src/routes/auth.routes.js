@@ -6,6 +6,7 @@ const {
   registerValidation,
   forgotPasswordValidation,
   resetPasswordValidation,
+  updateUsernameValidation,
 } = require("../validators/auth.validator");
 const validate = require("../middleware/validation.middleware");
 const authenticate = require("../middleware/auth.middleware");
@@ -19,6 +20,7 @@ const {
   resetPassword,
   validateResetToken,
   deleteAccount,
+  updateUsername,
 } = require("../controllers/auth.controller");
 const {
   loginLimiter,
@@ -35,6 +37,7 @@ router.post("/resend-verification", resendVerificationLimiter, resendVerificatio
 router.post("/forgot-password", forgotPasswordLimiter, forgotPasswordValidation, validate, forgotPassword);
 router.put("/reset-password", resetPasswordValidation, validate, resetPassword);
 router.get("/reset-password/validate", validateResetToken);
+router.patch("/username", authenticate, updateUsernameValidation, validate, updateUsername);
 router.delete("/account", authenticate, deleteAccount);
 
 module.exports = router;

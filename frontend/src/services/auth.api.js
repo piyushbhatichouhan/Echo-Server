@@ -56,6 +56,12 @@ export const getCurrentUser = async () => {
   return res.data.data;
 };
 
+export const updateUsername = async (username) => {
+  const res = await api.patch("/auth/username", { username });
+
+  return res.data;
+};
+
 export const deleteAccount = async () => {
   const res = await api.delete("/auth/account");
 

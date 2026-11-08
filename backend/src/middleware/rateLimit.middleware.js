@@ -74,9 +74,66 @@ const resendVerificationLimiter = rateLimit({
   },
 });
 
+/**
+ * General API DDoS and flooding protection.
+ * Allows up to 600 requests per 15-minute window per IP.
+ */
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  limit: 600, // 600 requests per 15 minutes (~40 req/min)
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  handler: (req, res, _next, options) => {
+    res.status(options.statusCode).json({
+      success: false,
+      message: "API rate limit exceeded. Please throttle your requests and try again shortly.",
+      retryAfterMinutes: 15,
+    });
+  },
+});
+
+/**
+ * Deployment abuse and container build spam protection.
+ * Allows up to 10 deployment triggers per 5-minute window per IP.
+ */
+const deploymentLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  limit: 10,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  handler: (req, res, _next, options) => {
+    res.status(options.statusCode).json({
+      success: false,
+      message: "Too many deployment requests in a short time. Please wait a few minutes before triggering another deployment.",
+      retryAfterMinutes: 5,
+    });
+  },
+});
+
+/**
+ * Interactive container terminal command flood protection.
+ * Allows up to 30 terminal commands per 1-minute window per IP.
+ */
+const terminalLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  limit: 30,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  handler: (req, res, _next, options) => {
+    res.status(options.statusCode).json({
+      success: false,
+      message: "Terminal command rate limit exceeded. Please wait a few seconds before executing more commands.",
+      retryAfterSeconds: 60,
+    });
+  },
+});
+
 module.exports = {
   loginLimiter,
   registerLimiter,
   forgotPasswordLimiter,
   resendVerificationLimiter,
+  apiLimiter,
+  deploymentLimiter,
+  terminalLimiter,
 };
