@@ -13,7 +13,7 @@ export function AuthProvider({ children }) {
       const freshUser = await getCurrentUserApi();
       if (freshUser) {
         setUser(freshUser);
-        localStorage.setItem("echohub_user", JSON.stringify(freshUser));
+        localStorage.setItem("echoserver_user", JSON.stringify(freshUser));
         return freshUser;
       }
     } catch (err) {
@@ -22,8 +22,12 @@ export function AuthProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    const savedToken = localStorage.getItem("echohub_token");
-    const savedUser = localStorage.getItem("echohub_user");
+    const savedToken =
+      localStorage.getItem("echoserver_token") ||
+      localStorage.getItem("echohub_token");
+    const savedUser =
+      localStorage.getItem("echoserver_user") ||
+      localStorage.getItem("echohub_user");
 
     if (savedToken) {
       setToken(savedToken);
@@ -41,7 +45,7 @@ export function AuthProvider({ children }) {
         .then((freshUser) => {
           if (freshUser) {
             setUser(freshUser);
-            localStorage.setItem("echohub_user", JSON.stringify(freshUser));
+            localStorage.setItem("echoserver_user", JSON.stringify(freshUser));
           }
         })
         .catch((err) => {
@@ -60,8 +64,10 @@ export function AuthProvider({ children }) {
 
     const { token, user } = response;
 
-    localStorage.setItem("echohub_token", token);
-    localStorage.setItem("echohub_user", JSON.stringify(user));
+    localStorage.setItem("echoserver_token", token);
+    localStorage.setItem("echoserver_user", JSON.stringify(user));
+    localStorage.removeItem("echohub_token");
+    localStorage.removeItem("echohub_user");
 
     setToken(token);
     setUser(user);
@@ -70,6 +76,8 @@ export function AuthProvider({ children }) {
   };
 
   const logout = () => {
+    localStorage.removeItem("echoserver_token");
+    localStorage.removeItem("echoserver_user");
     localStorage.removeItem("echohub_token");
     localStorage.removeItem("echohub_user");
 

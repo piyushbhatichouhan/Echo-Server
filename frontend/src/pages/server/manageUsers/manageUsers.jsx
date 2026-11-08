@@ -346,7 +346,7 @@ export default function ManageUsers() {
             <UsersIcon size={40} />
           </div>
           <h3>No Registered Users</h3>
-          <p>There are no developer accounts registered on this EchoHub instance yet.</p>
+          <p>There are no developer accounts registered on this EchoServer instance yet.</p>
         </div>
       ) : filteredUsers.length === 0 ? (
         <div className="users-empty-state">

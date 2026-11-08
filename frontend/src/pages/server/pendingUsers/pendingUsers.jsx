@@ -104,7 +104,7 @@ export default function PendingUsers() {
               </span>
             </div>
             <p className="pending-subtitle">
-              Review and approve newly registered developer accounts requesting access to EchoHub.
+              Review and approve newly registered developer accounts requesting access to EchoServer.
             </p>
           </div>
         </div>

@@ -18,7 +18,7 @@ export default function Navbar() {
 
     if (location.pathname === "/settings") return "Settings";
  
-    return "EchoHub";
+    return "EchoServer";
   };
 
   return <header className="eh-navbar"></header>;

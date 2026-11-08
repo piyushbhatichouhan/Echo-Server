@@ -398,7 +398,7 @@ export default function Logs() {
           <div className="terminal-info">
             <Terminal size={14} className="terminal-icon" />
             <span className="terminal-title">
-              echohub@{user?.username || "admin"}: /var/log/{category} (Showing {logs.length} of {totalCount} events)
+              echoserver@{user?.username || "admin"}: /var/log/{category} (Showing {logs.length} of {totalCount} events)
             </span>
           </div>
 

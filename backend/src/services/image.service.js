@@ -4,7 +4,7 @@ const workspace = require("./workspace.service");
 const buildContext = require("./build-context.service");
 
 const getImageName = (projectId, version = null) => {
-  return version ? `echohub-${projectId}:${version}` : `echohub-${projectId}`;
+  return version ? `echoserver-${projectId}:${version}` : `echoserver-${projectId}`;
 };
 
 const buildImage = async (projectId, settings, log, version = null) => {

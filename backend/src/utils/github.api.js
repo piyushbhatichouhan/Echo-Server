@@ -5,7 +5,7 @@ const fs = require("fs/promises");
 const getHeaders = (token) => {
   const headers = {
     Accept: "application/vnd.github.v3+json",
-    "User-Agent": "EchoHub-Server",
+    "User-Agent": "EchoServer-Server",
   };
   const activeToken = token || process.env.GITHUB_TOKEN;
   if (activeToken) {

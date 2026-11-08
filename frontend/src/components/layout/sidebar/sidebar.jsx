@@ -83,7 +83,7 @@ export default function Sidebar({ mobileOpen = false, onCloseMobile = () => {} }
             to="/dashboard"
             className="eh-sidebar-brand"
             onClick={handleNavClick}
-            title="EchoHub Dashboard"
+            title="EchoServer Dashboard"
           >
             <div className="eh-brand-emblem">
               <Radio size={19} className="eh-brand-icon" />

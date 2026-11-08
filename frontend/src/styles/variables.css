@@ -1,5 +1,5 @@
 /* =========================================================
-   EchoHub Central Theme System: Design Tokens
+   EchoServer Central Theme System: Design Tokens
    Themes: Dark-grey (Default), Amber-brown, Light-white, Neon-blue
    ========================================================= */
 
@@ -62,7 +62,7 @@
 }
 
 /* =========================================================
-   2. AMBER-BROWN (Classic EchoHub Obsidian & Flame Amber)
+   2. AMBER-BROWN (Classic EchoServer Obsidian & Flame Amber)
    ========================================================= */
 [data-theme="amber-brown"] {
   /* Theme Identity */

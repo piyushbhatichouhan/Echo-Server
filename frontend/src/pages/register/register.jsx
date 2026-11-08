@@ -68,13 +68,13 @@ export default function Register() {
 
       <div className="login__container">
         <div className="login__brand">
-          <h1>EchoHub</h1>
+          <h1>EchoServer</h1>
         </div>
 
         <div className="login__card">
           <div className="login__header">
             <h2>Create Account</h2>
-            <span>Create your EchoHub account to get started.</span>
+            <span>Create your EchoServer account to get started.</span>
           </div>
 
           <form

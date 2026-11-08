@@ -18,7 +18,7 @@ const updateHost = async ({
 }) => {
   const forwardHost =
     process.env.NPM_FORWARD_MODE === "docker"
-      ? containerName || `echohub-${projectId}`
+      ? containerName || `echoserver-${projectId}`
       : process.env.NPM_FORWARD_HOST;
 
   const response = await client.request({
@@ -78,7 +78,7 @@ const publishHost = async ({
 
   const forwardHost =
     process.env.NPM_FORWARD_MODE === "docker"
-      ? containerName || `echohub-${projectId}`
+      ? containerName || `echoserver-${projectId}`
       : process.env.NPM_FORWARD_HOST;
 
   const response = await client.request({

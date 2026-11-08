@@ -121,9 +121,9 @@ const notifySubdomainRequest = async ({
   const developerName = user.username || "Developer";
   const developerEmail = user.email || "No email available";
 
-  const subject = `🌐 [EchoHub] Custom Subdomain Requested: ${subdomain}`;
+  const subject = `🌐 [EchoServer] Custom Subdomain Requested: ${subdomain}`;
 
-  const plainText = `[EchoHub Platform] New Custom Subdomain Request
+  const plainText = `[EchoServer Platform] New Custom Subdomain Request
 
 A developer has submitted a new custom subdomain request that requires Super Admin review:
 
@@ -160,7 +160,7 @@ ${reviewUrl}
       </div>
 
       <p style="color: #8b949e; font-size: 15px; line-height: 1.5; margin: 0 0 24px;">
-        A developer has requested authorization for an exclusive custom subdomain on <strong>EchoHub</strong>.
+        A developer has requested authorization for an exclusive custom subdomain on <strong>EchoServer</strong>.
       </p>
 
       <!-- Subdomain Highlight Box -->
@@ -224,7 +224,7 @@ ${reviewUrl}
       <hr style="border: none; border-top: 1px solid #21262d; margin: 24px 0;" />
 
       <p style="color: #6e7681; font-size: 12px; line-height: 1.5; margin: 0;">
-        You received this email because you are the Super Administrator of this EchoHub instance.<br />
+        You received this email because you are the Super Administrator of this EchoServer instance.<br />
         To adjust alert settings, update <code style="color: #8b949e;">ADMIN_ALERT_EMAIL</code> in your server environment.
       </p>
     </div>
@@ -267,9 +267,9 @@ const notifyCustomSubdomainAssigned = async ({
   const developerEmail = user.email || "No email available";
 
   const actionVerb = action === "updated" ? "Updated" : "Assigned & Published";
-  const subject = `🌐 [EchoHub] Custom Subdomain ${actionVerb}: ${subdomain}`;
+  const subject = `🌐 [EchoServer] Custom Subdomain ${actionVerb}: ${subdomain}`;
 
-  const plainText = `[EchoHub Platform] Custom Subdomain ${actionVerb}
+  const plainText = `[EchoServer Platform] Custom Subdomain ${actionVerb}
 
 A user with custom subdomain privileges has ${action === "updated" ? "updated their project to" : "assigned and published"} a custom subdomain:
 
@@ -307,7 +307,7 @@ ${reviewUrl}
       </div>
 
       <p style="color: #8b949e; font-size: 15px; line-height: 1.5; margin: 0 0 24px;">
-        A developer with custom subdomain privileges has claimed and activated an exclusive custom subdomain on <strong>EchoHub</strong>.
+        A developer with custom subdomain privileges has claimed and activated an exclusive custom subdomain on <strong>EchoServer</strong>.
       </p>
 
       <!-- Subdomain Highlight Box -->
@@ -394,7 +394,7 @@ ${reviewUrl}
       <hr style="border: none; border-top: 1px solid #21262d; margin: 24px 0;" />
 
       <p style="color: #6e7681; font-size: 12px; line-height: 1.5; margin: 0;">
-        You received this notification because you are the Super Administrator of this EchoHub platform.<br />
+        You received this notification because you are the Super Administrator of this EchoServer platform.<br />
         If you wish to revoke or reassign this subdomain, you can do so at any time in Server Settings.
       </p>
     </div>
@@ -436,9 +436,9 @@ const notifyDeveloperSubdomainRevoked = async ({
   const developerName = user.username || "Developer";
   const rejectionReason = reason?.trim() || "Revoked by Super Administrator.";
 
-  const subject = `⚠️ [EchoHub] Custom Subdomain Revoked for "${projectName}"`;
+  const subject = `⚠️ [EchoServer] Custom Subdomain Revoked for "${projectName}"`;
 
-  const plainText = `[EchoHub Platform] Custom Subdomain Revoked
+  const plainText = `[EchoServer Platform] Custom Subdomain Revoked
 
 Hello ${developerName},
 
@@ -528,7 +528,7 @@ ${projectUrl}
       </div>
 
       <div style="border-top: 1px solid #21262d; padding-top: 16px; margin-top: 24px; color: #6e7681; font-size: 12px;">
-        This alert was delivered to your registered EchoHub account email: <strong style="color: #8b949e;">${user.email}</strong>.
+        This alert was delivered to your registered EchoServer account email: <strong style="color: #8b949e;">${user.email}</strong>.
       </div>
     </div>
   `;
@@ -565,7 +565,7 @@ const notifyDeveloperPrivilegeRevoked = async ({
   const developerName = user.username || "Developer";
   const revocationReason = reason?.trim() || "Administrative policy update.";
 
-  const subject = `⚠️ [EchoHub] Custom Subdomain Privilege Revoked`;
+  const subject = `⚠️ [EchoServer] Custom Subdomain Privilege Revoked`;
 
   let projectListText = "";
   let projectListHtml = "";
@@ -604,11 +604,11 @@ const notifyDeveloperPrivilegeRevoked = async ({
     `;
   }
 
-  const plainText = `[EchoHub Platform] Custom Subdomain Privilege Revoked
+  const plainText = `[EchoServer Platform] Custom Subdomain Privilege Revoked
 
 Hello ${developerName},
 
-Your custom subdomain privilege on EchoHub has been revoked by the platform Super Administrator.
+Your custom subdomain privilege on EchoServer has been revoked by the platform Super Administrator.
 ${projectListText}
 • Reason:    ${revocationReason}
 • Timestamp: ${timestamp}
@@ -639,7 +639,7 @@ ${dashboardUrl}
       </div>
 
       <p style="color: #8b949e; font-size: 15px; line-height: 1.5; margin: 0 0 20px;">
-        Hello <strong>${developerName}</strong>, your privilege to configure custom subdomains on EchoHub has been revoked by the Super Administrator.
+        Hello <strong>${developerName}</strong>, your privilege to configure custom subdomains on EchoServer has been revoked by the Super Administrator.
       </p>
 
       ${projectListHtml}
@@ -677,7 +677,7 @@ ${dashboardUrl}
       </div>
 
       <div style="border-top: 1px solid #21262d; padding-top: 16px; margin-top: 24px; color: #6e7681; font-size: 12px;">
-        This alert was delivered to your registered EchoHub account email: <strong style="color: #8b949e;">${user.email}</strong>.
+        This alert was delivered to your registered EchoServer account email: <strong style="color: #8b949e;">${user.email}</strong>.
       </div>
     </div>
   `;
@@ -749,7 +749,7 @@ const notifyCriticalError = async ({
 
   const plainText = `[CRITICAL SERVER ALERT] ${source}
 
-A critical error has occurred on EchoHub that requires attention:
+A critical error has occurred on EchoServer that requires attention:
 
 • Source:    ${source}
 • Message:   ${errorMessage}
@@ -906,7 +906,7 @@ ${logsUrl}
       <hr style="border: none; border-top: 1px solid #21262d; margin: 20px 0;" />
 
       <p style="color: #6e7681; font-size: 12px; line-height: 1.5; margin: 0;">
-        Automated alert generated by EchoHub Error Sentinel. You are receiving this because you are configured as the platform administrator (<code style="color: #8b949e;">${recipient}</code>).
+        Automated alert generated by EchoServer Error Sentinel. You are receiving this because you are configured as the platform administrator (<code style="color: #8b949e;">${recipient}</code>).
       </p>
     </div>
   `;

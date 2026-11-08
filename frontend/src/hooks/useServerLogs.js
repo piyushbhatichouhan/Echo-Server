@@ -119,7 +119,7 @@ export default function useServerLogs(defaultInterval = 5000) {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `echohub-server-${category}-logs-${new Date().toISOString().slice(0, 10)}.log`;
+    link.download = `echoserver-server-${category}-logs-${new Date().toISOString().slice(0, 10)}.log`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

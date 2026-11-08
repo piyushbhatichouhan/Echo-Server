@@ -3,7 +3,7 @@ const { verifyMailConnection, getFromAddress, sendVerificationEmail } = require(
 
 async function main() {
   console.log("==========================================");
-  console.log(" EchoHub SMTP & Custom Domain Mail Tester");
+  console.log(" EchoServer SMTP & Custom Domain Mail Tester");
   console.log("==========================================");
   console.log(`Host:     ${process.env.MAIL_HOST || "not set"}`);
   console.log(`Port:     ${process.env.MAIL_PORT || "587"}`);

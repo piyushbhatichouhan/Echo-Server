@@ -109,7 +109,7 @@ async function watchdogLoop() {
     console.log("\nUser Deployments");
 
     runningContainers
-      .filter((c) => c.startsWith("echohub-"))
+      .filter((c) => c.startsWith("echoserver-") || c.startsWith("echohub-"))
       .forEach((c) => console.log("•", c));
   } catch (err) {
     console.error(err);

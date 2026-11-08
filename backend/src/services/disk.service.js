@@ -4,7 +4,7 @@ const { default: checkDiskSpace } = require("check-disk-space");
 const workspace = require("./workspace.service");
 
 const getDiskInfo = async () => {
-  // Use the drive where EchoHub stores data
+  // Use the drive where EchoServer stores data
   const storageRoot = workspace.getStorageRoot();
 
   const root = path.parse(storageRoot).root;

@@ -7,7 +7,9 @@ export default function useLogStream(projectId, onLog) {
   useEffect(() => {
     if (!projectId) return;
 
-    const token = localStorage.getItem("echohub_token");
+    const token =
+      localStorage.getItem("echoserver_token") ||
+      localStorage.getItem("echohub_token");
 
     const eventSource = new EventSource(
       `${API_URL}/api/projects/${projectId}/logs/live?token=${token}`,

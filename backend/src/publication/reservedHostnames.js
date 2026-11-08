@@ -19,6 +19,7 @@ const SYSTEM_RESERVED = new Set([
 
   // Echo Platform Services
   "echo",
+  "echoserver",
   "echohub",
   "dashboard",
   "admin",

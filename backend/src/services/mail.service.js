@@ -2,7 +2,7 @@ const nodemailer = require("nodemailer");
 
 /**
  * Returns a normalized "From" address string.
- * Priority: process.env.MAIL_FROM -> "EchoHub" <process.env.MAIL_USER> -> fallback
+ * Priority: process.env.MAIL_FROM -> "EchoServer" <process.env.MAIL_USER> -> fallback
  */
 const getFromAddress = () => {
   let mailFrom = process.env.MAIL_FROM?.trim();
@@ -12,12 +12,12 @@ const getFromAddress = () => {
       return mailFrom;
     }
     if (mailFrom.includes("@")) {
-      return `"EchoHub" <${mailFrom}>`;
+      return `"EchoServer" <${mailFrom}>`;
     }
     return mailFrom;
   }
   const user = process.env.MAIL_USER?.trim();
-  return user ? `"EchoHub" <${user}>` : '"EchoHub" <noreply@localhost>';
+  return user ? `"EchoServer" <${user}>` : '"EchoServer" <noreply@localhost>';
 };
 
 /**
@@ -77,7 +77,7 @@ const sendVerificationEmail = async ({ email, username, token }) => {
   const verifyUrl = `${baseUrl}/verify-email?token=${encodeURIComponent(token.trim())}`;
   const from = getFromAddress();
 
-  const plainText = `Welcome to EchoHub, ${username}!\n\nPlease verify your email address by visiting the link below:\n\n${verifyUrl}\n\nThis verification link expires in 24 hours.\nIf you did not create an EchoHub account, you can safely ignore this email.`;
+  const plainText = `Welcome to EchoServer, ${username}!\n\nPlease verify your email address by visiting the link below:\n\n${verifyUrl}\n\nThis verification link expires in 24 hours.\nIf you did not create an EchoServer account, you can safely ignore this email.`;
 
   const html = `
     <div style="
@@ -91,7 +91,7 @@ const sendVerificationEmail = async ({ email, username, token }) => {
         border: 1px solid #283042;
     ">
       <div style="display: flex; align-items: center; margin-bottom: 24px;">
-        <h2 style="color: #38bdf8; margin: 0; font-size: 24px; font-weight: 700;">Welcome to EchoHub</h2>
+        <h2 style="color: #38bdf8; margin: 0; font-size: 24px; font-weight: 700;">Welcome to EchoServer</h2>
       </div>
 
       <p style="color: #f0f6fc; font-size: 16px; line-height: 1.5; margin: 0 0 16px;">
@@ -145,7 +145,7 @@ const sendVerificationEmail = async ({ email, username, token }) => {
     const info = await transport.sendMail({
       from,
       to: email,
-      subject: "Verify your EchoHub account",
+      subject: "Verify your EchoServer account",
       text: plainText,
       html,
     });
@@ -165,7 +165,7 @@ const sendPasswordResetEmail = async (email, token) => {
   const resetLink = `${baseUrl}/reset-password?token=${encodeURIComponent(token.trim())}`;
   const from = getFromAddress();
 
-  const plainText = `Password Reset Request\n\nWe received a request to reset your EchoHub password. Click the link below to choose a new password:\n\n${resetLink}\n\nThis single-use link expires in 30 minutes.\nIf you did not request this, you can safely ignore this email.`;
+  const plainText = `Password Reset Request\n\nWe received a request to reset your EchoServer password. Click the link below to choose a new password:\n\n${resetLink}\n\nThis single-use link expires in 30 minutes.\nIf you did not request this, you can safely ignore this email.`;
 
   const html = `
     <div style="
@@ -181,7 +181,7 @@ const sendPasswordResetEmail = async (email, token) => {
       <h2 style="color: #38bdf8; margin: 0 0 16px; font-size: 24px; font-weight: 700;">Password Reset</h2>
 
       <p style="color: #8b949e; font-size: 15px; line-height: 1.5; margin: 0 0 16px;">
-        We received a request to reset the password for your EchoHub account. Click the button below to choose a new password:
+        We received a request to reset the password for your EchoServer account. Click the button below to choose a new password:
       </p>
 
       <div style="margin: 32px 0; text-align: left;">
@@ -227,7 +227,7 @@ const sendPasswordResetEmail = async (email, token) => {
     const info = await transport.sendMail({
       from,
       to: email,
-      subject: "Reset your EchoHub password",
+      subject: "Reset your EchoServer password",
       text: plainText,
       html,
     });

@@ -42,7 +42,7 @@ const addServerLog = ({
 addServerLog({
   level: "info",
   source: "system",
-  message: "EchoHub Server Logging Subsystem initialized and active.",
+  message: "EchoServer Server Logging Subsystem initialized and active.",
 });
 
 /**

@@ -578,7 +578,7 @@ export default function Settings({ projectId }) {
                   <div>
                     <strong>Custom Runtime Container</strong>
                     <p>
-                      EchoHub will build and launch the container using this Dockerfile directly.
+                      EchoServer will build and launch the container using this Dockerfile directly.
                       Ensure all installations, build commands, and container port exposes are included.
                     </p>
                   </div>

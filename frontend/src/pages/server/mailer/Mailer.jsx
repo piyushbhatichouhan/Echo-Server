@@ -709,7 +709,7 @@ export default function Mailer() {
                         type="text"
                         value={subject}
                         onChange={(e) => setSubject(e.target.value)}
-                        placeholder="e.g. 🛠️ Scheduled System Maintenance Notice: EchoHub Platform"
+                        placeholder="e.g. 🛠️ Scheduled System Maintenance Notice: EchoServer Platform"
                         className="form-input form-input--lg"
                       />
                     </div>
@@ -928,7 +928,7 @@ export default function Mailer() {
                         <strong>Subject:</strong> <span>{subject || "(No Subject)"}</span>
                       </div>
                       <div className="mockup-from-row">
-                        <span>From:</span> <strong>"EchoHub" &lt;noreply@devpiyush.in&gt;</strong>
+                        <span>From:</span> <strong>"EchoServer" &lt;noreply@devpiyush.in&gt;</strong>
                         <span className="mockup-divider">•</span>
                         <span>To:</span> <span>{user?.email}</span>
                       </div>

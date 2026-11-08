@@ -99,7 +99,7 @@ export default function Server() {
   return (
     <div className="server">
       <div className="server__header">
-        <h1>Server Echohub</h1>
+        <h1>Server EchoServer</h1>
 
         <p>Manage your server and users.</p>
       </div>

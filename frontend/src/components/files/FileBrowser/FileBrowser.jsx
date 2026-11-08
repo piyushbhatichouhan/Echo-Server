@@ -38,7 +38,11 @@ export default function FileBrowser({ adapter, workspaceId, onStorageChange }) {
 
   // Upgraded Feature States
   const [viewMode, setViewMode] = useState(() => {
-    return localStorage.getItem("echohub_files_view_mode") || "list";
+    return (
+      localStorage.getItem("echoserver_files_view_mode") ||
+      localStorage.getItem("echohub_files_view_mode") ||
+      "list"
+    );
   });
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showTrashModal, setShowTrashModal] = useState(false);
@@ -76,7 +80,7 @@ export default function FileBrowser({ adapter, workspaceId, onStorageChange }) {
 
   const handleViewModeChange = (mode) => {
     setViewMode(mode);
-    localStorage.setItem("echohub_files_view_mode", mode);
+    localStorage.setItem("echoserver_files_view_mode", mode);
   };
 
   const handleCopy = async (item) => {

@@ -253,7 +253,7 @@ async function checkMail() {
 async function validateStartup() {
   console.log("");
   console.log("======================================");
-  console.log(" EchoHub Startup Validation");
+  console.log(" EchoServer Startup Validation");
   console.log("======================================");
 
   await checkStorage();

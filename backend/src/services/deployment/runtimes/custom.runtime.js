@@ -50,7 +50,7 @@ async function prepare(context) {
 
   const version = `${Date.now()}`;
   context.version = version;
-  context.imageName = `echohub-custom-${project.id}:${version}`;
+  context.imageName = `echoserver-custom-${project.id}:${version}`;
   context.containerPort =
     context.resolvedPort ||
     Number(settings?.port) ||
@@ -267,7 +267,7 @@ async function start(context) {
   const imageName =
     context.imageName ||
     deployment.image_name ||
-    `echohub-custom-${project.id}:${context.version || Date.now()}`;
+    `echoserver-custom-${project.id}:${context.version || Date.now()}`;
 
   const containerName =
     context.containerName ||

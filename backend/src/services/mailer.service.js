@@ -24,10 +24,10 @@ const TEMPLATES = [
     icon: "Wrench",
     badge: "SCHEDULED MAINTENANCE",
     badgeType: "warning",
-    subject: "🛠️ Scheduled System Maintenance Notice: EchoHub Platform",
+    subject: "🛠️ Scheduled System Maintenance Notice: EchoServer Platform",
     body: `Dear {{username}},
 
-Please be advised that the EchoHub platform will be undergoing scheduled infrastructure maintenance to apply system optimizations, security patches, and performance enhancements.
+Please be advised that the EchoServer platform will be undergoing scheduled infrastructure maintenance to apply system optimizations, security patches, and performance enhancements.
 
 • Maintenance Window: Saturday, 11:00 PM – 01:00 AM IST
 • Expected Downtime: Approximately 15 to 30 minutes
@@ -50,7 +50,7 @@ We appreciate your patience and understanding as we continuously improve platfor
     subject: "🔒 Important Security Update & Recommended Actions",
     body: `Dear {{username}},
 
-As part of our commitment to platform safety, we have deployed critical security enhancements across EchoHub, including database-level AES-256 secret encryption at rest and strict token verification.
+As part of our commitment to platform safety, we have deployed critical security enhancements across EchoServer, including database-level AES-256 secret encryption at rest and strict token verification.
 
 To ensure your projects and account remain safe, we recommend the following security hygiene steps:
 • Review your environment variables and sensitive API tokens in Project Settings
@@ -69,10 +69,10 @@ If you notice any unusual activity, please reach out to the platform administrat
     icon: "Sparkles",
     badge: "PLATFORM UPDATE",
     badgeType: "success",
-    subject: "🚀 What's New on EchoHub: Zero-Downtime Deployments & Analytics",
+    subject: "🚀 What's New on EchoServer: Zero-Downtime Deployments & Analytics",
     body: `Hello {{username}},
 
-We are thrilled to announce several major enhancements newly released on the EchoHub platform:
+We are thrilled to announce several major enhancements newly released on the EchoServer platform:
 
 ✨ Zero-Downtime Blue-Green Deployments: Update your applications seamlessly without offline hiccups. Your existing container serves visitors until the new version passes all health probes.
 📊 Real HTTP Traffic Analytics: Monitor real visitor counts, request volume, latency, status codes, and bandwidth live from your project analytics tab.
@@ -101,7 +101,7 @@ Eligible developers can select custom subdomains for their hosted web projects. 
 • Impersonation of core platform services, brand names, or trademarks is prohibited
 • Subdomains found in violation of policy will be administratively revoked and automatically reverted to standard format
 
-Thank you for building with EchoHub!`,
+Thank you for building with EchoServer!`,
     ctaLabel: "View Your Projects",
     ctaUrl: "{{frontendUrl}}/projects",
   },
@@ -129,20 +129,20 @@ Keeping your workspaces optimized guarantees faster deployment pipelines and pea
   {
     key: "custom_announcement",
     name: "Custom Announcement (Blank)",
-    description: "Start from a blank canvas with a professional branded EchoHub layout.",
+    description: "Start from a blank canvas with a professional branded EchoServer layout.",
     category: "General",
     icon: "Send",
     badge: "ANNOUNCEMENT",
     badgeType: "info",
-    subject: "📢 Important Notice from EchoHub Administration",
+    subject: "📢 Important Notice from EchoServer Administration",
     body: `Hello {{username}},
 
-We are writing to share an important announcement regarding your EchoHub account and hosted services.
+We are writing to share an important announcement regarding your EchoServer account and hosted services.
 
 [Enter your custom message here]
 
 If you have any questions or require assistance, please feel free to reach out to our team.`,
-    ctaLabel: "Open EchoHub",
+    ctaLabel: "Open EchoServer",
     ctaUrl: "{{frontendUrl}}",
   },
 ];
@@ -319,7 +319,7 @@ const renderEmail = ({
           <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: ${badgeStyle.color}; background: ${badgeStyle.bg}; padding: 5px 12px; border-radius: 999px; border: 1px solid ${badgeStyle.border};">
             ${interpolatedBadge}
           </span>
-          <span style="color: #6e7681; font-size: 12px; font-family: monospace;">EchoHub Platform</span>
+          <span style="color: #6e7681; font-size: 12px; font-family: monospace;">EchoServer Platform</span>
         </div>
         <h1 style="color: #f0f6fc; margin: 0; font-size: 22px; font-weight: 700; line-height: 1.35;">
           ${interpolatedSubject}
@@ -334,7 +334,7 @@ const renderEmail = ({
 
       <div style="border-top: 1px solid #21262d; padding-top: 20px; margin-top: 32px; color: #6e7681; font-size: 12px; line-height: 1.5;">
         <p style="margin: 0 0 6px;">
-          This official platform broadcast was dispatched by EchoHub Administration.
+          This official platform broadcast was dispatched by EchoServer Administration.
         </p>
         <p style="margin: 0;">
           Delivered to registered developer account: <strong style="color: #8b949e;">${user.email || "developer@example.com"}</strong>
@@ -343,7 +343,7 @@ const renderEmail = ({
     </div>
   `;
 
-  const plainText = `[EchoHub Platform Broadcast]
+  const plainText = `[EchoServer Platform Broadcast]
 ${interpolatedBadge}
 ${interpolatedSubject}
 
@@ -352,7 +352,7 @@ ${interpolatedBody}
 ${interpolatedCtaLabel && interpolatedCtaUrl ? `\n${interpolatedCtaLabel}: ${interpolatedCtaUrl}\n` : ""}
 
 ---
-This official platform broadcast was dispatched by EchoHub Administration.
+This official platform broadcast was dispatched by EchoServer Administration.
 Delivered to: ${user.email || "developer@example.com"}
 `;
 

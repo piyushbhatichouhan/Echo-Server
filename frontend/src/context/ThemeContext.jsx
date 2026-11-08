@@ -16,7 +16,7 @@ export const THEMES = [
   {
     id: "amber-brown",
     name: "Amber Brown",
-    subtitle: "Classic EchoHub",
+    subtitle: "Classic EchoServer",
     description: "Signature warm obsidian with radiant flame amber",
     badge: "Warm",
     accentColor: "#ff8a00",
@@ -51,7 +51,7 @@ export const THEMES = [
   },
 ];
 
-const THEME_STORAGE_KEY = "echohub_theme";
+const THEME_STORAGE_KEY = "echoserver_theme";
 const DEFAULT_THEME = "dark-grey";
 
 const ThemeContext = createContext({
@@ -64,7 +64,9 @@ const ThemeContext = createContext({
 export function ThemeProvider({ children }) {
   const [theme, setThemeState] = useState(() => {
     try {
-      const stored = localStorage.getItem(THEME_STORAGE_KEY);
+      const stored =
+        localStorage.getItem("echoserver_theme") ||
+        localStorage.getItem("echohub_theme");
       if (stored && THEMES.some((t) => t.id === stored)) {
         return stored;
       }

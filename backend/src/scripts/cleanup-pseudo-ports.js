@@ -5,7 +5,7 @@ const portService = require("../services/port.service");
 
 async function main() {
   console.log("==================================================");
-  console.log("   EchoHub Pseudo-Port & Container Cleanup Tool   ");
+  console.log("   EchoServer Pseudo-Port & Container Cleanup Tool   ");
   console.log("==================================================");
 
   try {

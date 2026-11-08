@@ -114,7 +114,7 @@ export default function Dashboard() {
           <div className="dashboard-badge-row">
             <span className="platform-tag">
               <Server size={13} />
-              <span>EchoHub Cloud Engine</span>
+              <span>EchoServer Cloud Engine</span>
             </span>
 
             <div className="system-status-indicator status--healthy">

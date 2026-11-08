@@ -61,7 +61,7 @@ async function prepare(context) {
   );
   const version = `${Date.now()}`;
   context.version = version;
-  context.imageName = `echohub-static-${project.id}:${version}`;
+  context.imageName = `echoserver-static-${project.id}:${version}`;
   context.containerPort = module.exports.INTERNAL_PORT;
   context.containerName = context.infrastructure.container.getContainerName(
     project.id,
@@ -366,7 +366,7 @@ async function start(context) {
   const imageName =
     context.imageName ||
     deployment.image_name ||
-    `echohub-static-${project.id}:${context.version || Date.now()}`;
+    `echoserver-static-${project.id}:${context.version || Date.now()}`;
 
   const containerName =
     context.containerName ||

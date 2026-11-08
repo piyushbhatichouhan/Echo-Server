@@ -1,7 +1,7 @@
 const docker = require("../docker/docker.client");
 
 const getContainerName = (projectId, version = null) => {
-  return version ? `echohub-${projectId}-${version}` : `echohub-${projectId}`;
+  return version ? `echoserver-${projectId}-${version}` : `echoserver-${projectId}`;
 };
 
 const getContainerResourceLimits = () => {
@@ -40,8 +40,10 @@ const removePreviousContainers = async (
   try {
     const containers = await docker.listContainers({ all: true });
     const pIdStr = String(projectId);
+    const prefix0 = `/echoserver-${pIdStr}-`;
     const prefix1 = `/echohub-${pIdStr}-`;
     const prefix2 = `/echo-project-${pIdStr}-`;
+    const exact0 = `/echoserver-${pIdStr}`;
     const exact1 = `/echohub-${pIdStr}`;
     const exact2 = `/echo-project-${pIdStr}`;
 
@@ -53,8 +55,10 @@ const removePreviousContainers = async (
       const names = c.Names || [];
       const matchesProject = names.some(
         (n) =>
+          n === exact0 ||
           n === exact1 ||
           n === exact2 ||
+          n.startsWith(prefix0) ||
           n.startsWith(prefix1) ||
           n.startsWith(prefix2),
       );
@@ -101,6 +105,7 @@ const findActiveContainer = async (projectId) => {
 
   // If already a full container name or docker ID
   if (
+    idStr.startsWith("echoserver-") ||
     idStr.startsWith("echohub-") ||
     idStr.startsWith("echo-") ||
     idStr.length >= 64
@@ -130,16 +135,20 @@ const findActiveContainer = async (projectId) => {
 
     // 2. Docker container list search
     const containers = await docker.listContainers({ all: true });
+    const prefix0 = `/echoserver-${idStr}-`;
     const prefix1 = `/echohub-${idStr}-`;
     const prefix2 = `/echo-project-${idStr}-`;
+    const exact0 = `/echoserver-${idStr}`;
     const exact1 = `/echohub-${idStr}`;
     const exact2 = `/echo-project-${idStr}`;
 
     const projectContainers = containers.filter((c) =>
       (c.Names || []).some(
         (n) =>
+          n === exact0 ||
           n === exact1 ||
           n === exact2 ||
+          n.startsWith(prefix0) ||
           n.startsWith(prefix1) ||
           n.startsWith(prefix2),
       ),

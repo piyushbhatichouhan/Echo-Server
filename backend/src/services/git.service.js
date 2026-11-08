@@ -266,7 +266,7 @@ const cloneRepository = async (projectId, ownerId) => {
 
   // Temporary Cloning for size check
 
-  const tempDirectory = path.join(os.tmpdir(), "echohub-clones", uuid());
+  const tempDirectory = path.join(os.tmpdir(), "echoserver-clones", uuid());
 
   await fs.mkdir(tempDirectory, {
     recursive: true,

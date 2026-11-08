@@ -8,7 +8,7 @@ export default function ProjectTerminal({ projectId, isRunning }) {
   const [history, setHistory] = useState([
     {
       type: "system",
-      text: "EchoHub Web Shell Terminal v2.0 initialized. Type commands to execute inside your active container.",
+      text: "EchoServer Web Shell Terminal v2.0 initialized. Type commands to execute inside your active container.",
     },
   ]);
   const [commandHistory, setCommandHistory] = useState([]);
@@ -144,7 +144,7 @@ export default function ProjectTerminal({ projectId, isRunning }) {
           {history.map((item, idx) => (
             <div key={idx} className={`eh-terminal-row ${item.type}`}>
               {item.type === "command" && (
-                <span className="eh-terminal-prompt">echohub@app:~$ </span>
+                <span className="eh-terminal-prompt">echoserver@app:~$ </span>
               )}
               <span className="eh-terminal-text">{item.text}</span>
             </div>
@@ -159,7 +159,7 @@ export default function ProjectTerminal({ projectId, isRunning }) {
 
         {/* Terminal Input Box */}
         <div className="eh-terminal-input-bar">
-          <span className="eh-terminal-prompt">echohub@app:~$ </span>
+          <span className="eh-terminal-prompt">echoserver@app:~$ </span>
           <input
             ref={inputRef}
             type="text"
