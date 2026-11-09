@@ -9,11 +9,6 @@ services:
     env_file:
       - ./backend/.env
 
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-${DB_NAME:-echo_db}}
-      POSTGRES_USER: ${POSTGRES_USER:-${DB_USER:-echo_user}}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-${DB_PASSWORD:?Database password must be set in backend/.env}}
-
     ports:
       - "5432:5432"
 

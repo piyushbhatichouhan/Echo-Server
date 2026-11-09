@@ -1,5 +1,4 @@
 services:
-
   postgres:
     image: postgres:17
     container_name: echo-postgres
@@ -8,17 +7,11 @@ services:
     env_file:
       - ./backend/.env
 
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-${DB_NAME:-echo_db}}
-      POSTGRES_USER: ${POSTGRES_USER:-${DB_USER:-echo_user}}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-${DB_PASSWORD:?Database password must be set in backend/.env}}
-
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
     networks:
       - echo-network
-
 
   backend:
     build:
@@ -48,7 +41,6 @@ services:
     networks:
       - echo-network
 
-
   router:
     build:
       context: .
@@ -73,7 +65,6 @@ services:
     networks:
       - echo-network
 
-
   frontend:
     build:
       context: .
@@ -94,10 +85,8 @@ services:
     networks:
       - echo-network
 
-
 volumes:
   postgres_data:
-
 
 networks:
   echo-network:
