@@ -5,10 +5,13 @@ services:
     container_name: echo-postgres
     restart: unless-stopped
 
+    env_file:
+      - ./backend/.env
+
     environment:
-      POSTGRES_DB: echo_db
-      POSTGRES_USER: echo_user
-      POSTGRES_PASSWORD: REDACTED_PASSWORD
+      POSTGRES_DB: ${POSTGRES_DB:-${DB_NAME:-echo_db}}
+      POSTGRES_USER: ${POSTGRES_USER:-${DB_USER:-echo_user}}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-${DB_PASSWORD:?Database password must be set in backend/.env}}
 
     volumes:
       - postgres_data:/var/lib/postgresql/data
