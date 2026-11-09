@@ -2,7 +2,7 @@ import "./project.css";
 import { useParams } from "react-router-dom";
 import useProject from "../../hooks/useProject";
 import ProjectHeader from "../../components/project/projectheader/projectheader";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import DeploymentControls from "../../components/project/deploymentcontrols/deploymentcontrols";
 import LogsCard from "../../components/project/logscard/logscard";
 import useDeployment from "../../hooks/useDeployment";
@@ -16,7 +16,6 @@ import {
 import DeploymentCard from "../../components/project/deploymentcard/deploymentcard";
 import useLogStream from "../../hooks/useLogStream";
 import ProjectTabs from "../../components/project/projecttabs/projecttabs";
-import { useEffect } from "react";
 import Deployments from "../../components/project/deployments/deployments";
 import Settings from "../../components/project/settings/settings";
 import DeploymentHistory from "../../components/project/overview/deploymentHistory";
@@ -68,11 +67,24 @@ export default function Project() {
   const isRunning = status?.running;
   const hasDeployment = status?.exists;
 
-  const { isConnected } = useLogStream(id, (log) => {
-    setLogs((previous) => [...previous, log]);
+  const handleIncomingLog = useCallback(
+    (log) => {
+      setLogs((previous) => [...previous, log]);
 
-    refreshStatus();
-  });
+      if (
+        log?.category === "system" ||
+        log?.level === "status" ||
+        (log?.message &&
+          typeof log.message === "string" &&
+          log.message.toLowerCase().includes("status"))
+      ) {
+        refreshStatus();
+      }
+    },
+    [setLogs, refreshStatus],
+  );
+
+  const { isConnected } = useLogStream(id, handleIncomingLog);
 
   const toast = useToast();
 

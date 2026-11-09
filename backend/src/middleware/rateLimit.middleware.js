@@ -81,14 +81,19 @@ const resendVerificationLimiter = rateLimit({
 /**
  * General API DDoS and flooding protection.
  * Allows up to 3,000 requests per 15-minute window per IP (~200 req/min).
- * Skips CORS preflight (OPTIONS) requests so they do not consume quota.
+ * Skips CORS preflight (OPTIONS), health checks, and persistent SSE log streams.
  */
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   limit: Number(process.env.RATE_LIMIT_API_MAX) || 3000,
   standardHeaders: "draft-7",
   legacyHeaders: false,
-  skip: (req) => req.method === "OPTIONS" || req.path === "/health",
+  skip: (req) =>
+    req.method === "OPTIONS" ||
+    req.path === "/health" ||
+    req.path.endsWith("/logs/live") ||
+    (req.originalUrl && req.originalUrl.includes("/logs/live")) ||
+    Boolean(req.headers.accept && req.headers.accept.includes("text/event-stream")),
   handler: (req, res, _next, options) => {
     res.status(options.statusCode).json({
       success: false,
