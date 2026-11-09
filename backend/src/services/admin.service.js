@@ -1,6 +1,11 @@
+const fs = require("fs/promises");
+const { pool } = require("../config/database");
 const userRepository = require("../repositories/user.repository");
+const projectRepository = require("../repositories/project.repository");
 const publicationRepository = require("../publication/publication.repository");
 const publicationService = require("../publication/publication.service");
+const projectCleanupService = require("./project-cleanup.service");
+const { getCloudRoot } = require("../storage/cloud.storage.manager");
 
 const SUPER_ADMIN_EMAIL = process.env.SUPER_ADMIN_EMAIL;
 
@@ -36,20 +41,74 @@ const deleteUser = async (userId) => {
   const user = await userRepository.getUserById(userId);
 
   if (!user) {
-    throw new Error("User not found");
+    const error = new Error("User not found");
+    error.status = 404;
+    throw error;
   }
   if (user.is_owner) {
-    throw new Error("Owner account cannot be deleted");
-  }
-  if (user.pending_deletion) {
-    throw new Error("User is already scheduled for deletion");
+    const error = new Error("Owner account cannot be deleted");
+    error.status = 403;
+    throw error;
   }
 
-  await userRepository.scheduleUserDeletion(userId);
+  console.log(`[deleteUser] Starting immediate permanent deletion for user ${user.username} (${userId})`);
+
+  // 1. Fetch all projects owned by the user
+  const projects = await projectRepository.getProjectsByOwner(userId);
+
+  // 2. Perform deep physical cleanup for each project:
+  // containers, images, routing hosts, and workspace directory on disk
+  for (const project of projects) {
+    try {
+      await projectCleanupService.cleanupProject(project.id);
+    } catch (cleanErr) {
+      console.error(`[deleteUser] Error cleaning project ${project.id}:`, cleanErr);
+    }
+  }
+
+  // 3. Remove user cloud storage directory on disk
+  try {
+    const cloudRoot = getCloudRoot(userId);
+    await fs.rm(cloudRoot, { recursive: true, force: true });
+  } catch (cloudErr) {
+    console.error(`[deleteUser] Error removing cloud root for user ${userId}:`, cloudErr);
+  }
+
+  // 4. Atomically purge from database
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    // Remove all projects belonging to user (cascades to files, deployments, env vars, etc.)
+    for (const project of projects) {
+      await projectRepository.deleteProjectRecordTx(client, project.id);
+    }
+
+    // Remove user cloud_files records if any remained
+    await client.query("DELETE FROM cloud_files WHERE owner_id = $1", [userId]);
+
+    // Remove any user-level analytics
+    await client.query("DELETE FROM http_analytics WHERE user_id = $1", [userId]);
+
+    // Remove any subdomain requests
+    await client.query("DELETE FROM subdomain_requests WHERE user_id = $1", [userId]);
+
+    // Permanently remove user record
+    await userRepository.deleteUserTx(client, userId);
+
+    await client.query("COMMIT");
+    console.log(`[deleteUser] User ${user.username} (${userId}) and all resources permanently deleted.`);
+  } catch (dbErr) {
+    await client.query("ROLLBACK");
+    console.error(`[deleteUser] Database rollback for user ${userId}:`, dbErr);
+    throw dbErr;
+  } finally {
+    client.release();
+  }
 
   return {
     success: true,
-    message: "User scheduled for deletion.",
+    message: "User account and all associated resources permanently deleted.",
   };
 };
 

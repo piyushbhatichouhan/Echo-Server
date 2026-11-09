@@ -44,11 +44,11 @@ const enableUser = async (req, res, next) => {
 
 const deleteUser = async (req, res, next) => {
   try {
-    await adminService.deleteUser(req.params.id);
+    const result = await adminService.deleteUser(req.params.id);
 
     res.json({
       success: true,
-      message: "User deleted successfully",
+      message: result?.message || "User and all associated resources permanently deleted.",
     });
   } catch (err) {
     next(err);

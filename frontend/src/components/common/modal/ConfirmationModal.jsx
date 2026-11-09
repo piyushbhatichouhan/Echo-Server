@@ -122,30 +122,32 @@ export default function ConfirmationModal({
           {projectMode ? (
             <div className="confirmationScopeBox">
               <p className="confirmationScopeTitle">
-                You are about to permanently delete project:
+                You are about to permanently and irreversibly delete project:
               </p>
               <div className="confirmationTargetEntity">
                 <strong>{project.name}</strong>
               </div>
-              <p className="confirmationListHeading">The following will be permanently removed:</p>
+              <p className="confirmationListHeading">The following will be permanently destroyed immediately:</p>
               <ul className="confirmationList">
-                <li>Git repository & commit history</li>
-                <li>Source files & build assets</li>
-                <li>Active container deployments</li>
-                <li>Configured environment variables</li>
-                <li>Associated deployment runtime logs</li>
-                <li>Docker images & network routing</li>
+                <li><strong>Immediate &amp; Irreversible:</strong> This project and all its data cannot be recovered.</li>
+                <li>Running containers and Docker images stopped and deleted immediately</li>
+                <li>All workspace files, source code, and build assets deleted immediately from disk</li>
+                <li>All configured environment variables and secrets wiped</li>
+                <li>All assigned subdomains, custom domains, and proxy routes removed</li>
+                <li>All deployment history and telemetry logs permanently purged</li>
               </ul>
             </div>
           ) : accountMode ? (
             <div className="confirmationScopeBox">
               <p className="confirmationScopeTitle">
-                You are about to permanently delete your personal account.
+                You are about to permanently and irreversibly delete your personal account.
               </p>
               <ul className="confirmationList">
-                <li>You will immediately lose access to this console.</li>
-                <li>All projects, deployments, repositories, and logs will be permanently deleted after <strong>24 hours</strong>.</li>
-                <li>To reverse this, contact a system administrator within the 24-hour window.</li>
+                <li><strong>Immediate &amp; Irreversible:</strong> All data is permanently destroyed immediately. This cannot be undone.</li>
+                <li>All projects, active containers, and Docker images will be terminated and wiped immediately.</li>
+                <li>All workspace files, git repositories, and cloud storage files will be deleted immediately from disk.</li>
+                <li>All environment variables, secrets, custom domains, and analytics are permanently purged.</li>
+                <li>You will be signed out immediately and all access will be permanently revoked.</li>
               </ul>
             </div>
           ) : user?.username === "CLEAR" ? (
@@ -154,24 +156,25 @@ export default function ConfirmationModal({
                 You are about to flush all historical server logs.
               </p>
               <ul className="confirmationList">
-                <li>All system runtime logs and audit entries will be permanently cleared.</li>
+                <li>All system runtime logs and audit entries will be permanently cleared immediately.</li>
                 <li>Historical diagnostic records cannot be restored once deleted.</li>
               </ul>
             </div>
           ) : (
             <div className="confirmationScopeBox">
               <p className="confirmationScopeTitle">
-                You are about to permanently delete user account:
+                You are about to permanently and irreversibly delete user account:
               </p>
               <div className="confirmationTargetEntity">
                 <strong>{user.username}</strong>
                 {user.email && <span>{user.email}</span>}
               </div>
-              <p className="confirmationListHeading">Consequences of deletion:</p>
+              <p className="confirmationListHeading">Consequences of immediate deletion:</p>
               <ul className="confirmationList">
-                <li>User will immediately lose server access.</li>
-                <li>Projects, repositories, environment variables, and build artifacts will be queued for removal.</li>
-                <li>Deletion will be finalized after a 24-hour grace period.</li>
+                <li><strong>Immediate &amp; Irreversible:</strong> The account and all its resources are permanently erased immediately.</li>
+                <li>All user projects, containers, and Docker images will be terminated and deleted immediately.</li>
+                <li>All user workspace files, git repositories, and cloud files will be permanently wiped from disk.</li>
+                <li>All environment secrets, custom domains, and database records will be permanently purged.</li>
               </ul>
             </div>
           )}

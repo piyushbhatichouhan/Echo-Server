@@ -200,7 +200,10 @@ export default function ManageUsers() {
     setWorkingUser(id);
     try {
       await deleteUser(id);
-      toast.success("User Deleted", "The account has been scheduled for removal.");
+      toast.success(
+        "User Permanently Deleted",
+        "The account and all associated resources have been permanently deleted immediately.",
+      );
       await refresh();
     } catch (err) {
       toast.error("Delete Failed", err.response?.data?.message || err.message);

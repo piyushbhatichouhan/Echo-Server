@@ -25,18 +25,23 @@ const publish = async ({
 };
 
 const unpublish = async ({ projectId }) => {
-  const domain = await publicationRepository.getProjectDomain(projectId);
+  const domains = await publicationRepository.listProjectDomains(projectId);
 
-  if (!domain) {
-    return true;
+  if (domains && domains.length > 0) {
+    for (const domain of domains) {
+      console.log(`[Routing] Removing proxy host ${domain.hostname}`);
+      try {
+        await repository.removeHost({
+          hostname: domain.hostname,
+        });
+      } catch (err) {
+        console.warn(
+          `[Routing] Failed to remove proxy host ${domain.hostname} from NPM:`,
+          err.message,
+        );
+      }
+    }
   }
-
-  console.log(`[Routing] Removing ${domain.hostname}`);
-
-  // Remove proxy from NPM
-  await repository.removeHost({
-    hostname: domain.hostname,
-  });
 
   // Remove publication from database
   await publicationRepository.deleteProjectDomain(projectId);

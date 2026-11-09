@@ -135,11 +135,13 @@ const validateResetToken = async (req, res, next) => {
 
 const deleteAccount = async (req, res, next) => {
   try {
-    await deleteOwnAccount(req.user.id);
+    const result = await deleteOwnAccount(req.user.id);
 
     res.json({
       success: true,
-      message: "Account scheduled for deletion.",
+      message:
+        result?.message ||
+        "Account and all associated resources permanently deleted.",
     });
   } catch (error) {
     next(error);

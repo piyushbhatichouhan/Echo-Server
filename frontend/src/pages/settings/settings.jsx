@@ -200,8 +200,8 @@ export default function Settings() {
     try {
       await deleteAccount();
       toast?.success(
-        "Account scheduled for deletion",
-        "Your account will be deleted after 24 hours.",
+        "Account Permanently Deleted",
+        "Your account and all associated projects, containers, and data have been permanently erased.",
       );
       logout?.();
     } catch (err) {
@@ -639,14 +639,15 @@ export default function Settings() {
         <div className="settings-card settings-card--danger">
           <div className="settings-danger-content">
             <div className="settings-danger-details">
-              <h3>Deactivate & Delete Account</h3>
+              <h3>Permanently Delete Account</h3>
               <p>
-                Deleting your account will immediately revoke all authentication credentials and server access.
+                Deleting your account is immediate and irreversible. In accordance with our Privacy Policy, all your data will be permanently wiped immediately upon confirmation.
               </p>
               <ul className="settings-danger-list">
-                <li>Immediate session termination across all devices.</li>
-                <li>Projects, repositories, environment configurations, and cloud files scheduled for deletion.</li>
-                <li>A <strong>24-hour grace window</strong> allows an administrator to recover your account if requested.</li>
+                <li>All running containers and Docker images are stopped and deleted immediately.</li>
+                <li>All projects, source code, repositories, and cloud storage files are permanently erased from disk.</li>
+                <li>All environment secrets, custom domains, and database records are permanently purged.</li>
+                <li><strong>Irreversible action:</strong> This cannot be undone and no data can be restored.</li>
               </ul>
             </div>
 

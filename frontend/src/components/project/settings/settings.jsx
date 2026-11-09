@@ -142,8 +142,8 @@ export default function Settings({ projectId }) {
     try {
       await deleteProject(projectId);
       toast.success(
-        "Project deleted",
-        "The project has been permanently removed.",
+        "Project Deleted",
+        "The project and all associated resources have been permanently deleted immediately.",
       );
       navigate("/dashboard");
     } catch (error) {
@@ -651,13 +651,13 @@ export default function Settings({ projectId }) {
               </div>
               <div>
                 <h3>Delete Project</h3>
-                <p>Irreversible deletion of all code, deployments, images, and logs.</p>
+                <p>Immediate and irreversible deletion of all containers, code, domains, secrets, and logs.</p>
               </div>
             </div>
 
             <div className="eh-danger-body">
               <p>
-                Deleting this project is permanent. Once deleted, all associated resources cannot be recovered:
+                Deleting this project is immediate and permanent. Once confirmed, all associated resources are permanently erased from the server immediately:
               </p>
               <ul className="eh-danger-list">
                 <li>Project files and workspace directory</li>
