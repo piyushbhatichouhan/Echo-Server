@@ -388,6 +388,48 @@ const getGitStatus = async (projectId, ownerId) => {
   }
 
   const gitDirectory = getProjectGitDirectory(projectId);
+  const gitMetaDir = path.join(gitDirectory, ".git");
+
+  const hasGit = await fs
+    .access(gitMetaDir)
+    .then(() => true)
+    .catch(() => false);
+
+  if (!hasGit) {
+    // If repository details exist, attempt auto-clone/recovery
+    if (repository.clone_url) {
+      try {
+        console.log(
+          `[getGitStatus] Git repository missing on disk for project ${projectId}. Auto-healing...`,
+        );
+        await cloneRepository(projectId, ownerId);
+      } catch (err) {
+        console.warn(
+          `[getGitStatus] Auto-heal clone failed/pending for project ${projectId}:`,
+          err.message,
+        );
+        return {
+          branch: repository.branch || "main",
+          ahead: 0,
+          behind: 0,
+          clean: true,
+          changes: [],
+          cloning: true,
+          message: "Repository is cloning or awaiting sync.",
+        };
+      }
+    } else {
+      return {
+        branch: repository.branch || "main",
+        ahead: 0,
+        behind: 0,
+        clean: true,
+        changes: [],
+        cloning: false,
+        message: "Repository has not been cloned yet.",
+      };
+    }
+  }
 
   const status = await gitOperations.status(gitDirectory);
 
@@ -594,6 +636,16 @@ const getCommits = async (projectId, ownerId, limit = 15) => {
   }
 
   const gitDirectory = getProjectGitDirectory(projectId);
+  const gitMetaDir = path.join(gitDirectory, ".git");
+  const hasGit = await fs
+    .access(gitMetaDir)
+    .then(() => true)
+    .catch(() => false);
+
+  if (!hasGit) {
+    return [];
+  }
+
   return await gitOperations.log(gitDirectory, limit);
 };
 
@@ -607,6 +659,19 @@ const getBranches = async (projectId, ownerId) => {
   }
 
   const gitDirectory = getProjectGitDirectory(projectId);
+  const gitMetaDir = path.join(gitDirectory, ".git");
+  const hasGit = await fs
+    .access(gitMetaDir)
+    .then(() => true)
+    .catch(() => false);
+
+  if (!hasGit) {
+    return {
+      current: repository.branch || "main",
+      all: [repository.branch || "main"],
+    };
+  }
+
   return await gitOperations.branches(gitDirectory);
 };
 
@@ -661,6 +726,16 @@ const getDiff = async (projectId, ownerId, file = null) => {
   }
 
   const gitDirectory = getProjectGitDirectory(projectId);
+  const gitMetaDir = path.join(gitDirectory, ".git");
+  const hasGit = await fs
+    .access(gitMetaDir)
+    .then(() => true)
+    .catch(() => false);
+
+  if (!hasGit) {
+    return "";
+  }
+
   return await gitOperations.diff(gitDirectory, file);
 };
 

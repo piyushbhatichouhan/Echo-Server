@@ -2,19 +2,20 @@ const { rateLimit } = require("express-rate-limit");
 
 /**
  * Brute-force protection for user login.
- * Allows up to 10 failed login attempts per 15-minute window per IP.
+ * Allows up to 25 failed login attempts per 15-minute window per IP.
  * Successful logins do not count against the limit.
  */
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  limit: 10, // Max 10 attempts per IP per window
-  standardHeaders: "draft-7", // draft-6: `RateLimit-*` headers; draft-7: combined `RateLimit` header
-  legacyHeaders: false, // Disable X-RateLimit-* headers
-  skipSuccessfulRequests: true, // Only failed logins count toward brute-force threshold
+  limit: Number(process.env.RATE_LIMIT_LOGIN_MAX) || 25,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  skipSuccessfulRequests: true,
+  skip: (req) => req.method === "OPTIONS",
   handler: (req, res, _next, options) => {
     res.status(options.statusCode).json({
       success: false,
-      message: "Too many login attempts from this IP. Please try again after 15 minutes.",
+      message: "Too many login attempts from this IP. Please try again after a few minutes.",
       retryAfterMinutes: 15,
     });
   },
@@ -22,17 +23,18 @@ const loginLimiter = rateLimit({
 
 /**
  * Protection against mass account registration and bot spam.
- * Allows up to 5 registrations per 1-hour window per IP.
+ * Allows up to 20 registrations per 1-hour window per IP.
  */
 const registerLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  limit: 5, // Max 5 account registrations per IP per hour
+  limit: Number(process.env.RATE_LIMIT_REGISTER_MAX) || 20,
   standardHeaders: "draft-7",
   legacyHeaders: false,
+  skip: (req) => req.method === "OPTIONS",
   handler: (req, res, _next, options) => {
     res.status(options.statusCode).json({
       success: false,
-      message: "Too many accounts created from this IP. Please try again in an hour.",
+      message: "Too many accounts created from this IP. Please try again later.",
       retryAfterMinutes: 60,
     });
   },
@@ -40,17 +42,18 @@ const registerLimiter = rateLimit({
 
 /**
  * Protection against password reset spamming and email flooding.
- * Allows up to 5 password reset requests per 1-hour window per IP.
+ * Allows up to 15 password reset requests per 1-hour window per IP.
  */
 const forgotPasswordLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  limit: 5, // Max 5 reset requests per IP per hour
+  limit: Number(process.env.RATE_LIMIT_FORGOT_PASSWORD_MAX) || 15,
   standardHeaders: "draft-7",
   legacyHeaders: false,
+  skip: (req) => req.method === "OPTIONS",
   handler: (req, res, _next, options) => {
     res.status(options.statusCode).json({
       success: false,
-      message: "Too many password reset requests from this IP. Please try again in an hour.",
+      message: "Too many password reset requests from this IP. Please try again later.",
       retryAfterMinutes: 60,
     });
   },
@@ -58,17 +61,18 @@ const forgotPasswordLimiter = rateLimit({
 
 /**
  * Protection against email verification resend flooding.
- * Allows up to 5 requests per 15-minute window per IP.
+ * Allows up to 15 requests per 15-minute window per IP.
  */
 const resendVerificationLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  limit: 5, // Max 5 resend requests per IP
+  limit: Number(process.env.RATE_LIMIT_RESEND_VERIFY_MAX) || 15,
   standardHeaders: "draft-7",
   legacyHeaders: false,
+  skip: (req) => req.method === "OPTIONS",
   handler: (req, res, _next, options) => {
     res.status(options.statusCode).json({
       success: false,
-      message: "Too many email verification requests from this IP. Please wait a few minutes before trying again.",
+      message: "Too many email verification requests. Please wait a few minutes before trying again.",
       retryAfterMinutes: 15,
     });
   },
@@ -76,17 +80,19 @@ const resendVerificationLimiter = rateLimit({
 
 /**
  * General API DDoS and flooding protection.
- * Allows up to 600 requests per 15-minute window per IP.
+ * Allows up to 3,000 requests per 15-minute window per IP (~200 req/min).
+ * Skips CORS preflight (OPTIONS) requests so they do not consume quota.
  */
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  limit: 600, // 600 requests per 15 minutes (~40 req/min)
+  limit: Number(process.env.RATE_LIMIT_API_MAX) || 3000,
   standardHeaders: "draft-7",
   legacyHeaders: false,
+  skip: (req) => req.method === "OPTIONS" || req.path === "/health",
   handler: (req, res, _next, options) => {
     res.status(options.statusCode).json({
       success: false,
-      message: "API rate limit exceeded. Please throttle your requests and try again shortly.",
+      message: "API rate limit exceeded. Please wait a moment and try again.",
       retryAfterMinutes: 15,
     });
   },
@@ -94,13 +100,14 @@ const apiLimiter = rateLimit({
 
 /**
  * Deployment abuse and container build spam protection.
- * Allows up to 10 deployment triggers per 5-minute window per IP.
+ * Allows up to 30 deployment triggers per 5-minute window per IP.
  */
 const deploymentLimiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 5 minutes
-  limit: 10,
+  limit: Number(process.env.RATE_LIMIT_DEPLOY_MAX) || 30,
   standardHeaders: "draft-7",
   legacyHeaders: false,
+  skip: (req) => req.method === "OPTIONS",
   handler: (req, res, _next, options) => {
     res.status(options.statusCode).json({
       success: false,
@@ -112,13 +119,14 @@ const deploymentLimiter = rateLimit({
 
 /**
  * Interactive container terminal command flood protection.
- * Allows up to 30 terminal commands per 1-minute window per IP.
+ * Allows up to 180 terminal commands per 1-minute window per IP (~3/sec).
  */
 const terminalLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  limit: 30,
+  limit: Number(process.env.RATE_LIMIT_TERMINAL_MAX) || 180,
   standardHeaders: "draft-7",
   legacyHeaders: false,
+  skip: (req) => req.method === "OPTIONS",
   handler: (req, res, _next, options) => {
     res.status(options.statusCode).json({
       success: false,

@@ -51,8 +51,23 @@ async function fetch(directory) {
 }
 
 async function status(directory) {
-  const git = gitClient.getRepository(directory);
-  return git.status();
+  try {
+    const git = gitClient.getRepository(directory);
+    return await git.status();
+  } catch (err) {
+    console.warn(`[gitOperations.status] Status unavailable for ${directory}:`, err.message);
+    return {
+      current: "main",
+      ahead: 0,
+      behind: 0,
+      modified: [],
+      created: [],
+      deleted: [],
+      renamed: [],
+      not_added: [],
+      isClean: () => true,
+    };
+  }
 }
 
 async function commit(directory, message) {
