@@ -101,8 +101,24 @@ FROM node:22-alpine
 
 WORKDIR /app
 
-RUN apk add --no-cache python3 make g++ libc6-compat git bash
+# Essential system dependencies for native builds and Prisma/crypto
+RUN apk add --no-cache python3 make g++ libc6-compat git bash openssl
+
+# Pre-install pnpm (yarn is already in base image)
 RUN npm install -g pnpm
+
+# Configure Node/NPM build environment:
+# 1. Expand PATH so binaries in .bin (vite, next, prisma, tsc, tailwind) can be invoked directly
+# 2. Prevent peer dependency resolution crashes (NPM 7+)
+# 3. Ensure devDependencies are installed across npm and yarn
+# 4. Expand heap space to 2GB to prevent build out-of-memory errors
+# 5. Ensure host binds to all interfaces (0.0.0.0)
+ENV PATH="/app/node_modules/.bin:/app/frontend/node_modules/.bin:/app/backend/node_modules/.bin:/app/client/node_modules/.bin:/app/server/node_modules/.bin:$PATH"
+ENV NPM_CONFIG_PRODUCTION=false
+ENV YARN_PRODUCTION=false
+ENV NPM_CONFIG_LEGACY_PEER_DEPS=true
+ENV NODE_OPTIONS="--max-old-space-size=2048"
+ENV HOST=0.0.0.0
 
 # Copy all application files first so monorepos, subfolders, and scripts exist
 COPY . .
@@ -110,9 +126,6 @@ COPY . .
 ${workingDirInstruction}
 
 ${buildEnvDeclarations}
-
-# Ensure devDependencies are installed for build steps (Vite, TypeScript, Tailwind, etc.)
-ENV NPM_CONFIG_PRODUCTION=false
 
 # Install dependencies
 RUN ${installCmd}
@@ -125,7 +138,7 @@ ENV NODE_ENV="${userNodeEnv}"
 ENV PORT=${context.containerPort}
 EXPOSE ${context.containerPort}
 
-CMD ["sh", "-c", "${startCmd.replace(/"/g, '\\"')}"]
+CMD ["sh", "-c", "exec ${startCmd.replace(/"/g, '\\"')}"]
 `;
 }
 

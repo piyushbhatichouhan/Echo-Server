@@ -91,12 +91,27 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y --no-install-recommends build-essential gcc git curl && rm -rf /var/lib/apt/lists/*
+# Install native compilation dependencies, PostgreSQL client libs, and Git
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    gcc \
+    git \
+    curl \
+    libpq-dev \
+    libffi-dev \
+    && rm -rf /var/lib/apt/lists/*
 
+# Prevent PEP 668 externally-managed errors in Debian Python 3.12 and configure tool PATH
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
+ENV PIP_BREAK_SYSTEM_PACKAGES=1
+ENV PIP_NO_CACHE_DIR=1
+ENV PATH="/root/.local/bin:$PATH"
 ENV PORT=${context.containerPort}
 ENV HOST=0.0.0.0
+
+# Pre-upgrade core Python build tools
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel
 
 # Copy all application files first so monorepos, subfolders, and scripts exist
 COPY . .
@@ -113,7 +128,7 @@ ${settings.build_command?.trim() ? `RUN ${settings.build_command}` : ""}
 
 EXPOSE ${context.containerPort}
 
-CMD ["sh", "-c", "${startCmd.replace(/"/g, '\\"')}"]
+CMD ["sh", "-c", "exec ${startCmd.replace(/"/g, '\\"')}"]
 `;
 }
 

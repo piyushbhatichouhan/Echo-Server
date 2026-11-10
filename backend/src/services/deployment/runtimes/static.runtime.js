@@ -126,8 +126,14 @@ FROM node:22-alpine AS builder
 
 WORKDIR /app
 
-RUN apk add --no-cache python3 make g++ libc6-compat git bash
+RUN apk add --no-cache python3 make g++ libc6-compat git bash openssl
 RUN npm install -g pnpm
+
+ENV PATH="/app/node_modules/.bin:/app/frontend/node_modules/.bin:$PATH"
+ENV NPM_CONFIG_PRODUCTION=false
+ENV YARN_PRODUCTION=false
+ENV NPM_CONFIG_LEGACY_PEER_DEPS=true
+ENV NODE_OPTIONS="--max-old-space-size=2048"
 
 # Copy all application files first so monorepos, subfolders, and scripts exist
 COPY . .
@@ -135,9 +141,6 @@ COPY . .
 ${workingDirInstruction}
 
 ${buildEnvDeclarations}
-
-# Ensure devDependencies are installed for build steps (Vite, TypeScript, Tailwind, etc.)
-ENV NPM_CONFIG_PRODUCTION=false
 
 # Install dependencies
 RUN ${installCmd}
@@ -155,10 +158,10 @@ RUN if [ ! -d "/app/${resolvedOutputPath}" ]; then \\
       done; \\
     fi && mkdir -p /app/${resolvedOutputPath}
 
-# Stage 2: Unified Static Nginx Server with SPA fallback
+# Stage 2: Unified Static Nginx Server with SPA fallback & gzip
 FROM nginx:alpine
 
-RUN echo 'server { listen 80; server_name _; root /usr/share/nginx/html; index index.html; location / { try_files $uri $uri/ /index.html; } location ~* \\.(?:css|js|mjs|svg|png|jpg|jpeg|gif|ico|woff|woff2|ttf|eot|wasm|json)$ { expires 1y; add_header Cache-Control "public, no-transform"; try_files $uri =404; } error_page 500 502 503 504 /50x.html; location = /50x.html { root /usr/share/nginx/html; } }' > /etc/nginx/conf.d/default.conf
+RUN echo 'server { listen 80; server_name _; root /usr/share/nginx/html; index index.html; gzip on; gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript image/svg+xml; location / { try_files $uri $uri/ /index.html; } location ~* \\.(?:css|js|mjs|svg|png|jpg|jpeg|gif|ico|woff|woff2|ttf|eot|wasm|json)$ { expires 1y; add_header Cache-Control "public, no-transform"; try_files $uri =404; } error_page 500 502 503 504 /50x.html; location = /50x.html { root /usr/share/nginx/html; } }' > /etc/nginx/conf.d/default.conf
 
 COPY --from=builder /app/${resolvedOutputPath}/ /usr/share/nginx/html/
 
