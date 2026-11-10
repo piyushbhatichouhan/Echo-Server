@@ -9,6 +9,10 @@ import {
   AlertTriangle,
   RotateCw,
   Sparkles,
+  Network,
+  Copy,
+  Check,
+  BookOpen,
 } from "lucide-react";
 
 import Button from "../../common/button/button";
@@ -16,6 +20,7 @@ import Card from "../../common/card/card";
 
 import EnvironmentItem from "./environmentItem";
 import BulkEnvModal from "./BulkEnvModal";
+import DeploymentGuideModal from "../guide/DeploymentGuideModal";
 
 import useEnvironment from "../../../hooks/useEnvironment";
 import { useState, useEffect } from "react";
@@ -24,6 +29,7 @@ import EnvironmentModal from "./EnvironmentModal";
 import { useToast } from "../../../context/ToastContext";
 import { redeployProject } from "../../../services/deployment.api";
 import { getExampleEnvironmentVariables } from "../../../services/environment.api";
+import { getOutboundIp } from "../../../services/system.api";
 
 export default function Environment({ projectId }) {
   const toast = useToast();
@@ -36,6 +42,33 @@ export default function Environment({ projectId }) {
   const [needsRedeploy, setNeedsRedeploy] = useState(false);
   const [redeploying, setRedeploying] = useState(false);
   const [exampleEnv, setExampleEnv] = useState(null);
+
+  const [outboundIp, setOutboundIp] = useState(null);
+  const [copiedIp, setCopiedIp] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
+  const [guideTab, setGuideTab] = useState("db");
+
+  useEffect(() => {
+    let mounted = true;
+    getOutboundIp()
+      .then((res) => {
+        if (mounted && res?.ip) {
+          setOutboundIp(res.ip);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const handleCopyIp = () => {
+    if (!outboundIp) return;
+    navigator.clipboard.writeText(outboundIp);
+    setCopiedIp(true);
+    toast.success("Copied to Clipboard", `Outbound IP ${outboundIp} copied.`);
+    setTimeout(() => setCopiedIp(false), 2000);
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -137,6 +170,45 @@ export default function Environment({ projectId }) {
         </div>
       </Card>
 
+      {outboundIp && (
+        <div className="eh-env-ip-banner">
+          <div className="eh-env-ip-left">
+            <div className="eh-env-ip-icon">
+              <Network size={18} />
+            </div>
+            <div className="eh-env-ip-text">
+              <div className="eh-env-ip-title">
+                <strong>Outbound Server IP:</strong>
+                <code className="eh-env-ip-code">{outboundIp}</code>
+                <button
+                  type="button"
+                  className="eh-env-ip-copy-btn"
+                  onClick={handleCopyIp}
+                  title="Copy IP for MongoDB Atlas / Supabase whitelist"
+                >
+                  {copiedIp ? <Check size={14} /> : <Copy size={14} />}
+                  <span>{copiedIp ? "Copied!" : "Copy IP"}</span>
+                </button>
+              </div>
+              <p className="eh-env-ip-desc">
+                External databases (MongoDB Atlas, Supabase, Neon, AWS RDS) require whitelisting this IP under their Network Access settings.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="eh-env-ip-guide-btn"
+            onClick={() => {
+              setGuideTab("db");
+              setGuideOpen(true);
+            }}
+          >
+            <BookOpen size={14} />
+            <span>DB Whitelist Guide</span>
+          </button>
+        </div>
+      )}
+
       {exampleEnv && (
         <div className="eh-env-example-banner">
           <div className="eh-env-example-left">
@@ -236,6 +308,12 @@ export default function Environment({ projectId }) {
         open={bulkModalOpen}
         onClose={() => setBulkModalOpen(false)}
         onImport={handleBulkImport}
+      />
+
+      <DeploymentGuideModal
+        isOpen={guideOpen}
+        onClose={() => setGuideOpen(false)}
+        initialTab={guideTab}
       />
     </div>
   );

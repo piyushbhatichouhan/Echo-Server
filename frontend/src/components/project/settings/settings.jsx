@@ -32,7 +32,9 @@ import {
   Cpu,
   Info,
   Layers,
+  BookOpen,
 } from "lucide-react";
+import DeploymentGuideModal from "../guide/DeploymentGuideModal";
 
 const FRAMEWORK_PRESETS = [
   {
@@ -195,6 +197,7 @@ export default function Settings({ projectId }) {
 
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
 
   const {
     publication,
@@ -435,6 +438,15 @@ export default function Settings({ projectId }) {
         </div>
 
         <div className="eh-settings-topbar-actions">
+          <Button
+            variant="secondary"
+            onClick={() => setGuideOpen(true)}
+            className="eh-guide-trigger-btn"
+          >
+            <BookOpen size={16} />
+            <span>Deployment Guide</span>
+          </Button>
+
           {activeTab === "build" && (
             <Button
               variant="primary"
@@ -918,6 +930,12 @@ export default function Settings({ projectId }) {
         onDelete={handleDeleteProject}
         onClose={() => setDeleteOpen(false)}
         project={project}
+      />
+
+      {/* Deployment Guide & IP Whitelisting Modal */}
+      <DeploymentGuideModal
+        isOpen={guideOpen}
+        onClose={() => setGuideOpen(false)}
       />
     </div>
   );
