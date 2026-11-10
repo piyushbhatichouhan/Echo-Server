@@ -25,16 +25,32 @@ export default function UploadDrawer({
   const errorCount = uploads.filter((u) => u.status === "error" || u.status === "cancelled").length;
 
   const allFinished = inProgressCount === 0;
+  const overallPercent =
+    totalCount > 0
+      ? Math.round(
+          uploads.reduce((acc, u) => acc + (u.progress || 0), 0) / totalCount
+        )
+      : 0;
 
   return createPortal(
     <div className={`upload-drawer-container ${minimized ? "minimized" : ""}`}>
       <div className="upload-drawer-header" onClick={() => setMinimized((m) => !m)}>
         <div className="upload-drawer-title">
-          <UploadCloud size={18} className="upload-drawer-icon" />
+          {allFinished ? (
+            errorCount > 0 ? (
+              <AlertCircle size={18} className="upload-drawer-icon status-error" />
+            ) : (
+              <CheckCircle2 size={18} className="upload-drawer-icon status-success" />
+            )
+          ) : (
+            <UploadCloud size={18} className="upload-drawer-icon pulse" />
+          )}
           <span>
             {allFinished
-              ? `Completed (${completedCount}/${totalCount})`
-              : `Uploading ${inProgressCount} file${inProgressCount === 1 ? "" : "s"}...`}
+              ? errorCount > 0
+                ? `Finished with errors (${completedCount}/${totalCount})`
+                : `Upload Complete (${completedCount}/${totalCount})`
+              : `Uploading ${inProgressCount} file${inProgressCount === 1 ? "" : "s"} (${overallPercent}%)`}
           </span>
         </div>
 
@@ -43,7 +59,7 @@ export default function UploadDrawer({
             type="button"
             className="drawer-icon-btn"
             onClick={() => setMinimized((m) => !m)}
-            title={minimized ? "Expand" : "Minimize"}
+            title={minimized ? "Expand details" : "Minimize"}
           >
             {minimized ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
           </button>
@@ -70,6 +86,15 @@ export default function UploadDrawer({
           )}
         </div>
       </div>
+
+      {!allFinished && (
+        <div className="upload-drawer-header-progress">
+          <div
+            className="upload-drawer-header-progress-fill"
+            style={{ width: `${Math.min(100, Math.max(0, overallPercent))}%` }}
+          />
+        </div>
+      )}
 
       {!minimized && (
         <div className="upload-drawer-list">

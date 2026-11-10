@@ -6,7 +6,7 @@ import FileBreadcrumbs from "../FileBreadcrumbs/FileBreadcrumbs";
 import FileViewer from "../fileviewer/FileViewer";
 import FileToolbar from "../FileToolBar/FileToolbar";
 import FolderTreeSidebar from "../FolderTreeSidebar";
-import UploadDrawer from "../UploadDrawer";
+import { useUpload } from "../../../context/UploadContext";
 import TrashModal from "../TrashModal";
 import FilePropertiesModal from "../FilePropertiesModal";
 import CrossTransferModal from "../CrossTransferModal";
@@ -30,9 +30,7 @@ export default function FileBrowser({ adapter, workspaceId, onStorageChange }) {
   const uploadFolderRef = useRef();
   const [saving, setSaving] = useState(false);
   const [clipboard, setClipboard] = useState(null);
-  const [uploadQueue, setUploadQueue] = useState([]);
-  const uploadAbortController = useRef(null);
-  const uploadCancelled = useRef(false);
+  const { startUpload, subscribeToUploads } = useUpload();
   const [selectedItems, setSelectedItems] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -369,115 +367,30 @@ export default function FileBrowser({ adapter, workspaceId, onStorageChange }) {
     return () => clearTimeout(timer);
   }, [isGlobalSearch, searchQuery, workspaceId]);
 
+  // Real-time listener: refresh file list when background uploads finish for this workspace
+  useEffect(() => {
+    if (!subscribeToUploads) return;
+    const unsubscribe = subscribeToUploads((event) => {
+      if (event.workspaceId === workspaceId && !event.cancelled) {
+        refresh();
+        onStorageChange?.();
+      }
+    });
+    return unsubscribe;
+  }, [workspaceId, subscribeToUploads, onStorageChange]);
+
   const uploadFiles = async (items) => {
     if (!items || items.length === 0) return;
-
-    uploadCancelled.current = false;
-    const controller = new AbortController();
-    uploadAbortController.current = controller;
-    const { signal } = controller;
-
-    const uploadItems = items.map((item) => {
-      const actualFile = item.file || item;
-      const sourceRelative =
-        item.relativePath || actualFile.webkitRelativePath || actualFile.name;
-      const relativePath = currentFolder
-        ? `${currentFolder}/${sourceRelative}`
-        : sourceRelative;
-
-      return {
-        item,
-        file: actualFile,
-        relativePath,
-      };
+    startUpload({
+      adapter,
+      workspaceId,
+      items,
+      currentFolder,
+      onComplete: () => {
+        refresh();
+      },
+      onStorageChange,
     });
-
-    const initialQueue = uploadItems.map((u, idx) => ({
-      id: `${idx}-${Date.now()}`,
-      name: u.file.name,
-      size: u.file.size,
-      progress: 0,
-      status: "pending",
-    }));
-    setUploadQueue(initialQueue);
-
-    try {
-      for (let i = 0; i < uploadItems.length; i++) {
-        if (signal.aborted || uploadCancelled.current) break;
-
-        const { file, relativePath } = uploadItems[i];
-
-        setUploadQueue((prev) =>
-          prev.map((q, idx) => (idx === i ? { ...q, status: "uploading", progress: 0 } : q)),
-        );
-
-        try {
-          await adapter.uploadFile(
-            workspaceId,
-            file,
-            relativePath,
-            ({ percentage }) => {
-              if (signal.aborted || uploadCancelled.current) return;
-              setUploadQueue((prev) =>
-                prev.map((q, idx) =>
-                  idx === i ? { ...q, progress: percentage || 0 } : q,
-                ),
-              );
-            },
-            signal,
-          );
-
-          setUploadQueue((prev) =>
-            prev.map((q, idx) =>
-              idx === i ? { ...q, status: "completed", progress: 100 } : q,
-            ),
-          );
-        } catch (error) {
-          if (
-            signal.aborted ||
-            uploadCancelled.current ||
-            error?.name === "CanceledError" ||
-            error?.code === "ERR_CANCELED"
-          ) {
-            break;
-          }
-
-          setUploadQueue((prev) =>
-            prev.map((q, idx) =>
-              idx === i
-                ? {
-                    ...q,
-                    status: "error",
-                    error: error.response?.data?.message || error.message || "Failed",
-                  }
-                : q,
-            ),
-          );
-        }
-      }
-
-      await refresh();
-      onStorageChange?.();
-    } finally {
-      if (uploadAbortController.current === controller) {
-        uploadAbortController.current = null;
-      }
-      uploadCancelled.current = false;
-    }
-  };
-
-  const cancelUpload = () => {
-    if (!uploadAbortController.current) return;
-    uploadCancelled.current = true;
-    uploadAbortController.current.abort();
-    setUploadQueue((prev) =>
-      prev.map((q) =>
-        q.status === "uploading" || q.status === "pending"
-          ? { ...q, status: "cancelled" }
-          : q,
-      ),
-    );
-    toast.info("Upload Cancelled", "The upload was cancelled.");
   };
 
   const handleUpload = (e) => {
@@ -778,13 +691,6 @@ export default function FileBrowser({ adapter, workspaceId, onStorageChange }) {
           </button>
         </div>
       )}
-
-      {/* Floating Upload Progress Drawer */}
-      <UploadDrawer
-        uploads={uploadQueue}
-        onCancelAll={cancelUpload}
-        onDismiss={() => setUploadQueue([])}
-      />
 
       {/* Modern Name Input Dialog (Folder, File, Zip Archive, Rename) */}
       <NamePromptModal
