@@ -49,12 +49,22 @@ async function prepare(context) {
 
   context.cwd = workspace.getProjectFilesDirectory(project.id);
 
+  const targetDir =
+    settings.working_directory && settings.working_directory !== "."
+      ? path.join(context.cwd, settings.working_directory)
+      : context.cwd;
+
   let hasPackageJson = false;
   try {
-    await fs.access(path.join(context.cwd, "package.json"));
+    await fs.access(path.join(targetDir, "package.json"));
     hasPackageJson = true;
   } catch {
-    hasPackageJson = false;
+    try {
+      await fs.access(path.join(context.cwd, "package.json"));
+      hasPackageJson = true;
+    } catch {
+      hasPackageJson = false;
+    }
   }
   context.hasPackageJson = hasPackageJson;
 
@@ -82,12 +92,13 @@ function generateDockerfile(context) {
   const output = rawOutput && rawOutput !== "." ? rawOutput : "dist";
 
   const hasBuildStep = Boolean(
-    (settings.build_command?.trim() || settings.install_command?.trim()) &&
+    settings.build_command?.trim() ||
+      settings.install_command?.trim() ||
       hasPackageJson,
   );
 
-  const envDeclarations = (environment || [])
-    .filter((e) => e && e.key)
+  const buildEnvDeclarations = (environment || [])
+    .filter((e) => e && e.key && e.key !== "NODE_ENV")
     .map((e) => {
       const sanitized = String(e.value ?? "").replace(/"/g, '\\"');
       return `ARG ${e.key}="${sanitized}"\nENV ${e.key}="${sanitized}"`;
@@ -104,6 +115,11 @@ function generateDockerfile(context) {
         ? `${settings.working_directory.replace(/^\/+/, "")}/${output}`
         : output;
 
+    const defaultInstall =
+      "if [ -f pnpm-lock.yaml ]; then pnpm install; elif [ -f yarn.lock ]; then yarn install; elif [ -f package.json ]; then npm install; fi";
+    const installCmd = settings.install_command?.trim() || defaultInstall;
+    const buildCmd = settings.build_command?.trim() || "npm run build";
+
     // Multi-stage isolated container build for SPAs (Vite, React, Vue, etc.)
     return `
 FROM node:22-alpine AS builder
@@ -118,18 +134,31 @@ COPY . .
 
 ${workingDirInstruction}
 
-${envDeclarations}
+${buildEnvDeclarations}
+
+# Ensure devDependencies are installed for build steps (Vite, TypeScript, Tailwind, etc.)
+ENV NPM_CONFIG_PRODUCTION=false
 
 # Install dependencies
-${settings.install_command?.trim() ? `RUN ${settings.install_command}` : "RUN npm install"}
+RUN ${installCmd}
 
 # Build static assets
-${settings.build_command?.trim() ? `RUN ${settings.build_command}` : "RUN npm run build"}
+RUN ${buildCmd}
+
+# Fallback check: if the configured output dir is missing, find where the build artifacts went
+RUN if [ ! -d "/app/${resolvedOutputPath}" ]; then \\
+      for candidate in dist build out .output/public public .; do \\
+        if [ -d "/app/$candidate" ] && [ "$candidate" != "." ]; then \\
+          cp -r "/app/$candidate" "/app/${resolvedOutputPath}"; \\
+          break; \\
+        fi; \\
+      done; \\
+    fi && mkdir -p /app/${resolvedOutputPath}
 
 # Stage 2: Unified Static Nginx Server with SPA fallback
 FROM nginx:alpine
 
-RUN echo 'server { listen 80; server_name _; root /usr/share/nginx/html; index index.html; location / { try_files $uri $uri/ /index.html; } error_page 500 502 503 504 /50x.html; location = /50x.html { root /usr/share/nginx/html; } }' > /etc/nginx/conf.d/default.conf
+RUN echo 'server { listen 80; server_name _; root /usr/share/nginx/html; index index.html; location / { try_files $uri $uri/ /index.html; } location ~* \\.(?:css|js|mjs|svg|png|jpg|jpeg|gif|ico|woff|woff2|ttf|eot|wasm|json)$ { expires 1y; add_header Cache-Control "public, no-transform"; try_files $uri =404; } error_page 500 502 503 504 /50x.html; location = /50x.html { root /usr/share/nginx/html; } }' > /etc/nginx/conf.d/default.conf
 
 COPY --from=builder /app/${resolvedOutputPath}/ /usr/share/nginx/html/
 
@@ -140,17 +169,22 @@ CMD ["nginx", "-g", "daemon off;"]
   }
 
   // Pure static site (HTML/CSS/JS directly without build tool)
-  let sourceDir = rawOutput && rawOutput !== "." ? `${rawOutput}/` : ".";
-  if (!hasPackageJson && rawOutput === "dist") {
-    sourceDir = ".";
+  let sourceDir = ".";
+  if (settings.working_directory && settings.working_directory !== ".") {
+    sourceDir = `${settings.working_directory.replace(/^\/+/, "")}`;
+    if (rawOutput && rawOutput !== "." && rawOutput !== "dist") {
+      sourceDir = `${sourceDir}/${rawOutput}`;
+    }
+  } else if (rawOutput && rawOutput !== "." && rawOutput !== "dist") {
+    sourceDir = rawOutput;
   }
 
   return `
 FROM nginx:alpine
 
-RUN echo 'server { listen 80; server_name _; root /usr/share/nginx/html; index index.html; location / { try_files $uri $uri/ /index.html; } }' > /etc/nginx/conf.d/default.conf
+RUN echo 'server { listen 80; server_name _; root /usr/share/nginx/html; index index.html; location / { try_files $uri $uri/ /index.html; } location ~* \\.(?:css|js|mjs|svg|png|jpg|jpeg|gif|ico|woff|woff2|ttf|eot|wasm|json)$ { expires 1y; add_header Cache-Control "public, no-transform"; try_files $uri =404; } }' > /etc/nginx/conf.d/default.conf
 
-COPY ${sourceDir} /usr/share/nginx/html/
+COPY ${sourceDir}/ /usr/share/nginx/html/
 
 EXPOSE 80
 

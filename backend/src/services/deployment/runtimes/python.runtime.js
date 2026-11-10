@@ -65,12 +65,33 @@ async function prepare(context) {
 }
 
 function generateDockerfile(context) {
-  const { settings } = context;
+  const { settings, environment } = context;
+
+  const envDeclarations = (environment || [])
+    .filter((e) => e && e.key)
+    .map((e) => {
+      const sanitized = String(e.value ?? "").replace(/"/g, '\\"');
+      return `ARG ${e.key}="${sanitized}"\nENV ${e.key}="${sanitized}"`;
+    })
+    .join("\n");
+
+  const workingDirInstruction =
+    settings.working_directory && settings.working_directory !== "."
+      ? `WORKDIR /app/${settings.working_directory.replace(/^\/+/, "")}`
+      : "";
+
+  const defaultStart = `if [ -f main.py ]; then python main.py; elif [ -f app.py ]; then python app.py; elif [ -f manage.py ]; then python manage.py runserver 0.0.0.0:${context.containerPort}; else python -m http.server ${context.containerPort}; fi`;
+  const startCmd = settings.start_command?.trim() || defaultStart;
+
+  const defaultInstall = `if [ -f requirements.txt ]; then pip install --no-cache-dir -r requirements.txt; elif [ -f pyproject.toml ]; then pip install --no-cache-dir .; fi`;
+  const installCmd = settings.install_command?.trim() || defaultInstall;
 
   return `
 FROM python:3.12-slim
 
 WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends build-essential gcc git curl && rm -rf /var/lib/apt/lists/*
 
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -80,16 +101,19 @@ ENV HOST=0.0.0.0
 # Copy all application files first so monorepos, subfolders, and scripts exist
 COPY . .
 
-${settings.working_directory && settings.working_directory !== "." ? `WORKDIR /app/${settings.working_directory.replace(/^\/+/, "")}` : ""}
+${workingDirInstruction}
+
+${envDeclarations}
 
 # Install dependencies
-${settings.install_command?.trim() ? `RUN ${settings.install_command}` : "RUN if [ -f requirements.txt ]; then pip install --no-cache-dir -r requirements.txt; fi"}
+RUN ${installCmd}
 
+# Optional build step (e.g. collectstatic for Django)
 ${settings.build_command?.trim() ? `RUN ${settings.build_command}` : ""}
 
 EXPOSE ${context.containerPort}
 
-CMD ["sh", "-c", "${settings.start_command}"]
+CMD ["sh", "-c", "${startCmd.replace(/"/g, '\\"')}"]
 `;
 }
 

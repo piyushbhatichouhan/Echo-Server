@@ -35,7 +35,8 @@ const prepareBuildContext = async (projectId, dockerfileContent) => {
 
   const dockerfilePath = path.join(buildPath, "Dockerfile");
 
-  await fs.writeFile(dockerfilePath, dockerfileContent);
+  const normalizedDockerfile = String(dockerfileContent || "").replace(/\r\n/g, "\n");
+  await fs.writeFile(dockerfilePath, normalizedDockerfile);
 
   return buildPath;
 };

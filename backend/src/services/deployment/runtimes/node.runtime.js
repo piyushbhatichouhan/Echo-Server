@@ -70,8 +70,13 @@ async function prepare(context) {
 function generateDockerfile(context) {
   const { settings, environment } = context;
 
-  const envDeclarations = (environment || [])
-    .filter((e) => e && e.key)
+  const userNodeEnv =
+    (environment || []).find((e) => e && e.key === "NODE_ENV")?.value ||
+    "production";
+
+  // Filter out NODE_ENV during build so npm/yarn/pnpm install devDependencies (vite, webpack, tailwind, etc.)
+  const buildEnvDeclarations = (environment || [])
+    .filter((e) => e && e.key && e.key !== "NODE_ENV")
     .map((e) => {
       const sanitized = String(e.value ?? "").replace(/"/g, '\\"');
       return `ARG ${e.key}="${sanitized}"\nENV ${e.key}="${sanitized}"`;
@@ -82,6 +87,14 @@ function generateDockerfile(context) {
     settings.working_directory && settings.working_directory !== "."
       ? `WORKDIR /app/${settings.working_directory.replace(/^\/+/, "")}`
       : "";
+
+  const defaultInstall =
+    "if [ -f pnpm-lock.yaml ]; then pnpm install; elif [ -f yarn.lock ]; then yarn install; elif [ -f package.json ]; then npm install; fi";
+  const installCmd = settings.install_command?.trim() || defaultInstall;
+
+  const defaultStart =
+    'if [ -f package.json ] && grep -q \'"start":\' package.json; then npm start; elif [ -f server.js ]; then node server.js; elif [ -f app.js ]; then node app.js; elif [ -f index.js ]; then node index.js; elif [ -f dist/index.js ]; then node dist/index.js; else npm start; fi';
+  const startCmd = settings.start_command?.trim() || defaultStart;
 
   return `
 FROM node:22-alpine
@@ -96,19 +109,23 @@ COPY . .
 
 ${workingDirInstruction}
 
-${envDeclarations}
+${buildEnvDeclarations}
+
+# Ensure devDependencies are installed for build steps (Vite, TypeScript, Tailwind, etc.)
+ENV NPM_CONFIG_PRODUCTION=false
 
 # Install dependencies
-${settings.install_command?.trim() ? `RUN ${settings.install_command}` : "RUN npm install"}
+RUN ${installCmd}
 
 # Build application
 ${settings.build_command?.trim() ? `RUN ${settings.build_command}` : ""}
 
-ENV NODE_ENV=production
+# Switch to production mode for application runtime
+ENV NODE_ENV="${userNodeEnv}"
 ENV PORT=${context.containerPort}
 EXPOSE ${context.containerPort}
 
-CMD ["sh", "-c", "${settings.start_command || 'npm start'}"]
+CMD ["sh", "-c", "${startCmd.replace(/"/g, '\\"')}"]
 `;
 }
 

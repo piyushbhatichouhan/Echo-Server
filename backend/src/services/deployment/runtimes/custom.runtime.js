@@ -54,9 +54,13 @@ async function prepare(context) {
   const version = `${Date.now()}`;
   context.version = version;
   context.imageName = `echoserver-custom-${project.id}:${version}`;
+  const exposedMatch = settings?.dockerfile?.match(/EXPOSE\s+(\d+)/i);
+  const detectedPort = exposedMatch ? parseInt(exposedMatch[1], 10) : null;
+
   context.containerPort =
     context.resolvedPort ||
     Number(settings?.port) ||
+    detectedPort ||
     module.exports.INTERNAL_PORT;
   context.containerName = context.infrastructure.container.getContainerName(
     project.id,
@@ -82,8 +86,7 @@ function generateDockerfile(context) {
 async function createDeployment(context) {
   const { project, settings } = context;
 
-  await context.infrastructure.deployment.stopPreviousDeployments(project.id);
-
+  // Blue/Green: Keep previous deployment running until new build is verified
   context.deployment = await context.infrastructure.deployment.create(
     project.id,
     context.imageName,
