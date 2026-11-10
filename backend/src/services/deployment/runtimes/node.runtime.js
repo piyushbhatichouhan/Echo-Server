@@ -89,7 +89,7 @@ FROM node:22-alpine
 WORKDIR /app
 
 RUN apk add --no-cache python3 make g++ libc6-compat git bash
-RUN npm install -g pnpm yarn
+RUN npm install -g pnpm
 
 # Copy all application files first so monorepos, subfolders, and scripts exist
 COPY . .
