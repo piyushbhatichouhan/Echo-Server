@@ -643,6 +643,19 @@ export default function Settings({ projectId }) {
             </div>
           </div>
 
+          {/* Full-Stack Monorepo Architecture Tip */}
+          <div className="eh-fullstack-tip-box">
+            <div className="eh-fullstack-tip-icon">
+              <Info size={18} />
+            </div>
+            <div className="eh-fullstack-tip-content">
+              <strong>Full-Stack Monorepo Architecture Tip:</strong>
+              <p>
+                When hosting both a backend (Node/Express) and a frontend (React/Vite) in the same project, configure your backend server to serve the compiled frontend static files in production (e.g., <code>app.use(express.static(path.join(__dirname, '../frontend/dist')))</code>). This allows your API and web interface to run seamlessly on a single port.
+              </p>
+            </div>
+          </div>
+
           {/* Paths & Directories Configuration */}
           <div className="eh-card">
             <div className="eh-card-header">

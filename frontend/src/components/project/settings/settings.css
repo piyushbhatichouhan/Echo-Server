@@ -535,6 +535,51 @@
   line-height: 1.45;
 }
 
+/* Full-Stack Architecture Tip */
+.eh-fullstack-tip-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 18px;
+  background: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.eh-fullstack-tip-icon {
+  color: #60a5fa;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.eh-fullstack-tip-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.eh-fullstack-tip-content strong {
+  font-size: 0.9rem;
+  color: #93c5fd;
+}
+
+.eh-fullstack-tip-content p {
+  margin: 0;
+  font-size: 0.84rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.eh-fullstack-tip-content code {
+  background: rgba(0, 0, 0, 0.35);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: Consolas, monospace;
+  color: #e2e8f0;
+  font-size: 0.8rem;
+}
+
 /* ==========================================================
    Forms & Inputs
    ========================================================== */

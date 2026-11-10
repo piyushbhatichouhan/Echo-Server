@@ -102,6 +102,12 @@ async function createDeployment(context) {
     context.deployment.id,
     "Preparing Deployment",
   );
+
+  if (context.preflightWarnings?.length > 0) {
+    for (const warn of context.preflightWarnings) {
+      await context.infrastructure.logger.info(context.deployment.id, warn);
+    }
+  }
 }
 
 async function install() {}
@@ -214,6 +220,15 @@ async function failDeployment(context, error) {
     context.deployment.id,
     error.message,
   );
+
+  const { explainError } = require("../errorExplainer.service");
+  const explanation = explainError(error.message);
+  if (explanation) {
+    await context.infrastructure.logger.warn(
+      context.deployment.id,
+      `💡 Recommendation: ${explanation.suggestion}`,
+    );
+  }
 
   await context.infrastructure.deployment.updateStatus(
     context.deployment.id,

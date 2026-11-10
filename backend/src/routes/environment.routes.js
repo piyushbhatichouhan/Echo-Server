@@ -17,6 +17,12 @@ router.get(
   environmentController.getVariables,
 );
 
+router.get(
+  "/projects/:id/environment/example",
+  authenticate,
+  environmentController.getExampleVariables,
+);
+
 router.post(
   "/projects/:id/environment",
   authenticate,

@@ -148,6 +148,55 @@
     background: #fbbf24;
 }
 
+.eh-env-example-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 18px;
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-radius: 12px;
+  flex-wrap: wrap;
+}
+
+.eh-env-example-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
+.eh-env-example-left strong {
+  color: #a5b4fc;
+  margin-right: 6px;
+}
+
+.eh-sparkle-icon {
+  color: #818cf8;
+  flex-shrink: 0;
+}
+
+.eh-env-import-example-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  background: #6366f1;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.eh-env-import-example-btn:hover {
+  background: #4f46e5;
+}
+
 @media (max-width: 640px) {
   .eh-environment-header {
     flex-direction: column;

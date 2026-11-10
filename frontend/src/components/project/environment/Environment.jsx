@@ -8,6 +8,7 @@ import {
   EyeOff,
   AlertTriangle,
   RotateCw,
+  Sparkles,
 } from "lucide-react";
 
 import Button from "../../common/button/button";
@@ -17,11 +18,12 @@ import EnvironmentItem from "./environmentItem";
 import BulkEnvModal from "./BulkEnvModal";
 
 import useEnvironment from "../../../hooks/useEnvironment";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import EnvironmentModal from "./EnvironmentModal";
 import { useToast } from "../../../context/ToastContext";
 import { redeployProject } from "../../../services/deployment.api";
+import { getExampleEnvironmentVariables } from "../../../services/environment.api";
 
 export default function Environment({ projectId }) {
   const toast = useToast();
@@ -33,6 +35,21 @@ export default function Environment({ projectId }) {
   const [showAllSecrets, setShowAllSecrets] = useState(false);
   const [needsRedeploy, setNeedsRedeploy] = useState(false);
   const [redeploying, setRedeploying] = useState(false);
+  const [exampleEnv, setExampleEnv] = useState(null);
+
+  useEffect(() => {
+    let mounted = true;
+    getExampleEnvironmentVariables(projectId)
+      .then((data) => {
+        if (mounted && data?.found) {
+          setExampleEnv(data);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      mounted = false;
+    };
+  }, [projectId]);
 
   const handleBulkImport = async (parsedList) => {
     let count = 0;
@@ -119,6 +136,27 @@ export default function Environment({ projectId }) {
           </div>
         </div>
       </Card>
+
+      {exampleEnv && (
+        <div className="eh-env-example-banner">
+          <div className="eh-env-example-left">
+            <Sparkles size={18} className="eh-sparkle-icon" />
+            <div>
+              <strong>Template Detected ({exampleEnv.source}):</strong>
+              <span>
+                Found {exampleEnv.variables.length} suggested environment variables.
+              </span>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="eh-env-import-example-btn"
+            onClick={() => handleBulkImport(exampleEnv.variables)}
+          >
+            Import from {exampleEnv.source}
+          </button>
+        </div>
+      )}
 
       {needsRedeploy && (
         <div className="eh-env-redeploy-banner">

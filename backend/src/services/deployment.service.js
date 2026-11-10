@@ -137,11 +137,16 @@ const deployProject = async (projectId, ownerId) => {
     ownerId,
   );
 
+  // Pre-flight check: validate directories, scripts, and commands before building
+  const { validatePreflight } = require("./deployment/preflightValidator.service");
+  const preflight = await validatePreflight(projectId, settings, userEnvironment);
+
   const deploymentContext = buildExecutionContext(
     project,
     settings,
     userEnvironment,
   );
+  deploymentContext.preflightWarnings = preflight.warnings;
 
   const runtime = runtimeResolver.getRuntimeHandler(settings.runtime);
 

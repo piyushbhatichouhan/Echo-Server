@@ -21,6 +21,7 @@ import {
   Activity,
   Wifi,
   WifiOff,
+  Sparkles,
 } from "lucide-react";
 
 export default function LogsCard({
@@ -69,6 +70,92 @@ export default function LogsCard({
       warnCount: warnings,
     };
   }, [logs]);
+
+  const recommendation = useMemo(() => {
+    if (status?.state !== "failed") return null;
+
+    const recentLogs = logs.slice(-35).map((l) => l.message || "").join("\n");
+    if (!recentLogs) return null;
+
+    if (/sh:\s*([a-zA-Z0-9_\-]+):\s*not found/i.test(recentLogs)) {
+      const match = recentLogs.match(/sh:\s*([a-zA-Z0-9_\-]+):\s*not found/i);
+      return {
+        title: `Build Tool Missing: "${match[1]}"`,
+        desc: `The build step failed because '${match[1]}' is not installed in the container environment.`,
+        action: `Ensure '${match[1]}' is listed under 'dependencies' or 'devDependencies' in your package.json, or prefix the command with 'npx' (e.g., 'npx ${match[1]} build').`,
+      };
+    }
+
+    if (/Missing script:\s*"([^"]+)"/i.test(recentLogs)) {
+      const match = recentLogs.match(/Missing script:\s*"([^"]+)"/i);
+      return {
+        title: `Missing Script in package.json: "${match[1]}"`,
+        desc: `NPM tried to execute "npm run ${match[1]}", but no "${match[1]}" script exists in package.json.`,
+        action: `Check the "scripts" section in your package.json. If your build script is named differently (e.g. "build:prod"), update the Build Command in Project Settings.`,
+      };
+    }
+
+    if (/Cannot find module\s*['"]([^'"]+)['"]/i.test(recentLogs)) {
+      const match = recentLogs.match(/Cannot find module\s*['"]([^'"]+)['"]/i);
+      return {
+        title: `Missing Dependency: "${match[1]}"`,
+        desc: `Node.js could not load the module '${match[1]}'.`,
+        action: `Add '${match[1]}' to your dependencies in package.json and commit your updated lockfile.`,
+      };
+    }
+
+    if (/ModuleNotFoundError:\s*No module named\s*['"]([^'"]+)['"]/i.test(recentLogs)) {
+      const match = recentLogs.match(/ModuleNotFoundError:\s*No module named\s*['"]([^'"]+)['"]/i);
+      return {
+        title: `Missing Python Package: "${match[1]}"`,
+        desc: `Python could not find the module '${match[1]}'.`,
+        action: `Add '${match[1]}' to your requirements.txt or pyproject.toml file.`,
+      };
+    }
+
+    if (/EADDRINUSE/i.test(recentLogs)) {
+      return {
+        title: "Port Conflict (EADDRINUSE)",
+        desc: "The application attempted to bind to a port that is already in use.",
+        action: "Make sure your application reads process.env.PORT instead of hardcoding a fixed port number like 3000 or 5000.",
+      };
+    }
+
+    if (/Mongo(Server|Network|Connection)?Error|MongooseServerSelectionError|ECONNREFUSED\s+(127\.0\.0\.1|localhost):27017/i.test(recentLogs)) {
+      return {
+        title: "Database Connection Failed (MongoDB)",
+        desc: "Could not connect to MongoDB at localhost / 127.0.0.1.",
+        action: "Inside Docker containers, 'localhost' refers to the container itself. Set a MONGODB_URI environment variable in Environment Variables pointing to your cloud database (e.g. MongoDB Atlas).",
+      };
+    }
+
+    if (/SequelizeConnectionError|ECONNREFUSED\s+(127\.0\.0\.1|localhost):5432/i.test(recentLogs)) {
+      return {
+        title: "Database Connection Failed (PostgreSQL)",
+        desc: "Could not connect to PostgreSQL at localhost:5432.",
+        action: "Set your DATABASE_URL environment variable to point to your cloud PostgreSQL database in Environment Variables.",
+      };
+    }
+
+    if (/did not respond to HTTP probe on port (\d+)/i.test(recentLogs)) {
+      const match = recentLogs.match(/did not respond to HTTP probe on port (\d+)/i);
+      return {
+        title: `Health Check Timeout on Port ${match[1]}`,
+        desc: `The container started, but nothing answered HTTP probes on port ${match[1]}.`,
+        action: `Ensure your web server binds to host '0.0.0.0' (not '127.0.0.1') and listens on process.env.PORT. Check logs for startup errors.`,
+      };
+    }
+
+    if (/index\.html was not found/i.test(recentLogs)) {
+      return {
+        title: "Static Build Output Missing index.html",
+        desc: "Static assets were built, but no index.html was found in the output directory.",
+        action: "Check your framework's build output folder (e.g. 'dist', 'build', 'out') and ensure Output Directory in Project Settings matches it.",
+      };
+    }
+
+    return null;
+  }, [logs, status?.state]);
 
   // Filtered logs based on active tab and search query
   const filteredLogs = useMemo(() => {
@@ -161,6 +248,21 @@ export default function LogsCard({
       <div className="eh-logs-card">
         {/* Pipeline Stepper */}
         <DeploymentStepper status={status} logs={logs} />
+
+        {/* Actionable Failure Recommendation */}
+        {recommendation && (
+          <div className="eh-actionable-recommendation">
+            <div className="eh-rec-header">
+              <Sparkles size={16} className="eh-rec-icon" />
+              <h4>{recommendation.title}</h4>
+            </div>
+            <p className="eh-rec-desc">{recommendation.desc}</p>
+            <div className="eh-rec-action">
+              <strong>Actionable Suggestion:</strong>
+              <span>{recommendation.action}</span>
+            </div>
+          </div>
+        )}
 
         {/* Card Header */}
         <div className="eh-logs-header">

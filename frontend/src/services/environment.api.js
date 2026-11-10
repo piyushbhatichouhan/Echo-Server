@@ -31,3 +31,8 @@ export const deleteEnvironmentVariable = async (projectId, variableId) => {
 
   return res.data.data;
 };
+
+export const getExampleEnvironmentVariables = async (projectId) => {
+  const res = await api.get(`/projects/${projectId}/environment/example`);
+  return res.data.data;
+};
