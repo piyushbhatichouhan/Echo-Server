@@ -48,7 +48,11 @@ const runCommand = (
       }
     });
 
-    child.on("error", reject);
+    child.on("error", (err) => {
+      err.status = err.status || 400;
+      err.isUserError = true;
+      reject(err);
+    });
 
     child.on("close", (code) => {
       if (code === 0) {
@@ -58,7 +62,10 @@ const runCommand = (
           stderr,
         });
       } else {
-        reject(new Error(stderr || `Command exited with code ${code}`));
+        const error = new Error(stderr || `Command exited with code ${code}`);
+        error.status = 400;
+        error.isUserError = true;
+        reject(error);
       }
     });
   });

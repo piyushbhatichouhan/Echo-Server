@@ -1,5 +1,19 @@
 const deploymentService = require("../services/deployment.service");
 
+const normalizeDeploymentError = (error) => {
+  if (!error) return error;
+  // Preserve circuit breaker capacity statuses (503 memory low, 507 disk low)
+  if (error.status === 503 || error.status === 507) {
+    return error;
+  }
+  // All other deployment/build/runtime errors are user application issues
+  if (!error.status || error.status >= 500) {
+    error.status = 400;
+  }
+  error.isUserError = true;
+  return error;
+};
+
 const deployProject = async (req, res, next) => {
   try {
     const deployment = await deploymentService.deployProject(
@@ -12,7 +26,7 @@ const deployProject = async (req, res, next) => {
       data: deployment,
     });
   } catch (error) {
-    next(error);
+    next(normalizeDeploymentError(error));
   }
 };
 
@@ -25,7 +39,7 @@ const startProject = async (req, res, next) => {
 
     res.json(result);
   } catch (error) {
-    next(error);
+    next(normalizeDeploymentError(error));
   }
 };
 
@@ -38,7 +52,7 @@ const stopProject = async (req, res, next) => {
 
     res.json(result);
   } catch (error) {
-    next(error);
+    next(normalizeDeploymentError(error));
   }
 };
 
@@ -51,7 +65,7 @@ const restartProject = async (req, res, next) => {
 
     res.json(result);
   } catch (error) {
-    next(error);
+    next(normalizeDeploymentError(error));
   }
 };
 
@@ -64,7 +78,7 @@ const redeployProject = async (req, res, next) => {
 
     res.json(deployment);
   } catch (error) {
-    next(error);
+    next(normalizeDeploymentError(error));
   }
 };
 

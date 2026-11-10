@@ -236,7 +236,10 @@ const deleteProjectRecord = async (projectId) => {
   );
 
   if (result.rows.length === 0) {
-    throw new Error("Project not found");
+    const error = new Error("Project not found");
+    error.status = 404;
+    error.isUserError = true;
+    throw error;
   }
 
   return result.rows[0];

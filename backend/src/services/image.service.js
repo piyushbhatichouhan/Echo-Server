@@ -45,11 +45,13 @@ const buildImage = async (projectId, settings, log, version = null) => {
       try {
         if (typeof stream.destroy === "function") stream.destroy();
       } catch {}
-      reject(
-        new Error(
-          `Docker build timed out after ${Math.round(BUILD_TIMEOUT_MS / 1000)} seconds`,
-        ),
+      const timeoutErr = new Error(
+        `Docker build timed out after ${Math.round(BUILD_TIMEOUT_MS / 1000)} seconds`,
       );
+      timeoutErr.status = 408;
+      timeoutErr.isUserError = true;
+      timeoutErr.isBuildError = true;
+      reject(timeoutErr);
     }, BUILD_TIMEOUT_MS);
 
     docker.modem.followProgress(
@@ -61,13 +63,20 @@ const buildImage = async (projectId, settings, log, version = null) => {
         clearTimeout(timer);
 
         if (err) {
+          err.status = err.status || 400;
+          err.isUserError = true;
+          err.isBuildError = true;
           return reject(err);
         }
 
         const buildError = output.find((event) => event.error);
 
         if (buildError) {
-          return reject(new Error(buildError.error));
+          const bErr = new Error(buildError.error);
+          bErr.status = 400;
+          bErr.isUserError = true;
+          bErr.isBuildError = true;
+          return reject(bErr);
         }
 
         resolve(output);

@@ -19,6 +19,20 @@ const gitOperations = require("../git/git.service");
 const gitClient = require("../git/git.client");
 const storageAllocation = require("./storageAllocation.service");
 
+const notConnectedError = () => {
+  const err = new Error("Repository not connected");
+  err.status = 404;
+  err.isUserError = true;
+  return err;
+};
+
+const invalidUrlError = () => {
+  const err = new Error("Invalid GitHub repository URL");
+  err.status = 400;
+  err.isUserError = true;
+  return err;
+};
+
 const checkGit = async (projectId, stage) => {
   const gitDir = path.join(getProjectGitDirectory(projectId), ".git");
 
@@ -61,7 +75,7 @@ const validateRepository = async (projectId, ownerId, url, branch, token = null)
   const match = url.match(/^https:\/\/github\.com\/([^/]+)\/([^/]+?)(\.git)?$/);
 
   if (!match) {
-    throw new Error("Invalid GitHub repository URL");
+    throw invalidUrlError();
   }
 
   const owner = match[1];
@@ -105,7 +119,7 @@ const connectRepository = async (projectId, ownerId, repositoryUrl, branch, toke
   );
 
   if (!match) {
-    throw new Error("Invalid GitHub repository URL");
+    throw invalidUrlError();
   }
 
   const owner = match[1];
@@ -259,7 +273,7 @@ const cloneRepository = async (projectId, ownerId) => {
   );
 
   if (result.rows.length === 0) {
-    throw new Error("Repository not connected");
+    throw notConnectedError();
   }
 
   const repository = result.rows[0];
@@ -490,7 +504,7 @@ const commitChanges = async (projectId, ownerId, message) => {
 
   const repository = await getRepository(projectId, ownerId);
   if (!repository) {
-    throw new Error("Repository not connected");
+    throw notConnectedError();
   }
 
   const gitDirectory = getProjectGitDirectory(projectId);
@@ -512,7 +526,7 @@ const pullRepository = async (projectId, ownerId) => {
 
   const repository = await getRepository(projectId, ownerId);
   if (!repository) {
-    throw new Error("Repository not connected");
+    throw notConnectedError();
   }
 
   const gitDirectory = getProjectGitDirectory(projectId);
@@ -543,7 +557,7 @@ const pushRepository = async (projectId, ownerId) => {
 
   const repository = await getRepository(projectId, ownerId);
   if (!repository) {
-    throw new Error("Repository not connected");
+    throw notConnectedError();
   }
 
   const gitDirectory = getProjectGitDirectory(projectId);
@@ -570,7 +584,7 @@ const fetchRepository = async (projectId, ownerId) => {
 
   const repository = await getRepository(projectId, ownerId);
   if (!repository) {
-    throw new Error("Repository not connected");
+    throw notConnectedError();
   }
 
   const gitDirectory = getProjectGitDirectory(projectId);
@@ -602,7 +616,7 @@ const updateRepository = async (projectId, ownerId) => {
   const repository = await getRepository(projectId, ownerId);
 
   if (!repository) {
-    throw new Error("Repository not connected");
+    throw notConnectedError();
   }
 
   const gitDirectory = getProjectGitDirectory(projectId);
@@ -686,7 +700,7 @@ const switchBranch = async (projectId, ownerId, branch) => {
 
   const repository = await getRepository(projectId, ownerId);
   if (!repository) {
-    throw new Error("Repository not connected");
+    throw notConnectedError();
   }
 
   const gitDirectory = getProjectGitDirectory(projectId);

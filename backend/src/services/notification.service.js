@@ -702,6 +702,100 @@ ${dashboardUrl}
 // -------------------------------------------------------------
 
 /**
+ * Determines whether an error is a user project error, deployment failure,
+ * user Dockerfile/application bug, or client error, which should NOT trigger
+ * platform infrastructure alerts to the Super Admin.
+ */
+const isUserOrDeploymentError = (error, source = "", req = null) => {
+  if (error?.isUserError || error?.userFacing || error?.isBuildError) {
+    return true;
+  }
+
+  const rawStatus = Number(error?.status || req?.statusCode);
+  if (rawStatus >= 400 && rawStatus < 500) {
+    return true;
+  }
+
+  const rawUrl = req?.originalUrl || req?.url || "";
+  const isUserProjectRoute =
+    rawUrl.includes("/api/projects/") ||
+    rawUrl.includes("/api/deployments") ||
+    rawUrl.includes("/api/git");
+
+  const msg = String(error?.message || error || "").toLowerCase();
+  const src = String(source || "").toLowerCase();
+
+  if (
+    src.includes("deploy") ||
+    src.includes("build") ||
+    src.includes("git")
+  ) {
+    if (!msg.includes("docker daemon") && !msg.includes("econnrefused")) {
+      return true;
+    }
+  }
+
+  const userErrorKeywords = [
+    "returned a non-zero code",
+    "copy failed",
+    "file not found in build context",
+    "file does not exist",
+    "no such file or directory",
+    "no dockerfile",
+    "dockerfile not found",
+    "failed to solve with frontend",
+    "failed to compute cache key",
+    "docker build timed out",
+    "exited prematurely",
+    "did not respond to http probe",
+    "simple-git",
+    "repository not connected",
+    "invalid github repository",
+    "not a git repository",
+    "merge conflict",
+    "git clone",
+    "git pull",
+    "git push",
+    "authentication failed",
+    "could not read username",
+    "remote branch",
+    "npm err!",
+    "yarn error",
+    "pnpm",
+    "corepack",
+    "command not found",
+    ": not found",
+    "modulenotfounderror",
+    "cannot find module",
+    "syntaxerror",
+    "pip install",
+    "requirements.txt",
+    "working directory",
+    "target deployment not found",
+    "project not found",
+  ];
+
+  if (userErrorKeywords.some((keyword) => msg.includes(keyword))) {
+    return true;
+  }
+
+  if (isUserProjectRoute) {
+    const isInfrastructureError =
+      msg.includes("econnrefused") ||
+      msg.includes("connect enoent") ||
+      msg.includes("docker daemon") ||
+      rawStatus === 503 ||
+      rawStatus === 507;
+
+    if (!isInfrastructureError) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
+/**
  * Sends an email notification to the Super Admin whenever a critical error occurs on the server.
  */
 const notifyCriticalError = async ({
@@ -711,6 +805,15 @@ const notifyCriticalError = async ({
   context = null,
 }) => {
   const errObj = error instanceof Error ? error : new Error(String(error || "Unknown Error"));
+
+  // Never send infrastructure alert emails for user application or deployment failures
+  if (isUserOrDeploymentError(errObj, source, req)) {
+    console.log(
+      `[Notification] Suppressed critical alert email: Not a platform infrastructure failure ("${errObj.message}" | Source: ${source})`,
+    );
+    return { ok: false, ignored: true, reason: "USER_PROJECT_ERROR" };
+  }
+
   const signature = computeErrorSignature(errObj, source);
 
   const check = shouldAlertError(signature);

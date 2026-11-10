@@ -33,6 +33,9 @@ async function deploy(context) {
 
     return context.deployment;
   } catch (error) {
+    if (!error.status) error.status = 400;
+    error.isUserError = true;
+
     await failDeployment(context, error);
 
     throw error;
@@ -287,7 +290,10 @@ async function start(context) {
     (await context.infrastructure.deployment.getLatestDeployment(project.id));
 
   if (!deployment) {
-    throw new Error("No deployment found.");
+    const error = new Error("No deployment found.");
+    error.status = 404;
+    error.isUserError = true;
+    throw error;
   }
 
   // Ensure deployment has an allocated, valid host port
@@ -392,9 +398,12 @@ async function healthCheck(context) {
   } else {
     const status = await context.infrastructure.container.getStatus(project.id);
     if (!status.running) {
-      throw new Error(
+      const error = new Error(
         `Application container exited prematurely (Exit code: ${status.exitCode}). Check logs for details.`,
       );
+      error.status = 400;
+      error.isUserError = true;
+      throw error;
     }
 
     await context.infrastructure.logger.warn(
@@ -411,7 +420,10 @@ async function stop(context) {
     await context.infrastructure.deployment.getLatestDeployment(project.id);
 
   if (!deployment) {
-    throw new Error("No deployment found.");
+    const error = new Error("No deployment found.");
+    error.status = 404;
+    error.isUserError = true;
+    throw error;
   }
 
   await context.infrastructure.logger.stage(
@@ -441,7 +453,10 @@ async function restart(context) {
     await context.infrastructure.deployment.getLatestDeployment(project.id);
 
   if (!deployment) {
-    throw new Error("No deployment found.");
+    const error = new Error("No deployment found.");
+    error.status = 404;
+    error.isUserError = true;
+    throw error;
   }
 
   // If container doesn't exist or is not running or has no port, start freshly

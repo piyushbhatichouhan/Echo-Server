@@ -1,6 +1,15 @@
 const gitService = require("../services/git.service");
 const { syncWorkspaceToGit } = require("../services/workspace.sync.service");
 
+const normalizeGitError = (err) => {
+  if (!err) return err;
+  if (!err.status || err.status >= 500) {
+    err.status = 400;
+  }
+  err.isUserError = true;
+  return err;
+};
+
 const getProjectRepository = async (req, res, next) => {
   try {
     const projectId = req.params.id || req.params.projectId;
@@ -11,7 +20,7 @@ const getProjectRepository = async (req, res, next) => {
       data: repository,
     });
   } catch (error) {
-    next(error);
+    next(normalizeGitError(error));
   }
 };
 
@@ -32,7 +41,7 @@ const validateProjectRepository = async (req, res, next) => {
       data: result,
     });
   } catch (error) {
-    next(error);
+    next(normalizeGitError(error));
   }
 };
 
@@ -53,7 +62,7 @@ const connectProjectRepository = async (req, res, next) => {
       data: repository,
     });
   } catch (error) {
-    next(error);
+    next(normalizeGitError(error));
   }
 };
 
@@ -66,7 +75,7 @@ const disconnectProjectRepository = async (req, res, next) => {
       success: true,
     });
   } catch (error) {
-    next(error);
+    next(normalizeGitError(error));
   }
 };
 
@@ -79,7 +88,7 @@ const cloneProjectRepository = async (req, res, next) => {
       success: true,
     });
   } catch (err) {
-    next(err);
+    next(normalizeGitError(err));
   }
 };
 
@@ -93,7 +102,7 @@ const getProjectGitStatus = async (req, res, next) => {
       data: status,
     });
   } catch (error) {
-    next(error);
+    next(normalizeGitError(error));
   }
 };
 
@@ -105,6 +114,7 @@ const commitProjectChanges = async (req, res, next) => {
     if (!message || !message.trim()) {
       const error = new Error("Commit message is required");
       error.status = 400;
+      error.isUserError = true;
       throw error;
     }
 
@@ -122,7 +132,7 @@ const commitProjectChanges = async (req, res, next) => {
       data: result,
     });
   } catch (error) {
-    next(error);
+    next(normalizeGitError(error));
   }
 };
 
@@ -136,7 +146,7 @@ const pullRepositoryController = async (req, res, next) => {
 
     res.json(result);
   } catch (err) {
-    next(err);
+    next(normalizeGitError(err));
   }
 };
 
@@ -150,7 +160,7 @@ const pushRepositoryController = async (req, res, next) => {
 
     res.json(result);
   } catch (err) {
-    next(err);
+    next(normalizeGitError(err));
   }
 };
 
@@ -164,7 +174,7 @@ const fetchRepositoryController = async (req, res, next) => {
 
     res.json(result);
   } catch (err) {
-    next(err);
+    next(normalizeGitError(err));
   }
 };
 
@@ -179,7 +189,7 @@ const getProjectCommitsController = async (req, res, next) => {
       data: commits,
     });
   } catch (err) {
-    next(err);
+    next(normalizeGitError(err));
   }
 };
 
@@ -193,7 +203,7 @@ const getProjectBranchesController = async (req, res, next) => {
       data: branches,
     });
   } catch (err) {
-    next(err);
+    next(normalizeGitError(err));
   }
 };
 
@@ -204,6 +214,7 @@ const switchProjectBranchController = async (req, res, next) => {
     if (!branch) {
       const error = new Error("Branch name is required");
       error.status = 400;
+      error.isUserError = true;
       throw error;
     }
 
@@ -214,7 +225,7 @@ const switchProjectBranchController = async (req, res, next) => {
       data: result,
     });
   } catch (err) {
-    next(err);
+    next(normalizeGitError(err));
   }
 };
 
@@ -229,7 +240,7 @@ const getProjectDiffController = async (req, res, next) => {
       data: diff,
     });
   } catch (err) {
-    next(err);
+    next(normalizeGitError(err));
   }
 };
 
