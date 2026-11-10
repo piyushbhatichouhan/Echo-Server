@@ -95,24 +95,35 @@ function generateDockerfile(context) {
     .join("\n");
 
   if (hasBuildStep) {
+    const workingDirInstruction =
+      settings.working_directory && settings.working_directory !== "."
+        ? `WORKDIR /app/${settings.working_directory.replace(/^\/+/, "")}`
+        : "";
+    const resolvedOutputPath =
+      settings.working_directory && settings.working_directory !== "."
+        ? `${settings.working_directory.replace(/^\/+/, "")}/${output}`
+        : output;
+
     // Multi-stage isolated container build for SPAs (Vite, React, Vue, etc.)
     return `
 FROM node:22-alpine AS builder
 
 WORKDIR /app
 
-RUN apk add --no-cache python3 make g++ libc6-compat
+RUN apk add --no-cache python3 make g++ libc6-compat git bash
+RUN npm install -g pnpm yarn
 
-# Copy dependency manifests
-COPY package*.json yarn.lock* pnpm-lock.yaml* bun.lockb* ./
-
-${settings.install_command?.trim() ? `RUN ${settings.install_command}` : "RUN npm install"}
-
-# Copy source
+# Copy all application files first so monorepos, subfolders, and scripts exist
 COPY . .
+
+${workingDirInstruction}
 
 ${envDeclarations}
 
+# Install dependencies
+${settings.install_command?.trim() ? `RUN ${settings.install_command}` : "RUN npm install"}
+
+# Build static assets
 ${settings.build_command?.trim() ? `RUN ${settings.build_command}` : "RUN npm run build"}
 
 # Stage 2: Unified Static Nginx Server with SPA fallback
@@ -120,7 +131,7 @@ FROM nginx:alpine
 
 RUN echo 'server { listen 80; server_name _; root /usr/share/nginx/html; index index.html; location / { try_files $uri $uri/ /index.html; } error_page 500 502 503 504 /50x.html; location = /50x.html { root /usr/share/nginx/html; } }' > /etc/nginx/conf.d/default.conf
 
-COPY --from=builder /app/${output}/ /usr/share/nginx/html/
+COPY --from=builder /app/${resolvedOutputPath}/ /usr/share/nginx/html/
 
 EXPOSE 80
 

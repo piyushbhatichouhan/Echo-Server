@@ -120,6 +120,13 @@ const updateProjectSettings = async (projectId, ownerId, settings = {}) => {
     ],
   );
 
+  if (runtime) {
+    try {
+      const projectService = require("./project.service");
+      await projectService.updateApplicationType(projectId, runtime);
+    } catch (_) {}
+  }
+
   return result.rows[0];
 };
 

@@ -34,6 +34,153 @@ import {
   Layers,
 } from "lucide-react";
 
+const FRAMEWORK_PRESETS = [
+  {
+    id: "mern-monorepo",
+    title: "Full-Stack Monorepo (Node.js + React/Vite/MERN)",
+    icon: "⚡",
+    runtime: "node",
+    working_directory: ".",
+    install_command: "npm run install:all",
+    build_command: "npm run build",
+    start_command: "npm start",
+    output_directory: ".",
+    description: "Monorepo with root package.json and backend + frontend folders.",
+  },
+  {
+    id: "node-server",
+    title: "Node.js Server (Express / Fastify / NestJS)",
+    icon: "🟢",
+    runtime: "node",
+    working_directory: ".",
+    install_command: "npm install",
+    build_command: "",
+    start_command: "npm start",
+    output_directory: ".",
+    description: "Standard Node.js backend server application.",
+  },
+  {
+    id: "nextjs",
+    title: "Next.js (SSR / Hybrid)",
+    icon: "▲",
+    runtime: "node",
+    working_directory: ".",
+    install_command: "npm install",
+    build_command: "npx next build",
+    start_command: "npx next start",
+    output_directory: ".next",
+    description: "Next.js full-stack framework with server-side rendering.",
+  },
+  {
+    id: "vite",
+    title: "Vite (React / Vue / Svelte / SPA)",
+    icon: "⚡",
+    runtime: "static",
+    working_directory: ".",
+    install_command: "npm install",
+    build_command: "npx vite build",
+    start_command: "",
+    output_directory: "dist",
+    description: "Single Page Application compiled to static assets served by Nginx.",
+  },
+  {
+    id: "cra",
+    title: "Create React App (CRA)",
+    icon: "⚛️",
+    runtime: "static",
+    working_directory: ".",
+    install_command: "npm install",
+    build_command: "npm run build",
+    start_command: "",
+    output_directory: "build",
+    description: "React SPA with static build directory.",
+  },
+  {
+    id: "nuxt",
+    title: "Nuxt.js",
+    icon: "💚",
+    runtime: "node",
+    working_directory: ".",
+    install_command: "npm install",
+    build_command: "npx nuxt build",
+    start_command: "node .output/server/index.mjs",
+    output_directory: ".output",
+    description: "Vue.js server-rendered application.",
+  },
+  {
+    id: "astro",
+    title: "Astro",
+    icon: "🚀",
+    runtime: "static",
+    working_directory: ".",
+    install_command: "npm install",
+    build_command: "npx astro build",
+    start_command: "",
+    output_directory: "dist",
+    description: "Content-focused static site framework.",
+  },
+  {
+    id: "fastapi",
+    title: "Python - FastAPI",
+    icon: "⚡",
+    runtime: "python",
+    working_directory: ".",
+    install_command: "pip install -r requirements.txt",
+    build_command: "",
+    start_command: "uvicorn main:app --host 0.0.0.0 --port 8000",
+    output_directory: ".",
+    description: "FastAPI modern Python async API.",
+  },
+  {
+    id: "django",
+    title: "Python - Django",
+    icon: "🐍",
+    runtime: "python",
+    working_directory: ".",
+    install_command: "pip install -r requirements.txt",
+    build_command: "python manage.py collectstatic --noinput",
+    start_command: "python manage.py runserver 0.0.0.0:8000",
+    output_directory: ".",
+    description: "Django web framework with manage.py entrypoint.",
+  },
+  {
+    id: "python-generic",
+    title: "Python - Flask / Generic",
+    icon: "🐍",
+    runtime: "python",
+    working_directory: ".",
+    install_command: "pip install -r requirements.txt",
+    build_command: "",
+    start_command: "python app.py",
+    output_directory: ".",
+    description: "Standard Python application with app.py or main.py.",
+  },
+  {
+    id: "static-html",
+    title: "Static Website (HTML/CSS/JS)",
+    icon: "🌐",
+    runtime: "static",
+    working_directory: ".",
+    install_command: "",
+    build_command: "",
+    start_command: "",
+    output_directory: ".",
+    description: "Pure static files served directly by high-performance Nginx.",
+  },
+  {
+    id: "dockerfile",
+    title: "Custom Dockerfile",
+    icon: "⚙️",
+    runtime: "custom",
+    working_directory: ".",
+    install_command: "",
+    build_command: "",
+    start_command: "",
+    output_directory: ".",
+    description: "Custom multi-stage or tailored Dockerfile defined by developer.",
+  },
+];
+
 export default function Settings({ projectId }) {
   const { project, settings, loading, save } = useProjectSettings(projectId);
   const toast = useToast();
@@ -104,6 +251,26 @@ export default function Settings({ projectId }) {
     } finally {
       setApplyingPreset(false);
     }
+  };
+
+  const handleSelectPreset = (presetId) => {
+    const preset = FRAMEWORK_PRESETS.find((p) => p.id === presetId);
+    if (!preset) return;
+
+    setForm((prev) => ({
+      ...prev,
+      runtime: preset.runtime,
+      working_directory: preset.working_directory || ".",
+      install_command: preset.install_command ?? "",
+      build_command: preset.build_command ?? "",
+      start_command: preset.start_command ?? "",
+      output_directory: preset.output_directory || ".",
+    }));
+
+    toast.info(
+      "Preset Selected",
+      `Switched to ${preset.title} preset. Click "Save Changes" to save.`,
+    );
   };
 
   const handlePublish = async (options = {}) => {
@@ -212,12 +379,13 @@ export default function Settings({ projectId }) {
   };
 
   const getRuntimeInfo = () => {
-    switch (project.application_type) {
+    const curRuntime = form?.runtime || project?.application_type;
+    switch (curRuntime) {
       case "node":
         return {
           icon: "🟢",
           name: "Node.js Application",
-          description: "Runs Node.js, Express, Fastify, Next.js, or Nuxt with npm runtime.",
+          description: "Runs Node.js, Express, Fastify, Next.js, or MERN monorepos with npm/yarn/pnpm runtime.",
           defaultPort: "3000",
         };
       case "python":
@@ -244,7 +412,7 @@ export default function Settings({ projectId }) {
       default:
         return {
           icon: "📦",
-          name: project.application_type?.toUpperCase() || "Application",
+          name: (curRuntime || "Application").toUpperCase(),
           description: "Containerized project execution environment.",
           defaultPort: "3000",
         };
@@ -341,6 +509,33 @@ export default function Settings({ projectId }) {
               </button>
             </div>
 
+            {/* Manual Preset Picker Row */}
+            <div className="eh-preset-selector-row">
+              <div className="eh-preset-selector-info">
+                <span className="eh-preset-selector-title">Framework Presets:</span>
+                <span className="eh-preset-selector-desc">Quickly apply configurations or switch between framework types.</span>
+              </div>
+              <div className="eh-preset-selector-control">
+                <select
+                  className="eh-select"
+                  defaultValue=""
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      handleSelectPreset(e.target.value);
+                      e.target.value = "";
+                    }
+                  }}
+                >
+                  <option value="" disabled>Choose Framework Preset...</option>
+                  {FRAMEWORK_PRESETS.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.icon} {p.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
             {/* Detection Result Dropdown Banner */}
             {detectionResult && (
               <div className="eh-detected-banner">
@@ -421,7 +616,22 @@ export default function Settings({ projectId }) {
                 <Cpu size={18} className="eh-header-icon" />
                 <h3>Active Runtime</h3>
               </div>
-              <span className="eh-port-badge">Default Port: {runtimeInfo.defaultPort}</span>
+              <div className="eh-runtime-header-right">
+                <div className="eh-runtime-switcher">
+                  <span className="eh-runtime-switcher-label">Engine:</span>
+                  <select
+                    className="eh-select eh-select-compact"
+                    value={form.runtime || "node"}
+                    onChange={(e) => update("runtime", e.target.value)}
+                  >
+                    <option value="node">Node.js (npm / yarn / pnpm)</option>
+                    <option value="static">Static Web (SPA / Nginx)</option>
+                    <option value="python">Python (WSGI / ASGI)</option>
+                    <option value="custom">Custom Dockerfile</option>
+                  </select>
+                </div>
+                <span className="eh-port-badge">Default Port: {runtimeInfo.defaultPort}</span>
+              </div>
             </div>
 
             <div className="eh-runtime-body">

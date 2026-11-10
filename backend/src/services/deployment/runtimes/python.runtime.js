@@ -77,12 +77,13 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PORT=${context.containerPort}
 ENV HOST=0.0.0.0
 
-# Install dependencies first for optimal Docker layer caching
-COPY requirements*.txt ./
-RUN if [ -f requirements.txt ]; then pip install --no-cache-dir -r requirements.txt; fi
-
-# Copy application source code
+# Copy all application files first so monorepos, subfolders, and scripts exist
 COPY . .
+
+${settings.working_directory && settings.working_directory !== "." ? `WORKDIR /app/${settings.working_directory.replace(/^\/+/, "")}` : ""}
+
+# Install dependencies
+${settings.install_command?.trim() ? `RUN ${settings.install_command}` : "RUN if [ -f requirements.txt ]; then pip install --no-cache-dir -r requirements.txt; fi"}
 
 ${settings.build_command?.trim() ? `RUN ${settings.build_command}` : ""}
 

@@ -78,23 +78,30 @@ function generateDockerfile(context) {
     })
     .join("\n");
 
+  const workingDirInstruction =
+    settings.working_directory && settings.working_directory !== "."
+      ? `WORKDIR /app/${settings.working_directory.replace(/^\/+/, "")}`
+      : "";
+
   return `
 FROM node:22-alpine
 
 WORKDIR /app
 
-RUN apk add --no-cache python3 make g++ libc6-compat
+RUN apk add --no-cache python3 make g++ libc6-compat git bash
+RUN npm install -g pnpm yarn
 
-# Copy dependency manifests first
-COPY package*.json yarn.lock* pnpm-lock.yaml* bun.lockb* ./
-
-${settings.install_command?.trim() ? `RUN ${settings.install_command}` : "RUN npm install"}
-
-# Copy application source
+# Copy all application files first so monorepos, subfolders, and scripts exist
 COPY . .
+
+${workingDirInstruction}
 
 ${envDeclarations}
 
+# Install dependencies
+${settings.install_command?.trim() ? `RUN ${settings.install_command}` : "RUN npm install"}
+
+# Build application
 ${settings.build_command?.trim() ? `RUN ${settings.build_command}` : ""}
 
 ENV NODE_ENV=production
