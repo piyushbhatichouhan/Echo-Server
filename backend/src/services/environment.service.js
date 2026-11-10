@@ -55,7 +55,7 @@ const deleteEnvironmentVariable = async (projectId, variableId, ownerId) => {
 
 const fs = require("fs/promises");
 const path = require("path");
-const workspace = require("./workspace.service");
+const workspace = require("./workspace/workspace.service");
 
 const getExampleEnvironmentVariables = async (projectId, ownerId) => {
   await projectService.verifyProjectOwnership(projectId, ownerId);

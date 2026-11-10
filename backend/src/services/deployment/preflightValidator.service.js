@@ -1,6 +1,6 @@
 const fs = require("fs/promises");
 const path = require("path");
-const workspace = require("../workspace.service");
+const workspace = require("../workspace/workspace.service");
 
 /**
  * Pre-Flight Validator Service

@@ -73,6 +73,7 @@ const getStorageRoot = () => STORAGE_ROOT;
 module.exports = {
   getProjectPath,
   getFilesPath,
+  getProjectFilesDirectory: getFilesPath,
   getBuildPath,
   getRuntimePath,
   getLogsPath,
