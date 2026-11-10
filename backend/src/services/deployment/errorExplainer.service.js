@@ -45,19 +45,43 @@ const EXPLAINERS = [
     }),
   },
   {
-    regex: /Mongo(Server|Network|Connection)?Error|MongooseServerSelectionError|ECONNREFUSED\s+(127\.0\.0\.1|localhost):27017/i,
+    regex: /Mongo(Server|Network|Connection)?Error|MongooseServerSelectionError|Could not connect to any servers in your MongoDB Atlas cluster|ECONNREFUSED\s+(127\.0\.0\.1|localhost):27017/i,
     explain: () => ({
       title: "Database Connection Failed (MongoDB)",
-      message: "Could not connect to MongoDB at localhost / 127.0.0.1.",
-      suggestion: "Inside Docker, 'localhost' refers to the container itself, not your host machine or cloud database. Set a MONGODB_URI environment variable pointing to your cloud database (e.g. MongoDB Atlas) in Project Settings → Environment Variables.",
+      message: "Could not connect to MongoDB cluster or localhost:27017.",
+      suggestion: "1) Whitelist this server's Outbound IP in MongoDB Atlas (Network Access → Add IP Address). 2) Ensure MONGODB_URI is configured in Environment Variables. 3) If your password has special characters (@, #, %), percent-encode them.",
     }),
   },
   {
-    regex: /SequelizeConnectionError|ECONNREFUSED\s+(127\.0\.0\.1|localhost):5432/i,
+    regex: /SequelizeConnectionError|PrismaClientInitializationError.*5432|no pg_hba\.conf entry|password authentication failed for user|ECONNREFUSED\s+(127\.0\.0\.1|localhost):5432|SSL connection is required/i,
     explain: () => ({
       title: "Database Connection Failed (PostgreSQL)",
-      message: "Could not connect to PostgreSQL at localhost:5432.",
-      suggestion: "Inside a container, 'localhost' is isolated. Set your DATABASE_URL environment variable to point to a managed cloud database.",
+      message: "Could not connect to PostgreSQL database.",
+      suggestion: "1) Whitelist this server's Outbound IP in Supabase, Neon, or AWS RDS. 2) Append '?sslmode=require' to your DATABASE_URL. 3) For Supabase, use port 6543 (transaction pooler) to prevent connection limits. 4) Do not use localhost inside Docker.",
+    }),
+  },
+  {
+    regex: /ER_ACCESS_DENIED_ERROR|ER_HOST_NOT_PRIVILEGED|PROTOCOL_CONNECTION_LOST|ECONNREFUSED\s+(127\.0\.0\.1|localhost):3306/i,
+    explain: () => ({
+      title: "Database Connection Failed (MySQL / MariaDB)",
+      message: "Could not connect to MySQL server.",
+      suggestion: "1) Whitelist this server's Outbound IP on port 3306 in your cloud security groups. 2) Ensure the MySQL user has privileges granted for '%' or this server's IP, not just 'localhost'. 3) Enable SSL for cloud MySQL providers (PlanetScale, Aiven).",
+    }),
+  },
+  {
+    regex: /ECONNREFUSED\s+(127\.0\.0\.1|localhost):6379|NOAUTH\s+Authentication\s+required|WRONGPASS|MaxRetriesPerRequestError/i,
+    explain: () => ({
+      title: "Cache / Database Connection Failed (Redis)",
+      message: "Could not connect or authenticate to Redis.",
+      suggestion: "1) Inside Docker, 'localhost' is isolated. Set REDIS_URL to your cloud Redis (Upstash, Redis Cloud). 2) Cloud Redis requires TLS: use 'rediss://' (with double 's'). 3) Verify your password or token in Environment Variables.",
+    }),
+  },
+  {
+    regex: /FirebaseAppError|credential-error|Could not load the default credentials|Invalid PEM formatted message|Failed to parse private key/i,
+    explain: () => ({
+      title: "Firebase Admin Initialization Failed",
+      message: "Could not load or parse Firebase service account credentials.",
+      suggestion: "1) Configure FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY in Environment Variables. 2) In Node.js, replace literal '\\n' characters: process.env.FIREBASE_PRIVATE_KEY.replace(/\\\\n/g, '\\n'). 3) Never commit serviceAccountKey.json to git.",
     }),
   },
   {

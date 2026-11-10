@@ -38,8 +38,8 @@ const validatePreflight = async (projectId, settings, userEnvironment = []) => {
   }
 
   // 3. Node.js & Static Script Validation
+  let pkgJson = null;
   if (settings.runtime === "node" || settings.runtime === "static") {
-    let pkgJson = null;
     try {
       const pkgRaw = await fs.readFile(path.join(workingDirPath, "package.json"), "utf8");
       pkgJson = JSON.parse(pkgRaw);
@@ -117,6 +117,56 @@ const validatePreflight = async (projectId, settings, userEnvironment = []) => {
       } catch {}
     }
   } catch {}
+
+  // 5. Database Connection String & Localhost Detection
+  const existingEnv = userEnvironment || [];
+  const existingKeys = new Set(existingEnv.map((e) => e.key));
+  const dbKeyRegex = /(MONGO|DATABASE_URL|POSTGRES|MYSQL|REDIS)/i;
+
+  for (const envVar of existingEnv) {
+    if (dbKeyRegex.test(envVar.key)) {
+      const val = (envVar.value || "").trim().toLowerCase();
+      if (val.includes("localhost") || val.includes("127.0.0.1")) {
+        warnings.push(
+          `⚠️ Notice: "${envVar.key}" points to localhost (${envVar.value}). Inside Docker, "localhost" refers to the container itself. Use a remote or cloud database URI (e.g. MongoDB Atlas, Supabase, Neon).`
+        );
+      }
+    }
+  }
+
+  // 6. Proactive Database Driver Detection
+  if (pkgJson) {
+    const allDeps = {
+      ...(pkgJson.dependencies || {}),
+      ...(pkgJson.devDependencies || {}),
+    };
+
+    if ((allDeps["mongoose"] || allDeps["mongodb"]) && !existingKeys.has("MONGODB_URI") && !existingKeys.has("MONGO_URI")) {
+      warnings.push(
+        "💡 Notice: MongoDB driver (mongoose/mongodb) detected in package.json. Ensure MONGODB_URI is set in Environment Variables."
+      );
+    }
+    if ((allDeps["pg"] || allDeps["@prisma/client"]) && !existingKeys.has("DATABASE_URL") && !existingKeys.has("POSTGRES_URL")) {
+      warnings.push(
+        "💡 Notice: PostgreSQL driver (pg/prisma) detected in package.json. Ensure DATABASE_URL is set in Environment Variables."
+      );
+    }
+    if (allDeps["mysql2"] && !existingKeys.has("DATABASE_URL") && !existingKeys.has("MYSQL_HOST")) {
+      warnings.push(
+        "💡 Notice: MySQL driver (mysql2) detected in package.json. Ensure DATABASE_URL or MySQL credentials are set in Environment Variables."
+      );
+    }
+    if (allDeps["ioredis"] && !existingKeys.has("REDIS_URL")) {
+      warnings.push(
+        "💡 Notice: Redis client (ioredis) detected in package.json. Ensure REDIS_URL is set in Environment Variables."
+      );
+    }
+    if (allDeps["firebase-admin"] && !existingKeys.has("FIREBASE_PROJECT_ID") && !existingKeys.has("FIREBASE_SERVICE_ACCOUNT")) {
+      warnings.push(
+        "💡 Notice: Firebase Admin SDK detected in package.json. Ensure FIREBASE_PROJECT_ID or credentials are set in Environment Variables."
+      );
+    }
+  }
 
   return {
     valid: true,

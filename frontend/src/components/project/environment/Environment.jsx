@@ -13,6 +13,7 @@ import {
   Copy,
   Check,
   BookOpen,
+  Database,
 } from "lucide-react";
 
 import Button from "../../common/button/button";
@@ -20,6 +21,7 @@ import Card from "../../common/card/card";
 
 import EnvironmentItem from "./environmentItem";
 import BulkEnvModal from "./BulkEnvModal";
+import DatabasePresetModal from "./DatabasePresetModal";
 import DeploymentGuideModal from "../guide/DeploymentGuideModal";
 
 import useEnvironment from "../../../hooks/useEnvironment";
@@ -47,6 +49,7 @@ export default function Environment({ projectId }) {
   const [copiedIp, setCopiedIp] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
   const [guideTab, setGuideTab] = useState("db");
+  const [dbPresetModalOpen, setDbPresetModalOpen] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -146,6 +149,14 @@ export default function Environment({ projectId }) {
               onClick={handleExportEnv}
             >
               Export .env
+            </Button>
+
+            <Button
+              variant="secondary"
+              icon={Database}
+              onClick={() => setDbPresetModalOpen(true)}
+            >
+              DB Presets
             </Button>
 
             <Button
@@ -308,6 +319,16 @@ export default function Environment({ projectId }) {
         open={bulkModalOpen}
         onClose={() => setBulkModalOpen(false)}
         onImport={handleBulkImport}
+      />
+
+      <DatabasePresetModal
+        open={dbPresetModalOpen}
+        onClose={() => setDbPresetModalOpen(false)}
+        onApply={handleBulkImport}
+        onOpenGuide={(dbId) => {
+          setGuideTab(dbId);
+          setGuideOpen(true);
+        }}
       />
 
       <DeploymentGuideModal
