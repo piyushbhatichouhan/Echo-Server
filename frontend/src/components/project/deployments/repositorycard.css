@@ -324,6 +324,16 @@
     align-items: center;
 }
 
+.eh-commits-count-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 12px;
+    background: rgba(59, 130, 246, 0.12);
+    border: 1px solid rgba(59, 130, 246, 0.25);
+    color: #60a5fa;
+}
+
 .eh-commits-title {
     display: flex;
     align-items: flex-start;

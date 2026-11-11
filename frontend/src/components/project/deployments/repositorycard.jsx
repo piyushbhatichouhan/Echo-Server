@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import "./repositorycard.css";
 import Button from "../../common/button/button";
 import RepositoryInfoCard from "../repository/info/RepositoryInfoCard";
@@ -27,6 +27,7 @@ import {
   fetchRepository,
   getCommits,
   getBranches,
+  switchBranch,
 } from "../../../services/git.api";
 
 export default function RepositoryCard({
@@ -43,6 +44,7 @@ export default function RepositoryCard({
   const [connecting, setConnecting] = useState(false);
   const [cloning, setCloning] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
+  const [switchingBranch, setSwitchingBranch] = useState(false);
   const [validation, setValidation] = useState(null);
   const [commitMessage, setCommitMessage] = useState("");
   const [committing, setCommitting] = useState(false);
@@ -56,43 +58,289 @@ export default function RepositoryCard({
 
   const toast = useToast();
 
-  const loadGitExtras = async () => {
-    if (!repository) return;
+  const loadGitExtras = useCallback(async () => {
+    if (!repository || !projectId) return;
     try {
       setLoadingCommits(true);
       const [commitsRes, branchesRes] = await Promise.allSettled([
-        getCommits(projectId, 8),
+        getCommits(projectId, 15),
         getBranches(projectId),
       ]);
+
       if (commitsRes.status === "fulfilled" && Array.isArray(commitsRes.value)) {
         setCommits(commitsRes.value);
+      } else {
+        setCommits([]);
       }
+
       if (branchesRes.status === "fulfilled" && branchesRes.value?.all) {
         setAvailableBranches(branchesRes.value.all);
       }
     } catch (e) {
-      // ignore
+      console.warn("[RepositoryCard] loadGitExtras failed:", e.message);
     } finally {
       setLoadingCommits(false);
     }
-  };
+  }, [projectId, repository]);
 
   useEffect(() => {
     if (repository) {
       setRepositoryUrl(repository.repository_url || "");
       setBranch(repository.branch || "main");
       loadGitExtras();
+    } else {
+      setCommits([]);
+      setAvailableBranches([]);
+      setValidation(null);
     }
-  }, [repository]);
+  }, [repository, loadGitExtras]);
 
-  const canCommit = gitStatus && !gitStatus.clean;
-  const canPush = gitStatus && gitStatus.ahead > 0;
+  const canCommit = Boolean(gitStatus && !gitStatus.clean);
+  const canPush = Boolean(gitStatus && gitStatus.ahead > 0);
 
   const handleCopyHash = (hash) => {
+    if (!hash) return;
     navigator.clipboard.writeText(hash);
     setCopiedHash(hash);
     setTimeout(() => setCopiedHash(null), 2000);
   };
+
+  const handleValidate = async () => {
+    try {
+      setValidating(true);
+      const result = await validateRepository(
+        projectId,
+        repositoryUrl,
+        branch,
+        token,
+      );
+      setValidation(result);
+
+      if (result.branches && result.branches.length > 0) {
+        setAvailableBranches(result.branches);
+      }
+      if (result.branch) {
+        setBranch(result.branch);
+      } else if (result.defaultBranch) {
+        setBranch(result.defaultBranch);
+      }
+
+      toast.success(
+        "Repository Validated",
+        `Validated ${result.owner}/${result.name} (Default: ${result.defaultBranch})`,
+      );
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message ??
+          error.message ??
+          "Validation failed",
+      );
+    } finally {
+      setValidating(false);
+    }
+  };
+
+  const handleConnect = async () => {
+    try {
+      setConnecting(true);
+      await connectRepository(
+        projectId,
+        repositoryUrl,
+        branch,
+        token,
+      );
+
+      // Automatically clone & sync workspace on initial connection
+      try {
+        await cloneRepository(projectId);
+      } catch (cloneErr) {
+        console.warn("[Initial Clone Notice]:", cloneErr.message);
+      }
+
+      await refresh();
+      if (refreshStatus) await refreshStatus();
+      await loadGitExtras();
+
+      toast.success(
+        "Repository Connected & Synchronized",
+        "Repository connected and workspace files synchronized.",
+      );
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message ??
+          error.message ??
+          "Connection failed",
+      );
+    } finally {
+      setConnecting(false);
+    }
+  };
+
+  const handleClone = async () => {
+    try {
+      setCloning(true);
+      await cloneRepository(projectId);
+      await refresh();
+      if (refreshStatus) await refreshStatus();
+      await loadGitExtras();
+      toast.success(
+        "Repository Cloned",
+        "Workspace synchronized with repository.",
+      );
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message ??
+          error.message ??
+          "Clone failed",
+      );
+    } finally {
+      setCloning(false);
+    }
+  };
+
+  const handleDisconnect = async () => {
+    try {
+      setDisconnecting(true);
+      await disconnectRepository(projectId);
+      setValidation(null);
+      setCommits([]);
+      setAvailableBranches([]);
+      await refresh();
+      if (refreshStatus) await refreshStatus();
+      toast.success(
+        "Repository Disconnected",
+        "Project unlinked from GitHub repository.",
+      );
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message ??
+          error.message ??
+          "Disconnect failed",
+      );
+    } finally {
+      setDisconnecting(false);
+    }
+  };
+
+  const handleSwitchBranch = async (newBranch) => {
+    if (!newBranch || newBranch === branch) return;
+    try {
+      setSwitchingBranch(true);
+      await switchBranch(projectId, newBranch);
+      setBranch(newBranch);
+      await refresh();
+      if (refreshStatus) await refreshStatus();
+      await loadGitExtras();
+      toast.success(
+        "Branch Switched",
+        `Active branch switched to "${newBranch}". Workspace synchronized.`,
+      );
+    } catch (err) {
+      toast.error(
+        "Branch Switch Failed",
+        err.response?.data?.message || err.message,
+      );
+    } finally {
+      setSwitchingBranch(false);
+    }
+  };
+
+  const handleCommit = async () => {
+    if (!canCommit) {
+      toast.info("Nothing to Commit", "Working directory is already clean.");
+      return;
+    }
+
+    if (!commitMessage.trim()) {
+      toast.error("Commit Message Required", "Please enter a commit message.");
+      return;
+    }
+
+    try {
+      setCommitting(true);
+      await commitChanges(projectId, commitMessage);
+      setCommitMessage("");
+      if (refreshStatus) await refreshStatus();
+      await loadGitExtras();
+      toast.success("Commit Created", "Changes committed to local branch.");
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message ??
+          error.message ??
+          "Commit failed",
+      );
+    } finally {
+      setCommitting(false);
+    }
+  };
+
+  const handlePull = async () => {
+    try {
+      setPulling(true);
+      await pullRepository(projectId);
+      await refresh();
+      if (refreshStatus) await refreshStatus();
+      await loadGitExtras();
+      toast.success("Repository Pulled", "Latest changes downloaded.");
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message ??
+          error.message ??
+          "Pull failed",
+      );
+    } finally {
+      setPulling(false);
+    }
+  };
+
+  const handlePush = async () => {
+    if (!canPush) {
+      toast.info(
+        "Nothing to Push",
+        "All local commits are already on GitHub.",
+      );
+      return;
+    }
+
+    try {
+      setPushing(true);
+      await pushRepository(projectId);
+      if (refreshStatus) await refreshStatus();
+      await loadGitExtras();
+      toast.success("Repository Pushed", "Changes uploaded to GitHub.");
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message ??
+          error.message ??
+          "Push failed",
+      );
+    } finally {
+      setPushing(false);
+    }
+  };
+
+  const handleFetch = async () => {
+    try {
+      setFetching(true);
+      await fetchRepository(projectId);
+      if (refreshStatus) await refreshStatus();
+      await loadGitExtras();
+      toast.success(
+        "Repository Fetched",
+        "Fetched latest remote branch information.",
+      );
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message ??
+          error.message ??
+          "Fetch failed",
+      );
+    } finally {
+      setFetching(false);
+    }
+  };
+
+  const safeCommits = Array.isArray(commits) ? commits : [];
 
   return (
     <div className="eh-repository-page">
@@ -110,97 +358,13 @@ export default function RepositoryCard({
           connecting={connecting}
           cloning={cloning}
           disconnecting={disconnecting}
+          switchingBranch={switchingBranch}
           availableBranches={availableBranches}
-          onValidate={async () => {
-            try {
-              setValidating(true);
-              const result = await validateRepository(
-                projectId,
-                repositoryUrl,
-                branch,
-                token,
-              );
-              setValidation(result);
-              toast.success(
-                "Repository Validated",
-                "Repository validation successful.",
-              );
-            } catch (error) {
-              toast.error(
-                error.response?.data?.message ??
-                  error.message ??
-                  "Validation failed",
-              );
-            } finally {
-              setValidating(false);
-            }
-          }}
-          onConnect={async () => {
-            try {
-              setConnecting(true);
-              await connectRepository(
-                projectId,
-                repositoryUrl,
-                branch,
-                token,
-              );
-              await refresh();
-              toast.success(
-                "Repository Connected",
-                "Repository connected successfully.",
-              );
-            } catch (error) {
-              toast.error(
-                error.response?.data?.message ??
-                  error.message ??
-                  "Connection failed",
-              );
-            } finally {
-              setConnecting(false);
-            }
-          }}
-          onClone={async () => {
-            try {
-              setCloning(true);
-              await cloneRepository(projectId);
-              await refresh();
-              await loadGitExtras();
-              toast.success(
-                "Repository Cloned",
-                "Workspace synchronized with repository.",
-              );
-            } catch (error) {
-              toast.error(
-                error.response?.data?.message ??
-                  error.message ??
-                  "Clone failed",
-              );
-            } finally {
-              setCloning(false);
-            }
-          }}
-          onDisconnect={async () => {
-            try {
-              setDisconnecting(true);
-              await disconnectRepository(projectId);
-              setValidation(null);
-              setCommits([]);
-              setAvailableBranches([]);
-              await refresh();
-              toast.success(
-                "Repository Disconnected",
-                "Project unlinked from GitHub repository.",
-              );
-            } catch (error) {
-              toast.error(
-                error.response?.data?.message ??
-                  error.message ??
-                  "Disconnect failed",
-              );
-            } finally {
-              setDisconnecting(false);
-            }
-          }}
+          onValidate={handleValidate}
+          onConnect={handleConnect}
+          onClone={handleClone}
+          onDisconnect={handleDisconnect}
+          onSwitchBranch={handleSwitchBranch}
         />
 
         <RepositoryInfoCard validation={validation} repository={repository} />
@@ -215,95 +379,13 @@ export default function RepositoryCard({
         commitMessage={commitMessage}
         setCommitMessage={setCommitMessage}
         committing={committing}
-        onCommit={async () => {
-          if (!canCommit) {
-            toast.info("Nothing to Commit", "There are no modified files.");
-            return;
-          }
-
-          try {
-            setCommitting(true);
-            await commitChanges(projectId, commitMessage);
-            setCommitMessage("");
-            await refreshStatus();
-            await loadGitExtras();
-            toast.success("Commit Created", "Changes committed to local branch.");
-          } catch (error) {
-            toast.error(
-              error.response?.data?.message ??
-                error.message ??
-                "Commit failed",
-            );
-          } finally {
-            setCommitting(false);
-          }
-        }}
+        onCommit={handleCommit}
         pulling={pulling}
         pushing={pushing}
         fetching={fetching}
-        onPull={async () => {
-          try {
-            setPulling(true);
-            await pullRepository(projectId);
-            await refresh();
-            await refreshStatus();
-            await loadGitExtras();
-            toast.success("Repository Pulled", "Latest changes downloaded.");
-          } catch (error) {
-            toast.error(
-              error.response?.data?.message ??
-                error.message ??
-                "Pull failed",
-            );
-          } finally {
-            setPulling(false);
-          }
-        }}
-        onPush={async () => {
-          if (!canPush) {
-            toast.info(
-              "Nothing to Push",
-              "All local commits are already on GitHub.",
-            );
-            return;
-          }
-
-          try {
-            setPushing(true);
-            await pushRepository(projectId);
-            await refreshStatus();
-            await loadGitExtras();
-            toast.success("Repository Pushed", "Changes uploaded to GitHub.");
-          } catch (error) {
-            toast.error(
-              error.response?.data?.message ??
-                error.message ??
-                "Push failed",
-            );
-          } finally {
-            setPushing(false);
-          }
-        }}
-        onFetch={async () => {
-          try {
-            setFetching(true);
-            await fetchRepository(projectId);
-            await refreshStatus();
-            await loadGitExtras();
-            toast.success(
-              "Repository Fetched",
-              "Fetched latest remote branch information.",
-            );
-          } catch (error) {
-            toast.error(
-              error.response?.data?.message ??
-                error.message ??
-                "Fetch failed",
-            );
-          } finally {
-            setFetching(false);
-          }
-        }}
+        onPull={handlePull}
+        onPush={handlePush}
+        onFetch={handleFetch}
       />
 
       {/* Recent Commits List */}
@@ -314,55 +396,79 @@ export default function RepositoryCard({
               <History size={20} />
               <div>
                 <h2>Recent Commits</h2>
-                <p>Latest version control history on active branch.</p>
+                <p>
+                  Latest version control history on active branch (
+                  <code>{branch || repository.branch || "main"}</code>).
+                </p>
               </div>
             </div>
+            {safeCommits.length > 0 && (
+              <span className="eh-commits-count-badge">
+                {safeCommits.length}{" "}
+                {safeCommits.length === 1 ? "commit" : "commits"}
+              </span>
+            )}
           </div>
 
           <div className="eh-commits-body">
             {loadingCommits ? (
               <div className="eh-commits-empty">Loading commit history...</div>
-            ) : commits.length === 0 ? (
+            ) : safeCommits.length === 0 ? (
               <div className="eh-commits-empty">
-                No commit history recorded yet.
+                No commit history recorded yet. Commits will appear here once
+                files are committed or synchronized.
               </div>
             ) : (
               <div className="eh-commits-list">
-                {commits.map((c) => (
-                  <div key={c.hash} className="eh-commit-item">
-                    <div className="eh-commit-item-left">
-                      <GitCommit size={16} className="eh-commit-icon" />
-                      <div className="eh-commit-info">
-                        <span className="eh-commit-msg">{c.message}</span>
-                        <div className="eh-commit-meta">
-                          <span className="eh-commit-author">
-                            <User size={12} /> {c.author_name}
+                {safeCommits.map((c, idx) => {
+                  const hash = c?.hash || "";
+                  const shortHash =
+                    c?.shortHash ||
+                    (hash ? hash.slice(0, 7) : `commit-${idx}`);
+                  const formattedDate =
+                    c?.date && !isNaN(new Date(c.date).getTime())
+                      ? new Date(c.date).toLocaleString()
+                      : c?.date || "Recently";
+
+                  return (
+                    <div key={hash || idx} className="eh-commit-item">
+                      <div className="eh-commit-item-left">
+                        <GitCommit size={16} className="eh-commit-icon" />
+                        <div className="eh-commit-info">
+                          <span className="eh-commit-msg">
+                            {c?.message || "No commit message"}
                           </span>
-                          <span className="eh-commit-date">
-                            <Calendar size={12} />{" "}
-                            {c.date ? new Date(c.date).toLocaleString() : ""}
-                          </span>
+                          <div className="eh-commit-meta">
+                            <span className="eh-commit-author">
+                              <User size={12} /> {c?.author_name || "Author"}
+                            </span>
+                            <span className="eh-commit-date">
+                              <Calendar size={12} /> {formattedDate}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    <button
-                      type="button"
-                      className="eh-commit-hash-btn"
-                      onClick={() => handleCopyHash(c.hash)}
-                      title="Copy full commit hash"
-                    >
-                      <code className="eh-commit-short-hash">
-                        {c.shortHash || c.hash.slice(0, 7)}
-                      </code>
-                      {copiedHash === c.hash ? (
-                        <Check size={12} className="copied" />
-                      ) : (
-                        <Copy size={12} />
+                      {hash && (
+                        <button
+                          type="button"
+                          className="eh-commit-hash-btn"
+                          onClick={() => handleCopyHash(hash)}
+                          title="Copy full commit hash"
+                        >
+                          <code className="eh-commit-short-hash">
+                            {shortHash}
+                          </code>
+                          {copiedHash === hash ? (
+                            <Check size={12} className="copied" />
+                          ) : (
+                            <Copy size={12} />
+                          )}
+                        </button>
                       )}
-                    </button>
-                  </div>
-                ))}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -371,4 +477,3 @@ export default function RepositoryCard({
     </div>
   );
 }
-

@@ -7,6 +7,7 @@ import {
   GitBranch,
   CheckCircle2,
   Clock,
+  Sparkles,
 } from "lucide-react";
 
 import Input from "../../../common/input/input";
@@ -31,9 +32,18 @@ export default function CommitCard({
 
   const isUpToDate = gitStatus.ahead === 0 && gitStatus.behind === 0;
 
+  const handleKeyDown = (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+      if (canCommit && commitMessage.trim() && !committing) {
+        e.preventDefault();
+        onCommit();
+      }
+    }
+  };
+
   return (
     <div className="eh-commit-card">
-      {/* Synchronization Section */}
+      {/* Synchronization Toolbar */}
       <div className="eh-sync-toolbar-section">
         <div className="eh-sync-top">
           <div className="eh-sync-branch-tag">
@@ -44,7 +54,7 @@ export default function CommitCard({
           <div className="eh-sync-status-pill">
             {isUpToDate ? (
               <span className="eh-sync-pill in-sync">
-                <CheckCircle2 size={13} /> Up to date
+                <CheckCircle2 size={13} /> Synced with GitHub
               </span>
             ) : (
               <span className="eh-sync-pill out-of-sync">
@@ -63,6 +73,7 @@ export default function CommitCard({
             disabled={pulling || fetching}
             onClick={onPull}
             className="eh-sync-btn"
+            title="Download latest commits from GitHub"
           >
             <ArrowDown size={15} />
             <span>Pull</span>
@@ -77,6 +88,11 @@ export default function CommitCard({
             onClick={onPush}
             disabled={pushing || !canPush || fetching}
             className="eh-sync-btn"
+            title={
+              canPush
+                ? `Push ${gitStatus.ahead} local commit(s) to GitHub`
+                : "No local commits to push"
+            }
           >
             <ArrowUp size={15} />
             <span>Push</span>
@@ -91,7 +107,7 @@ export default function CommitCard({
             disabled={fetching || pulling || pushing}
             onClick={onFetch}
             className="eh-sync-btn"
-            title="Fetch all remotes"
+            title="Fetch latest remote branch status from GitHub"
           >
             <RefreshCw size={15} className={fetching ? "eh-spin" : ""} />
             <span>Fetch</span>
@@ -99,9 +115,9 @@ export default function CommitCard({
         </div>
       </div>
 
-      {/* Commit Section */}
       <div className="eh-commit-divider" />
 
+      {/* Commit Working Tree Section */}
       <div className="eh-commit-section">
         <div className="eh-commit-header">
           <GitCommitHorizontal size={22} />
@@ -109,16 +125,20 @@ export default function CommitCard({
             <h2>Commit Working Tree</h2>
             <p>
               {gitStatus.clean
-                ? "Working directory clean. No uncommitted modifications."
+                ? "Working tree clean. All workspace changes are committed to the active branch."
                 : `${gitStatus.changes?.length || 0} modified file(s) ready to stage & commit.`}
             </p>
           </div>
         </div>
 
-        <div className="eh-commit-body">
+        <div className="eh-commit-body" onKeyDown={handleKeyDown}>
           <Input
             label="Commit Message"
-            placeholder="feat: describe your changes..."
+            placeholder={
+              canCommit
+                ? "e.g. feat: update API endpoints and styling (Ctrl+Enter to commit)"
+                : "Working tree is clean — no changes to commit"
+            }
             value={commitMessage}
             onChange={(e) => setCommitMessage(e.target.value)}
             disabled={committing || !canCommit}
@@ -132,11 +152,10 @@ export default function CommitCard({
             disabled={committing || !canCommit || !commitMessage.trim()}
             onClick={onCommit}
           >
-            Commit Changes
+            <span>Commit Changes to Branch</span>
           </Button>
         </div>
       </div>
     </div>
   );
 }
-

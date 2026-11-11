@@ -1,31 +1,96 @@
 import { useState } from "react";
 import "./RepositoryInfoCard.css";
-import { FolderGit2, User, GitBranch, ExternalLink, Copy, Check, Shield } from "lucide-react";
+import {
+  FolderGit2,
+  User,
+  GitBranch,
+  ExternalLink,
+  Copy,
+  Check,
+  Shield,
+  Sparkles,
+} from "lucide-react";
 
 export default function RepositoryInfoCard({ validation, repository }) {
   const [copied, setCopied] = useState(false);
 
-  const info = validation || (repository ? {
-    name: repository.repository_name,
-    owner: repository.owner,
-    branch: repository.branch || repository.default_branch || "main",
-    defaultBranch: repository.default_branch || "main",
-    cloneUrl: repository.clone_url,
-    repoUrl: repository.repository_url,
-    visibility: repository.access_token ? "Private" : "Public",
-  } : null);
-
-  if (!info) return null;
-
-  const repoUrl = info.repoUrl || (info.owner && info.name ? `https://github.com/${info.owner}/${info.name}` : null);
+  const info =
+    validation ||
+    (repository
+      ? {
+          name: repository.repository_name,
+          owner: repository.owner,
+          branch: repository.branch || repository.default_branch || "main",
+          defaultBranch: repository.default_branch || "main",
+          cloneUrl: repository.clone_url,
+          repoUrl: repository.repository_url,
+          visibility: repository.access_token ? "Private" : "Public",
+        }
+      : null);
 
   const handleCopy = () => {
-    if (info.cloneUrl) {
+    if (info?.cloneUrl) {
       navigator.clipboard.writeText(info.cloneUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
   };
+
+  // If not connected and no validation yet, show the Getting Started guidance card
+  if (!info) {
+    return (
+      <div className="eh-repository-info-card eh-git-guide-card">
+        <div className="eh-repository-info-header">
+          <Sparkles size={22} className="eh-sparkle-icon" />
+          <div>
+            <h2>Git Integration Workflow</h2>
+            <p>Automatic builds, version synchronization, and branch deployments.</p>
+          </div>
+        </div>
+
+        <div className="eh-git-steps-list">
+          <div className="eh-git-step-item">
+            <div className="eh-git-step-num">1</div>
+            <div>
+              <strong>Paste Repository URL</strong>
+              <p>
+                Supports public and private GitHub repositories (e.g.{" "}
+                <code>https://github.com/owner/repo</code>).
+              </p>
+            </div>
+          </div>
+
+          <div className="eh-git-step-item">
+            <div className="eh-git-step-num">2</div>
+            <div>
+              <strong>Validate & Select Branch</strong>
+              <p>
+                EchoServer inspects remote branches, default branch, and access
+                credentials automatically.
+              </p>
+            </div>
+          </div>
+
+          <div className="eh-git-step-item">
+            <div className="eh-git-step-num">3</div>
+            <div>
+              <strong>One-Click Sync & Push</strong>
+              <p>
+                Files are downloaded directly into your workspace. Commit, push,
+                and deploy right from this dashboard.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const repoUrl =
+    info.repoUrl ||
+    (info.owner && info.name
+      ? `https://github.com/${info.owner}/${info.name}`
+      : null);
 
   return (
     <div className="eh-repository-info-card">
@@ -35,15 +100,17 @@ export default function RepositoryInfoCard({ validation, repository }) {
           <div className="eh-info-header-row">
             <h2>Repository Metadata</h2>
             {info.visibility && (
-              <span className={`eh-visibility-badge ${info.visibility.toLowerCase()}`}>
+              <span
+                className={`eh-visibility-badge ${info.visibility.toLowerCase()}`}
+              >
                 <Shield size={12} /> {info.visibility}
               </span>
             )}
           </div>
           <p>
             {validation && !repository
-              ? "Detected repository configuration from GitHub."
-              : "Active repository details connected to this project."}
+              ? "Validated repository specifications from GitHub."
+              : "Active GitHub repository connected to this project workspace."}
           </p>
         </div>
       </div>
@@ -97,7 +164,11 @@ export default function RepositoryInfoCard({ validation, repository }) {
             onClick={handleCopy}
             title="Copy Clone URL"
           >
-            {copied ? <Check size={14} className="copied" /> : <Copy size={14} />}
+            {copied ? (
+              <Check size={14} className="copied" />
+            ) : (
+              <Copy size={14} />
+            )}
             <span>{copied ? "Copied" : "Copy"}</span>
           </button>
         </div>
@@ -105,4 +176,3 @@ export default function RepositoryInfoCard({ validation, repository }) {
     </div>
   );
 }
-

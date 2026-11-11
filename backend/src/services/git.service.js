@@ -64,70 +64,56 @@ const getRepository = async (projectId, ownerId) => {
 };
 
 const validateRepository = async (projectId, ownerId, url, branch, token = null) => {
-  const {
-    syncGitToWorkspace,
-    indexWorkspace,
-    syncWorkspaceToGit,
-  } = require("./workspace.sync.service");
   const { verifyProjectOwnership } = require("./project.service");
   await verifyProjectOwnership(projectId, ownerId);
 
-  const match = url.match(/^https:\/\/github\.com\/([^/]+)\/([^/]+?)(\.git)?$/);
-
-  if (!match) {
+  const parsed = github.parseGitHubUrl(url);
+  if (!parsed) {
     throw invalidUrlError();
   }
 
-  const owner = match[1];
-  const repository = match[2];
+  const { owner, repo: repositoryName } = parsed;
+  const repo = await github.getRepository(owner, repositoryName, token);
 
-  const repo = await github.getRepository(owner, repository, token);
+  // Fetch all remote branches from GitHub
+  const branches = await github.getBranches(owner, repositoryName, token);
+  if (repo.default_branch && !branches.includes(repo.default_branch)) {
+    branches.unshift(repo.default_branch);
+  }
 
-  const selectedBranch = branch || repo.default_branch;
-  const branchInfo = await github.getBranch(owner, repository, selectedBranch, token);
+  // If user provided a branch, verify it; otherwise fallback to default branch
+  let selectedBranch = (branch && branch.trim()) || repo.default_branch;
+  if (!branches.includes(selectedBranch) && branches.length > 0) {
+    selectedBranch = repo.default_branch;
+  }
 
   return {
     valid: true,
-
     owner,
-
-    name: repository,
-
+    name: repositoryName,
     defaultBranch: repo.default_branch,
-
     visibility: repo.private ? "Private" : "Public",
-
-    cloneUrl: repo.clone_url,
-
+    cloneUrl: repo.clone_url || parsed.cloneUrl,
     description: repo.description,
-
-    branch: branchInfo.name,
+    branch: selectedBranch,
+    branches,
   };
 };
-const connectRepository = async (projectId, ownerId, repositoryUrl, branch, token = null) => {
-  const {
-    syncGitToWorkspace,
-    indexWorkspace,
-    syncWorkspaceToGit,
-  } = require("./workspace.sync.service");
 
+const connectRepository = async (projectId, ownerId, repositoryUrl, branch, token = null) => {
   const { verifyProjectOwnership } = require("./project.service");
   await verifyProjectOwnership(projectId, ownerId);
 
-  const match = repositoryUrl.match(
-    /^https:\/\/github\.com\/([^/]+)\/([^/]+?)(\.git)?$/,
-  );
-
-  if (!match) {
+  const parsed = github.parseGitHubUrl(repositoryUrl);
+  if (!parsed) {
     throw invalidUrlError();
   }
 
-  const owner = match[1];
-  const repositoryName = match[2];
-
+  const { owner, repo: repositoryName, cloneUrl: defaultCloneUrl } = parsed;
   const repo = await github.getRepository(owner, repositoryName, token);
 
-  const selectedBranch = branch || repo.default_branch;
+  const selectedBranch = (branch && branch.trim()) || repo.default_branch;
+  const cloneUrl = repo.clone_url || defaultCloneUrl;
 
   const existing = await pool.query(
     `
@@ -138,6 +124,7 @@ const connectRepository = async (projectId, ownerId, repositoryUrl, branch, toke
     [projectId],
   );
 
+  let repositoryRecord = null;
   if (existing.rows.length > 0) {
     const result = await pool.query(
       `
@@ -159,49 +146,51 @@ const connectRepository = async (projectId, ownerId, repositoryUrl, branch, toke
         "github",
         owner,
         repositoryName,
-        repositoryUrl,
-        repo.clone_url,
+        parsed.normalizedUrl,
+        cloneUrl,
         repo.default_branch,
         selectedBranch,
         token || null,
       ],
     );
 
-    return result.rows[0];
+    repositoryRecord = result.rows[0];
+  } else {
+    const result = await pool.query(
+      `
+      INSERT INTO project_repository
+      (
+          project_id,
+          provider,
+          owner,
+          repository_name,
+          repository_url,
+          clone_url,
+          default_branch,
+          branch,
+          access_token
+      )
+      VALUES
+      ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+      RETURNING *
+      `,
+      [
+        projectId,
+        "github",
+        owner,
+        repositoryName,
+        parsed.normalizedUrl,
+        cloneUrl,
+        repo.default_branch,
+        selectedBranch,
+        token || null,
+      ],
+    );
+
+    repositoryRecord = result.rows[0];
   }
 
-  const result = await pool.query(
-    `
-    INSERT INTO project_repository
-    (
-        project_id,
-        provider,
-        owner,
-        repository_name,
-        repository_url,
-        clone_url,
-        default_branch,
-        branch,
-        access_token
-    )
-    VALUES
-    ($1,$2,$3,$4,$5,$6,$7,$8,$9)
-    RETURNING *
-    `,
-    [
-      projectId,
-      "github",
-      owner,
-      repositoryName,
-      repositoryUrl,
-      repo.clone_url,
-      repo.default_branch,
-      selectedBranch,
-      token || null,
-    ],
-  );
-
-  return result.rows[0];
+  return repositoryRecord;
 };
 
 const disconnectRepository = async (projectId, ownerId) => {
@@ -410,39 +399,15 @@ const getGitStatus = async (projectId, ownerId) => {
     .catch(() => false);
 
   if (!hasGit) {
-    // If repository details exist, attempt auto-clone/recovery
-    if (repository.clone_url) {
-      try {
-        console.log(
-          `[getGitStatus] Git repository missing on disk for project ${projectId}. Auto-healing...`,
-        );
-        await cloneRepository(projectId, ownerId);
-      } catch (err) {
-        console.warn(
-          `[getGitStatus] Auto-heal clone failed/pending for project ${projectId}:`,
-          err.message,
-        );
-        return {
-          branch: repository.branch || "main",
-          ahead: 0,
-          behind: 0,
-          clean: true,
-          changes: [],
-          cloning: true,
-          message: "Repository is cloning or awaiting sync.",
-        };
-      }
-    } else {
-      return {
-        branch: repository.branch || "main",
-        ahead: 0,
-        behind: 0,
-        clean: true,
-        changes: [],
-        cloning: false,
-        message: "Repository has not been cloned yet.",
-      };
-    }
+    return {
+      branch: repository.branch || "main",
+      ahead: 0,
+      behind: 0,
+      clean: true,
+      changes: [],
+      cloned: false,
+      message: "Repository connected. Click 'Clone & Sync' to download repository files.",
+    };
   }
 
   const status = await gitOperations.status(gitDirectory);

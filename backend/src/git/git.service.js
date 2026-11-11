@@ -87,13 +87,16 @@ async function log(directory, limit = 10) {
   const git = gitClient.getRepository(directory);
   try {
     const logResult = await git.log({ maxCount: limit });
+    if (!logResult || !Array.isArray(logResult.all)) {
+      return [];
+    }
     return logResult.all.map((c) => ({
-      hash: c.hash,
-      shortHash: c.hash.slice(0, 7),
-      date: c.date,
-      message: c.message,
-      author_name: c.author_name,
-      author_email: c.author_email,
+      hash: c.hash || "",
+      shortHash: c.hash ? c.hash.slice(0, 7) : "",
+      date: c.date || "",
+      message: c.message || "",
+      author_name: c.author_name || "Unknown",
+      author_email: c.author_email || "",
     }));
   } catch (err) {
     return [];
@@ -138,7 +141,17 @@ async function diff(directory, file = null) {
 
 async function checkout(directory, branch) {
   const git = gitClient.getRepository(directory);
-  return git.checkout(branch);
+  try {
+    return await git.checkout(branch);
+  } catch (err) {
+    // If local branch doesn't exist yet, try to checkout tracking origin branch
+    try {
+      await git.fetch("origin", branch);
+      return await git.checkout(["-B", branch, `origin/${branch}`]);
+    } catch {
+      throw err;
+    }
+  }
 }
 
 module.exports = {

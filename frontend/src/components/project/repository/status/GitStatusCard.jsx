@@ -74,17 +74,23 @@ export default function GitStatusCard({ gitStatus, projectId }) {
         <div className="eh-git-header">
           <GitCompare size={22} />
           <div>
-            <h2>Working Tree</h2>
-            <p>Repository status</p>
+            <h2>Working Tree Status</h2>
+            <p>Local changes vs active branch</p>
           </div>
         </div>
 
-        <div className="eh-clean-state">Everything is committed. Working tree clean.</div>
+        <div className="eh-clean-state">
+          <Check size={20} className="eh-clean-icon" />
+          <div>
+            <strong>Working tree is completely clean</strong>
+            <span>All workspace edits are committed to the active branch.</span>
+          </div>
+        </div>
       </div>
     );
   }
 
-  const changes = gitStatus.changes || [];
+  const changes = Array.isArray(gitStatus.changes) ? gitStatus.changes : [];
 
   const modified = changes.filter((c) => c.status === "modified").length;
   const added = changes.filter(

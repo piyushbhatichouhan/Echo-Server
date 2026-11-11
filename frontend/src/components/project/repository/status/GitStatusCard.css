@@ -43,19 +43,38 @@
 /* ---------- Clean ---------- */
 
 .eh-clean-state {
-    padding: 18px;
-
+    padding: 18px 22px;
     border-radius: 12px;
-
     background: rgba(46, 204, 113, .08);
-
     border: 1px solid rgba(46, 204, 113, .25);
+    color: var(--success, #2ecc71);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    text-align: left;
+}
 
-    color: var(--success);
+.eh-clean-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(46, 204, 113, .15);
+    padding: 6px;
+    color: #2ecc71;
+    flex-shrink: 0;
+}
 
-    font-weight: 500;
+.eh-clean-state strong {
+    display: block;
+    font-size: 0.95rem;
+    color: #fff;
+    margin-bottom: 2px;
+}
 
-    text-align: center;
+.eh-clean-state span {
+    display: block;
+    font-size: 0.82rem;
+    color: #a7f3d0;
 }
 
 /* ---------- Summary ---------- */
