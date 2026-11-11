@@ -76,26 +76,6 @@ export default function ManageUsers() {
     };
   }, [actionModal.open]);
 
-  // Guard: Super Admin only
-  if (!currentUser?.isOwner) {
-    return (
-      <div className="users-unauthorized">
-        <div className="users-unauthorized-card">
-          <ShieldAlert size={48} className="unauthorized-icon" />
-          <h2>Super Admin Access Required</h2>
-          <p>User directory and account management is restricted to the platform owner.</p>
-          <button
-            type="button"
-            className="users-btn users-btn--primary"
-            onClick={() => navigate("/dashboard")}
-          >
-            Return to Dashboard
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   // Filter out owners from the list (can't delete/disable yourself)
   const visibleUsers = useMemo(() => {
     return users.filter((u) => !u.is_owner);
@@ -144,6 +124,26 @@ export default function ManageUsers() {
       );
     });
   }, [visibleUsers, statusFilter, search]);
+
+  // Guard: Super Admin only
+  if (!currentUser?.isOwner) {
+    return (
+      <div className="users-unauthorized">
+        <div className="users-unauthorized-card">
+          <ShieldAlert size={48} className="unauthorized-icon" />
+          <h2>Super Admin Access Required</h2>
+          <p>User directory and account management is restricted to the platform owner.</p>
+          <button
+            type="button"
+            className="users-btn users-btn--primary"
+            onClick={() => navigate("/dashboard")}
+          >
+            Return to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const handleManualRefresh = async () => {
     setIsRefreshing(true);

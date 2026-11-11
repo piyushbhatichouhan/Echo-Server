@@ -63,6 +63,49 @@ export default function Health() {
   const [cleaningPorts, setCleaningPorts] = useState(false);
   const [pruningDocker, setPruningDocker] = useState(false);
 
+  const [userAnalytics, setUserAnalytics] = useState(null);
+  const [userAnalyticsLoading, setUserAnalyticsLoading] = useState(false);
+  const [userSearchTerm, setUserSearchTerm] = useState("");
+
+  const fetchUserAnalytics = useCallback(async () => {
+    try {
+      setUserAnalyticsLoading(true);
+      const data = await getSuperAdminUserAnalytics();
+      setUserAnalytics(data);
+    } catch (err) {
+      console.warn("Failed to fetch superadmin user analytics:", err.message);
+    } finally {
+      setUserAnalyticsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (user?.isOwner) {
+      fetchUserAnalytics();
+    }
+  }, [user?.isOwner, fetchUserAnalytics]);
+
+  const filteredUsers = useMemo(() => {
+    const list = userAnalytics?.users || [];
+    if (!userSearchTerm.trim()) return list;
+    const term = userSearchTerm.toLowerCase();
+    return list.filter(
+      (u) =>
+        u.username?.toLowerCase().includes(term) ||
+        u.email?.toLowerCase().includes(term),
+    );
+  }, [userAnalytics?.users, userSearchTerm]);
+
+  // Format time since last update
+  const formattedLastUpdated = useMemo(() => {
+    if (!lastUpdated) return "Just now";
+    return lastUpdated.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+  }, [lastUpdated]);
+
   // Guard: Super admin only
   if (!user?.isOwner) {
     return (
@@ -120,39 +163,6 @@ export default function Health() {
     }
   };
 
-  const [userAnalytics, setUserAnalytics] = useState(null);
-  const [userAnalyticsLoading, setUserAnalyticsLoading] = useState(false);
-  const [userSearchTerm, setUserSearchTerm] = useState("");
-
-  const fetchUserAnalytics = useCallback(async () => {
-    try {
-      setUserAnalyticsLoading(true);
-      const data = await getSuperAdminUserAnalytics();
-      setUserAnalytics(data);
-    } catch (err) {
-      console.warn("Failed to fetch superadmin user analytics:", err.message);
-    } finally {
-      setUserAnalyticsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (user?.isOwner) {
-      fetchUserAnalytics();
-    }
-  }, [user?.isOwner, fetchUserAnalytics]);
-
-  const filteredUsers = useMemo(() => {
-    const list = userAnalytics?.users || [];
-    if (!userSearchTerm.trim()) return list;
-    const term = userSearchTerm.toLowerCase();
-    return list.filter(
-      (u) =>
-        u.username?.toLowerCase().includes(term) ||
-        u.email?.toLowerCase().includes(term),
-    );
-  }, [userAnalytics?.users, userSearchTerm]);
-
   const overallStatus = health?.overallStatus || "healthy";
 
   const statusConfig = {
@@ -182,16 +192,6 @@ export default function Health() {
   };
 
   const StatusIcon = statusConfig.icon;
-
-  // Format time since last update
-  const formattedLastUpdated = useMemo(() => {
-    if (!lastUpdated) return "Just now";
-    return lastUpdated.toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    });
-  }, [lastUpdated]);
 
   return (
     <div className="server-health-page">

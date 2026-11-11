@@ -91,6 +91,25 @@ export default function Mailer() {
 
   const textareaRef = useRef(null);
 
+  // Apply template values to form
+  const applyTemplate = (tpl) => {
+    if (!tpl) return;
+    setSelectedTemplateKey(tpl.key);
+    setSubject(tpl.subject || "");
+    setBadge(tpl.badge || "");
+    setBadgeType(tpl.badgeType || "info");
+    setBody(tpl.body || "");
+    if (tpl.ctaLabel && tpl.ctaUrl) {
+      setEnableCta(true);
+      setCtaLabel(tpl.ctaLabel);
+      setCtaUrl(tpl.ctaUrl);
+    } else {
+      setEnableCta(false);
+      setCtaLabel("");
+      setCtaUrl("");
+    }
+  };
+
   // Load initial templates and recipient data
   const loadData = async (isRefresh = false) => {
     try {
@@ -123,25 +142,6 @@ export default function Mailer() {
       loadData();
     }
   }, [isSuperAdmin]);
-
-  // Apply template values to form
-  const applyTemplate = (tpl) => {
-    if (!tpl) return;
-    setSelectedTemplateKey(tpl.key);
-    setSubject(tpl.subject || "");
-    setBadge(tpl.badge || "");
-    setBadgeType(tpl.badgeType || "info");
-    setBody(tpl.body || "");
-    if (tpl.ctaLabel && tpl.ctaUrl) {
-      setEnableCta(true);
-      setCtaLabel(tpl.ctaLabel);
-      setCtaUrl(tpl.ctaUrl);
-    } else {
-      setEnableCta(false);
-      setCtaLabel("");
-      setCtaUrl("");
-    }
-  };
 
   const handleSelectTemplate = (key) => {
     const tpl = templates.find((t) => t.key === key);

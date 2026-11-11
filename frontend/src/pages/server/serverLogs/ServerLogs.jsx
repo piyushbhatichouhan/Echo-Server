@@ -87,6 +87,22 @@ export default function Logs() {
   const consoleEndRef = useRef(null);
   const consoleBodyRef = useRef(null);
 
+  // Auto-scroll to bottom if enabled and logs change
+  useEffect(() => {
+    if (autoScroll && consoleEndRef.current) {
+      consoleEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [logs, autoScroll]);
+
+  const formattedPolledTime = useMemo(() => {
+    if (!lastUpdated) return "Connecting...";
+    return lastUpdated.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+  }, [lastUpdated]);
+
   // Guard: Super Admin only
   if (!user?.isOwner) {
     return (
@@ -108,13 +124,6 @@ export default function Logs() {
       </div>
     );
   }
-
-  // Auto-scroll to bottom if enabled and logs change
-  useEffect(() => {
-    if (autoScroll && consoleEndRef.current) {
-      consoleEndRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [logs, autoScroll]);
 
   const handleCopyLogs = async () => {
     if (logs.length === 0) return;
@@ -155,15 +164,6 @@ export default function Logs() {
       consoleEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   };
-
-  const formattedPolledTime = useMemo(() => {
-    if (!lastUpdated) return "Connecting...";
-    return lastUpdated.toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    });
-  }, [lastUpdated]);
 
   return (
     <div className="server-logs-page">

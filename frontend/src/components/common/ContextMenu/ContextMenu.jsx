@@ -3,8 +3,6 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 export default function ContextMenu({ x, y, visible, items, onClose }) {
-  if (!visible) return null;
-
   const menuRef = useRef(null);
  
   const [position, setPosition] = useState({ left: x, top: y });
@@ -37,6 +35,8 @@ export default function ContextMenu({ x, y, visible, items, onClose }) {
       top,
     });
   }, [visible, x, y]);
+
+  if (!visible) return null;
 
   return createPortal(
     <>

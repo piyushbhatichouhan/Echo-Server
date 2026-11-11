@@ -24,22 +24,6 @@ export default function GitStatusCard({ gitStatus, projectId }) {
   const [loadingDiff, setLoadingDiff] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  if (!gitStatus) return null;
-
-  const handleViewDiff = async (filePath) => {
-    if (!projectId) return;
-    try {
-      setSelectedFile(filePath);
-      setLoadingDiff(true);
-      const diff = await getFileDiff(projectId, filePath);
-      setDiffContent(diff || "No changes detected or binary file.");
-    } catch (err) {
-      setDiffContent("Failed to load diff: " + (err.response?.data?.message || err.message));
-    } finally {
-      setLoadingDiff(false);
-    }
-  };
-
   // Lock body scroll and handle Escape key for diff modal
   useEffect(() => {
     if (!selectedFile) return;
@@ -59,6 +43,22 @@ export default function GitStatusCard({ gitStatus, projectId }) {
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [selectedFile]);
+
+  if (!gitStatus) return null;
+
+  const handleViewDiff = async (filePath) => {
+    if (!projectId) return;
+    try {
+      setSelectedFile(filePath);
+      setLoadingDiff(true);
+      const diff = await getFileDiff(projectId, filePath);
+      setDiffContent(diff || "No changes detected or binary file.");
+    } catch (err) {
+      setDiffContent("Failed to load diff: " + (err.response?.data?.message || err.message));
+    } finally {
+      setLoadingDiff(false);
+    }
+  };
 
   const handleCopyDiff = () => {
     if (diffContent) {
@@ -221,4 +221,5 @@ export default function GitStatusCard({ gitStatus, projectId }) {
     </div>
   );
 }
+
 

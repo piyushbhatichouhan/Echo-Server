@@ -27,6 +27,16 @@ export default function PendingUsers() {
   const [search, setSearch] = useState("");
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  const filteredUsers = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return pendingUsers;
+    return pendingUsers.filter(
+      (u) =>
+        (u.username || "").toLowerCase().includes(q) ||
+        (u.email || "").toLowerCase().includes(q),
+    );
+  }, [pendingUsers, search]);
+
   // Guard: Super Admin only
   if (!user?.isOwner) {
     return (
@@ -64,16 +74,6 @@ export default function PendingUsers() {
       toast.error("Rejection Failed", err.response?.data?.message || err.message);
     }
   };
-
-  const filteredUsers = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return pendingUsers;
-    return pendingUsers.filter(
-      (u) =>
-        (u.username || "").toLowerCase().includes(q) ||
-        (u.email || "").toLowerCase().includes(q),
-    );
-  }, [pendingUsers, search]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);

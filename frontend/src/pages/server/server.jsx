@@ -15,15 +15,16 @@ export default function Server() {
 
   const isOwner = Boolean(user?.is_owner || user?.isOwner);
 
-  if (!isOwner) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
   useEffect(() => {
+    if (!isOwner) return;
     getSubdomainRequestStats()
       .then((data) => setSubdomainStats(data))
       .catch(() => {});
-  }, []);
+  }, [isOwner]);
+
+  if (!isOwner) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const handleCleanupPorts = async () => {
     if (cleaning) return;
