@@ -9,34 +9,69 @@ const projectSettingsRepository = require("../repositories/projectSettings.repos
 const createProject = async (ownerId, projectData) => {
   const { name, description, applicationType } = projectData;
 
+  const trimmedName = (name || "").trim();
+  if (!trimmedName) {
+    const error = new Error("Project name is required.");
+    error.status = 400;
+    error.isUserError = true;
+    throw error;
+  }
+
+  // Enforce unique project name per account (case-insensitive)
+  const existing = await pool.query(
+    `
+    SELECT id, name
+    FROM projects
+    WHERE owner_id = $1 AND LOWER(TRIM(name)) = LOWER($2)
+    LIMIT 1
+    `,
+    [ownerId, trimmedName],
+  );
+
+  if (existing.rows.length > 0) {
+    const error = new Error(`A project named "${trimmedName}" already exists in your account.`);
+    error.status = 409;
+    error.isUserError = true;
+    throw error;
+  }
+
   const preset = getRuntimePreset(applicationType);
 
   if (!preset) {
     throw new Error("Invalid application type.");
   }
 
-  const result = await pool.query(
-    `
-    INSERT INTO projects
-    (
-        owner_id,
-        name,
-        application_type,
-        description
-        
-    )
-    VALUES
-    (
-        $1,
-        $2,
-        $3,
-        $4
-        
-    )
-    RETURNING *
-    `,
-    [ownerId, name, applicationType, description || null],
-  );
+  let result;
+  try {
+    result = await pool.query(
+      `
+      INSERT INTO projects
+      (
+          owner_id,
+          name,
+          application_type,
+          description
+      )
+      VALUES
+      (
+          $1,
+          $2,
+          $3,
+          $4
+      )
+      RETURNING *
+      `,
+      [ownerId, trimmedName, applicationType, description ? description.trim() : null],
+    );
+  } catch (dbErr) {
+    if (dbErr.code === "23505" || dbErr.message?.includes("projects_owner_name")) {
+      const error = new Error(`A project named "${trimmedName}" already exists in your account.`);
+      error.status = 409;
+      error.isUserError = true;
+      throw error;
+    }
+    throw dbErr;
+  }
 
   const project = result.rows[0];
 
@@ -157,26 +192,66 @@ AND p.owner_id = $2;
 const updateProject = async (projectId, ownerId, projectData) => {
   const { name, description } = projectData;
 
-  const result = await pool.query(
-    `
-        UPDATE projects
-        SET
-            name = COALESCE($3, name),
-            description = COALESCE($4, description),
-            updated_at = NOW()
-        WHERE
-            id = $1
-            AND owner_id = $2
-        RETURNING
-            id,
-            owner_id,
-            name,
-            description,
-            created_at,
-            updated_at
-        `,
-    [projectId, ownerId, name ?? null, description ?? null],
-  );
+  let trimmedName = undefined;
+  if (name !== undefined && name !== null) {
+    trimmedName = String(name).trim();
+    if (!trimmedName) {
+      const error = new Error("Project name cannot be empty.");
+      error.status = 400;
+      error.isUserError = true;
+      throw error;
+    }
+
+    // Check if another project owned by this user already has this name (case-insensitive)
+    const existing = await pool.query(
+      `
+      SELECT id, name
+      FROM projects
+      WHERE owner_id = $1 AND id != $2 AND LOWER(TRIM(name)) = LOWER($3)
+      LIMIT 1
+      `,
+      [ownerId, projectId, trimmedName],
+    );
+
+    if (existing.rows.length > 0) {
+      const error = new Error(`A project named "${trimmedName}" already exists in your account.`);
+      error.status = 409;
+      error.isUserError = true;
+      throw error;
+    }
+  }
+
+  let result;
+  try {
+    result = await pool.query(
+      `
+          UPDATE projects
+          SET
+              name = COALESCE($3, name),
+              description = COALESCE($4, description),
+              updated_at = NOW()
+          WHERE
+              id = $1
+              AND owner_id = $2
+          RETURNING
+              id,
+              owner_id,
+              name,
+              description,
+              created_at,
+              updated_at
+          `,
+      [projectId, ownerId, trimmedName ?? null, description !== undefined ? description?.trim() : null],
+    );
+  } catch (dbErr) {
+    if (dbErr.code === "23505" || dbErr.message?.includes("projects_owner_name")) {
+      const error = new Error(`A project named "${trimmedName}" already exists in your account.`);
+      error.status = 409;
+      error.isUserError = true;
+      throw error;
+    }
+    throw dbErr;
+  }
 
   if (result.rows.length === 0) {
     const error = new Error("Project not found");

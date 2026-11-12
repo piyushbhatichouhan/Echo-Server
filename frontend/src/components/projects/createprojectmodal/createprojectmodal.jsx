@@ -3,6 +3,7 @@ import "./createprojectmodal.css";
 import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { createProject } from "../../../services/project.api";
+import { useToast } from "../../../context/ToastContext";
 
 import {
   Globe,
@@ -16,6 +17,7 @@ import {
   X,
   FolderPlus,
   Plus,
+  AlertTriangle,
 } from "lucide-react";
 
 const APPLICATIONS = {
@@ -87,13 +89,16 @@ const APPLICATIONS = {
 };
 
 export default function CreateProjectModal({ open, onClose, onCreated }) {
+  const toast = useToast();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [applicationType, setApplicationType] = useState("node");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleClose = useCallback(() => {
     if (loading) return;
+    setError("");
     onClose?.();
   }, [loading, onClose]);
 
@@ -126,23 +131,36 @@ export default function CreateProjectModal({ open, onClose, onCreated }) {
   const submit = async (e) => {
     e.preventDefault();
 
-    if (!name.trim()) return;
+    const trimmed = name.trim();
+    if (!trimmed) return;
+
+    setError("");
 
     try {
       setLoading(true);
 
       await createProject({
-        name,
-        description,
+        name: trimmed,
+        description: description?.trim() || "",
         applicationType,
       });
 
       setName("");
       setDescription("");
       setApplicationType("node");
+      setError("");
 
+      toast.success("Project Created", `Project "${trimmed}" has been created successfully.`);
       onCreated?.();
       onClose?.();
+    } catch (err) {
+      const msg =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        err.message ||
+        "Failed to create project.";
+      setError(msg);
+      toast.error("Project Creation Failed", msg);
     } finally {
       setLoading(false);
     }
@@ -184,6 +202,13 @@ export default function CreateProjectModal({ open, onClose, onCreated }) {
         </div>
 
         <form className="createProjectBody" onSubmit={submit}>
+          {error && (
+            <div className="createProjectErrorBanner" role="alert">
+              <AlertTriangle size={18} className="createProjectErrorIcon" />
+              <span>{error}</span>
+            </div>
+          )}
+
           <div className="projectInfoSection">
             <div className="field">
               <label htmlFor="project-name-input">Project Name <span className="fieldRequired">*</span></label>
@@ -192,7 +217,10 @@ export default function CreateProjectModal({ open, onClose, onCreated }) {
                 id="project-name-input"
                 placeholder="e.g. portfolio-api or payments-worker"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  if (error) setError("");
+                }}
                 autoFocus
                 disabled={loading}
                 required

@@ -17,6 +17,7 @@ const syncGitToWorkspace = async (projectId) => {
   const syncDir = async (src, dest) => {
     await fs.mkdir(dest, { recursive: true });
     const entries = await fs.readdir(src, { withFileTypes: true });
+    const destEntries = await fs.readdir(dest, { withFileTypes: true }).catch(() => []);
 
     for (const entry of entries) {
       if (IGNORED_NAMES.has(entry.name)) {
@@ -38,6 +39,18 @@ const syncGitToWorkspace = async (projectId) => {
         } catch {
           await fs.copyFile(srcPath, destPath);
         }
+      }
+    }
+
+    // Clean up stale files in workspace that do not exist in the git repo
+    for (const destEntry of destEntries) {
+      if (IGNORED_NAMES.has(destEntry.name)) {
+        continue;
+      }
+      const existsInSrc = entries.some((e) => e.name === destEntry.name);
+      if (!existsInSrc) {
+        const stalePath = path.join(dest, destEntry.name);
+        await fs.rm(stalePath, { recursive: true, force: true }).catch(() => {});
       }
     }
   };

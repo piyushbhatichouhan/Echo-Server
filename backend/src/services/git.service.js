@@ -117,12 +117,52 @@ const connectRepository = async (projectId, ownerId, repositoryUrl, branch, toke
 
   const existing = await pool.query(
     `
-    SELECT id
+    SELECT id, repository_url, clone_url
     FROM project_repository
     WHERE project_id = $1
     `,
     [projectId],
   );
+
+  let isDifferentRepo = false;
+
+  if (existing.rows.length > 0) {
+    const prev = existing.rows[0];
+    const prevNorm = prev.repository_url ? prev.repository_url.trim().toLowerCase() : "";
+    const prevClone = prev.clone_url ? prev.clone_url.trim().toLowerCase() : "";
+    const newNorm = parsed.normalizedUrl.trim().toLowerCase();
+    const newClone = cloneUrl.trim().toLowerCase();
+    if ((prevNorm && prevNorm !== newNorm) || (prevClone && prevClone !== newClone)) {
+      isDifferentRepo = true;
+    }
+  } else {
+    // Check if the project previously had a different git_remote_url stored in projects table
+    const projRes = await pool.query(
+      `SELECT git_remote_url FROM projects WHERE id = $1`,
+      [projectId],
+    );
+    const prevRemote = projRes.rows[0]?.git_remote_url ? projRes.rows[0].git_remote_url.trim().toLowerCase() : "";
+    const newNorm = parsed.normalizedUrl.trim().toLowerCase();
+    const newClone = cloneUrl.trim().toLowerCase();
+    if (prevRemote && prevRemote !== newNorm && prevRemote !== newClone) {
+      isDifferentRepo = true;
+    } else {
+      // Also check if workspace has existing files or deployments
+      const filesCount = await pool.query(
+        `SELECT COUNT(*) as cnt FROM files WHERE project_id = $1`,
+        [projectId],
+      );
+      if (Number(filesCount.rows[0]?.cnt || 0) > 0) {
+        isDifferentRepo = true;
+      }
+    }
+  }
+
+  if (isDifferentRepo) {
+    console.log(`[GitService] Different repository detected for project ${projectId}. Triggering full reset of files and Docker.`);
+    const { resetProjectFilesAndDocker } = require("./project-cleanup.service");
+    await resetProjectFilesAndDocker(projectId, ownerId);
+  }
 
   let repositoryRecord = null;
   if (existing.rows.length > 0) {
@@ -154,7 +194,7 @@ const connectRepository = async (projectId, ownerId, repositoryUrl, branch, toke
       ],
     );
 
-    repositoryRecord = result.rows[0];
+    repositoryRecord = { ...result.rows[0], wasReset: isDifferentRepo };
   } else {
     const result = await pool.query(
       `
@@ -187,7 +227,7 @@ const connectRepository = async (projectId, ownerId, repositoryUrl, branch, toke
       ],
     );
 
-    repositoryRecord = result.rows[0];
+    repositoryRecord = { ...result.rows[0], wasReset: isDifferentRepo };
   }
 
   return repositoryRecord;

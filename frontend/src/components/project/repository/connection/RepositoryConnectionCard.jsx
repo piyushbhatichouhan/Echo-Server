@@ -11,6 +11,7 @@ import {
   ExternalLink,
   RefreshCw,
   HelpCircle,
+  AlertTriangle,
 } from "lucide-react";
 
 import Input from "../../../common/input/input";
@@ -39,6 +40,7 @@ export default function RepositoryConnectionCard({
 }) {
   const [showToken, setShowToken] = useState(false);
   const [showTokenField, setShowTokenField] = useState(false);
+  const [isChangingRepo, setIsChangingRepo] = useState(false);
 
   const isConnected = Boolean(repository);
   const repoUrl =
@@ -83,27 +85,76 @@ export default function RepositoryConnectionCard({
           </div>
         </div>
 
-        {isConnected && onDisconnect && (
-          <Button
-            variant="ghost"
-            size="sm"
-            loading={disconnecting}
-            disabled={disconnecting || cloning}
-            onClick={() => {
-              if (
-                window.confirm(
-                  "Are you sure you want to disconnect this repository? Your local workspace files will remain intact.",
-                )
-              ) {
-                onDisconnect();
-              }
-            }}
-            className="eh-repo-disconnect-btn"
-          >
-            <Unlink size={15} /> Disconnect
-          </Button>
+        {isConnected && (
+          <div className="eh-connected-header-actions">
+            {!isChangingRepo ? (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                  setIsChangingRepo(true);
+                  setShowTokenField(false);
+                }}
+                disabled={disconnecting || cloning}
+                className="eh-repo-change-btn"
+                title="Connect a different repository"
+              >
+                <RefreshCw size={14} /> Change Repository
+              </Button>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setIsChangingRepo(false);
+                  if (repository?.repository_url) {
+                    setRepositoryUrl(repository.repository_url);
+                  }
+                  if (repository?.branch) {
+                    setBranch(repository.branch);
+                  }
+                }}
+                className="eh-repo-cancel-change-btn"
+              >
+                Cancel
+              </Button>
+            )}
+
+            {onDisconnect && (
+              <Button
+                variant="ghost"
+                size="sm"
+                loading={disconnecting}
+                disabled={disconnecting || cloning}
+                onClick={() => {
+                  if (
+                    window.confirm(
+                      "Are you sure you want to disconnect this repository? Your local workspace files will remain intact.",
+                    )
+                  ) {
+                    onDisconnect();
+                  }
+                }}
+                className="eh-repo-disconnect-btn"
+              >
+                <Unlink size={15} /> Disconnect
+              </Button>
+            )}
+          </div>
         )}
       </div>
+
+      {isChangingRepo && (
+        <div className="eh-change-repo-warning">
+          <AlertTriangle size={18} className="eh-warning-icon" />
+          <div>
+            <strong>Notice on Changing Repository:</strong>
+            <span>
+              Connecting a different repository will permanently delete the current project's workspace files and completely reset all Docker containers, build cache, and deployment ports.
+            </span>
+          </div>
+        </div>
+      )}
 
       <div className="eh-repository-fields">
         <div className="eh-repo-url-wrapper">
@@ -112,9 +163,9 @@ export default function RepositoryConnectionCard({
             placeholder="https://github.com/owner/repository"
             value={repositoryUrl}
             onChange={(e) => setRepositoryUrl(e.target.value)}
-            disabled={isConnected}
+            disabled={isConnected && !isChangingRepo}
           />
-          {isConnected && repoUrl && (
+          {isConnected && !isChangingRepo && repoUrl && (
             <a
               href={repoUrl}
               target="_blank"
@@ -132,7 +183,7 @@ export default function RepositoryConnectionCard({
           <div className="eh-branch-select-wrapper">
             <div className="eh-branch-label-row">
               <label className="eh-input-label">Branch</label>
-              {isConnected && repository?.branch && (
+              {isConnected && !isChangingRepo && repository?.branch && (
                 <span className="eh-branch-active-indicator">
                   Active: <strong>{repository.branch}</strong>
                 </span>
@@ -163,12 +214,13 @@ export default function RepositoryConnectionCard({
                     value={branch}
                     onChange={(e) => setBranch(e.target.value)}
                     placeholder="main"
-                    disabled={isConnected && switchingBranch}
+                    disabled={isConnected && !isChangingRepo && switchingBranch}
                   />
                 )}
               </div>
 
               {isConnected &&
+                !isChangingRepo &&
                 onSwitchBranch &&
                 (!availableBranches || availableBranches.length === 0) && (
                   <Button
@@ -187,7 +239,7 @@ export default function RepositoryConnectionCard({
           </div>
         </div>
 
-        {!isConnected && (
+        {(!isConnected || isChangingRepo) && (
           <div className="eh-token-toggle-section">
             <button
               type="button"
@@ -235,7 +287,7 @@ export default function RepositoryConnectionCard({
       </div>
 
       <div className="eh-repository-actions">
-        {!isConnected && (
+        {(!isConnected || isChangingRepo) && (
           <div className="eh-connection-action-buttons">
             <Button
               variant="secondary"
@@ -251,7 +303,10 @@ export default function RepositoryConnectionCard({
                 variant="primary"
                 loading={connecting}
                 disabled={connecting}
-                onClick={onConnect}
+                onClick={async () => {
+                  await onConnect();
+                  setIsChangingRepo(false);
+                }}
               >
                 Connect & Sync Repository
               </Button>
@@ -259,7 +314,7 @@ export default function RepositoryConnectionCard({
           </div>
         )}
 
-        {isConnected && (
+        {isConnected && !isChangingRepo && (
           <div className="eh-connected-actions-row">
             <Button
               variant="secondary"
@@ -275,7 +330,7 @@ export default function RepositoryConnectionCard({
         )}
       </div>
 
-      {validation && !isConnected && (
+      {validation && (!isConnected || isChangingRepo) && (
         <div className="eh-validation-success">
           <div className="eh-validation-success-left">
             <CheckCircle2 size={18} className="eh-val-icon" />

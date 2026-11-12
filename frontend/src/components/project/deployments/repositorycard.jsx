@@ -141,9 +141,21 @@ export default function RepositoryCard({
   };
 
   const handleConnect = async () => {
+    const isDifferentRepo =
+      repository &&
+      repositoryUrl &&
+      repository.repository_url?.trim().toLowerCase() !== repositoryUrl.trim().toLowerCase();
+
+    if (isDifferentRepo) {
+      const confirmed = window.confirm(
+        "Connecting a different repository will permanently delete the current project's workspace files and reset Docker containers and build cache.\n\nDo you want to continue?",
+      );
+      if (!confirmed) return;
+    }
+
     try {
       setConnecting(true);
-      await connectRepository(
+      const res = await connectRepository(
         projectId,
         repositoryUrl,
         branch,
@@ -161,10 +173,17 @@ export default function RepositoryCard({
       if (refreshStatus) await refreshStatus();
       await loadGitExtras();
 
-      toast.success(
-        "Repository Connected & Synchronized",
-        "Repository connected and workspace files synchronized.",
-      );
+      if (res?.wasReset || isDifferentRepo) {
+        toast.success(
+          "Different Repository Connected",
+          "Existing files were deleted and Docker environment was reset.",
+        );
+      } else {
+        toast.success(
+          "Repository Connected & Synchronized",
+          "Repository connected and workspace files synchronized.",
+        );
+      }
     } catch (error) {
       toast.error(
         error.response?.data?.message ??

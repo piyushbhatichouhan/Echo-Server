@@ -164,6 +164,14 @@ async function checkDatabase() {
         );
         CREATE INDEX IF NOT EXISTS idx_broadcast_emails_created_at ON broadcast_emails(created_at DESC);
         CREATE INDEX IF NOT EXISTS idx_broadcast_emails_sender ON broadcast_emails(sender_id);
+
+        -- Enforce unique project names per user account (case-insensitive)
+        BEGIN
+          CREATE UNIQUE INDEX IF NOT EXISTS idx_projects_owner_name_unique
+          ON projects (owner_id, LOWER(TRIM(name)));
+        EXCEPTION WHEN OTHERS THEN
+          NULL;
+        END;
       END $$;
     `);
   } catch (err) {

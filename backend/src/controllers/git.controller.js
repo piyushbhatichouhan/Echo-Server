@@ -60,6 +60,7 @@ const connectProjectRepository = async (req, res, next) => {
     res.json({
       success: true,
       data: repository,
+      wasReset: Boolean(repository?.wasReset),
     });
   } catch (error) {
     next(normalizeGitError(error));
