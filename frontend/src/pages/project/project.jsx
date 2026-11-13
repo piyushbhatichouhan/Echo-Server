@@ -61,6 +61,7 @@ export default function Project() {
     refreshStatus,
     refreshLogs,
     setLogs,
+    clearAllLogs,
     deployments,
   } = useDeployment(id);
 
@@ -174,6 +175,19 @@ export default function Project() {
     }
   };
 
+  const handleClearLogs = async () => {
+    try {
+      await clearAllLogs();
+      toast.success("Logs Cleared", "Deployment logs permanently removed from the database.");
+    } catch (err) {
+      console.error("Failed to clear logs:", err);
+      toast.error(
+        "Clear Failed",
+        err.response?.data?.message || "Failed to clear deployment logs.",
+      );
+    }
+  };
+
   if (projectLoading || deploymentLoading) {
     return <p>Loading...</p>;
   }
@@ -219,7 +233,7 @@ export default function Project() {
               logs={logs}
               project={project}
               isConnected={isConnected}
-              onClear={() => setLogs([])}
+              onClear={handleClearLogs}
             />
           </>
         )}

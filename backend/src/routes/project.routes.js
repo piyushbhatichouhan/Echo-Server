@@ -33,6 +33,7 @@ router.get("/:id", authenticate, getById);
 router.patch("/:id", authenticate, updateProjectValidation, validate, update);
 router.delete("/:id", authenticate, remove);
 router.get("/:projectId/logs", authenticate, projectController.getProjectLogs);
+router.delete("/:projectId/logs", authenticate, projectController.clearProjectLogs);
 router.get(
   "/:projectId/deployments",
   authenticate,

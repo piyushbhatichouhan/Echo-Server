@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { getDeploymentStatus } from "../services/deployment.api";
 
-import { getLogs } from "../services/log.api";
+import { getLogs, clearLogs as clearLogsApi } from "../services/log.api";
 
 import { getDeployments } from "../services/deployment.api";
 
@@ -31,6 +31,11 @@ export default function useDeployment(projectId) {
     const data = await getLogs(projectId);
 
     setLogs(data);
+  }, [projectId]);
+
+  const clearAllLogs = useCallback(async () => {
+    await clearLogsApi(projectId);
+    setLogs([]);
   }, [projectId]);
 
   useEffect(() => {
@@ -75,6 +80,8 @@ export default function useDeployment(projectId) {
     refreshLogs,
 
     setLogs,
+
+    clearAllLogs,
 
     deployments,
     refreshDeployments,

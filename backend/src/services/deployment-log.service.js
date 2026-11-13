@@ -1,7 +1,10 @@
+const fs = require("fs/promises");
+const path = require("path");
 const deploymentLogRepository = require("../repositories/deployment-log.repository");
 const logStreamService = require("./log-stream.service");
 const deploymentRepository = require("../repositories/deployment.repository");
 const logClassifier = require("./logClassifier.service");
+const { getProjectLogsRoot } = require("../storage/project.storage.manager");
 
 const addLog = async (
   deploymentId,
@@ -70,7 +73,24 @@ const getLogs = async (projectId, options = {}) => {
   return formatted;
 };
 
+const clearLogs = async (projectId) => {
+  const count = await deploymentLogRepository.clearLogs(projectId);
+
+  try {
+    const logsDir = getProjectLogsRoot(projectId);
+    const files = await fs.readdir(logsDir);
+    for (const file of files) {
+      await fs.rm(path.join(logsDir, file), { recursive: true, force: true });
+    }
+  } catch (err) {
+    // Non-critical if logs directory does not exist
+  }
+
+  return count;
+};
+
 module.exports = {
   addLog,
   getLogs,
+  clearLogs,
 };

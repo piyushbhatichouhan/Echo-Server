@@ -282,6 +282,16 @@ const resetProjectFilesAndDocker = async (projectId, ownerId = null) => {
     await fs.mkdir(logsDir, { recursive: true });
   } catch {}
 
+  // Wipe deployment logs from database for this project
+  try {
+    await pool.query(
+      `DELETE FROM deployment_logs WHERE deployment_id IN (SELECT id FROM deployments WHERE project_id = $1)`,
+      [projectId],
+    );
+  } catch (err) {
+    console.warn(`[ProjectReset] Failed to clear deployment logs:`, err.message);
+  }
+
   console.log(`[ProjectReset] Complete: Project ${projectId} files wiped and Docker environment fully reset.`);
   return { success: true };
 };

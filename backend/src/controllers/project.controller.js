@@ -26,6 +26,25 @@ const getProjectLogs = async (req, res, next) => {
   }
 };
 
+const clearProjectLogs = async (req, res, next) => {
+  try {
+    const { projectId } = req.params;
+    const ownerId = req.user.id;
+
+    await projectService.verifyProjectOwnership(projectId, ownerId);
+
+    const deletedCount = await deploymentLogService.clearLogs(projectId);
+
+    res.json({
+      success: true,
+      message: "Deployment logs cleared successfully.",
+      deletedCount,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const create = async (req, res, next) => {
   try {
     const project = await createProject(req.user.id, req.body);
@@ -311,6 +330,7 @@ module.exports = {
   update,
   remove,
   getProjectLogs,
+  clearProjectLogs,
   getProjectDeployments,
   getDeploymentStatus,
   streamLogs,

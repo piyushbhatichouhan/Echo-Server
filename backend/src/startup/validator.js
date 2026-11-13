@@ -102,6 +102,7 @@ async function checkDatabase() {
         IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'deployment_logs') THEN
           ALTER TABLE deployment_logs ADD COLUMN IF NOT EXISTS level VARCHAR(20) DEFAULT 'info';
           ALTER TABLE deployment_logs ADD COLUMN IF NOT EXISTS category VARCHAR(30) DEFAULT 'system';
+          CREATE INDEX IF NOT EXISTS idx_deployment_logs_deployment_id ON deployment_logs(deployment_id);
         END IF;
 
         CREATE TABLE IF NOT EXISTS password_reset_tokens (

@@ -102,8 +102,23 @@ const getLogs = async (projectId, options = {}) => {
   }
 };
 
+const clearLogs = async (projectId) => {
+  const result = await pool.query(
+    `
+    DELETE FROM deployment_logs
+    WHERE deployment_id IN (
+      SELECT id FROM deployments WHERE project_id = $1
+    )
+    `,
+    [projectId],
+  );
+
+  return result.rowCount;
+};
+
 module.exports = {
   addLog,
   getLogs,
+  clearLogs,
 };
 

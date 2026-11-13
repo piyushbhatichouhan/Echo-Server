@@ -39,6 +39,7 @@ export default function LogsCard({
   const [autoScroll, setAutoScroll] = useState(true);
   const [copied, setCopied] = useState(false);
   const [latestLogId, setLatestLogId] = useState(null);
+  const [clearing, setClearing] = useState(false);
 
   // Category counts
   const categoryCounts = useMemo(() => {
@@ -243,6 +244,18 @@ export default function LogsCard({
     URL.revokeObjectURL(url);
   };
 
+  const handleClear = async () => {
+    if (clearing || !onClear) return;
+    try {
+      setClearing(true);
+      await onClear();
+    } catch (err) {
+      console.error("Failed to clear logs:", err);
+    } finally {
+      setClearing(false);
+    }
+  };
+
   return (
     <Card>
       <div className="eh-logs-card">
@@ -328,7 +341,14 @@ export default function LogsCard({
             </button>
 
             {/* Clear logs */}
-            <Button variant="secondary" icon={Trash2} onClick={onClear}>
+            <Button
+              variant="secondary"
+              icon={Trash2}
+              onClick={handleClear}
+              loading={clearing}
+              disabled={clearing || logs.length === 0}
+              title={logs.length === 0 ? "No logs to clear" : "Clear logs permanently from database"}
+            >
               Clear
             </Button>
           </div>
