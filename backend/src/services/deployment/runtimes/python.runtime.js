@@ -413,9 +413,14 @@ async function start(context) {
 
   await context.infrastructure.deployment.markStoppedByUser(project.id, false);
 
+  await context.infrastructure.deployment.updateStatus(
+    deployment.id,
+    "running",
+  );
+
   await context.infrastructure.logger.info(
     deployment.id,
-    "Application container started, preparing health checks...",
+    "Application container started and running.",
   );
 
   return { success: true, deployment, port: hostPort };
@@ -561,16 +566,23 @@ async function getStatus(context) {
   const containerStatus = await context.infrastructure.container.getStatus(
     project.id,
   );
+
+  const isRunning =
+    (deployment.status === "running" && containerStatus.running) ||
+    (containerStatus.running && !deployment.stopped_by_user);
+
+  const effectiveState = isRunning ? "running" : deployment.status;
+
   return {
     ...containerStatus,
 
-    state: deployment.status,
+    state: effectiveState,
 
-    display: deployment.status
+    display: effectiveState
       .replaceAll("_", " ")
       .replace(/\b\w/g, (c) => c.toUpperCase()),
 
-    running: deployment.status === "running",
+    running: effectiveState === "running",
 
     stoppedByUser: deployment.stopped_by_user,
     port: deployment.port,

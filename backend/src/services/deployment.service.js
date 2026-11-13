@@ -257,6 +257,15 @@ const startProject = async (projectId, ownerId) => {
 
   const result = await runtime.start(context);
 
+  // Explicitly ensure deployment status is marked running in database
+  const latestDeployment =
+    context.deployment ||
+    (await deploymentRepository.getLatestDeployment(projectId));
+  if (latestDeployment) {
+    await deploymentRepository.updateStatus(latestDeployment.id, "running");
+    await deploymentRepository.markStoppedByUser(projectId, false);
+  }
+
   // Refresh routing only if this project is already published
   try {
     await publicationService.republishProject(projectId, ownerId);
