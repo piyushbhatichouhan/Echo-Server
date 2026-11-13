@@ -391,24 +391,50 @@ const containerExists = async (projectId) => {
 
 const stopContainerByProject = async (projectId, exceptContainerId = null) => {
   if (!projectId) return;
+  const pIdStr = String(projectId);
+  const keepNorm = exceptContainerId
+    ? String(exceptContainerId).replace(/^\//, "")
+    : null;
+
+  // 1. Direct stop by recorded container_id or container_name from database
+  try {
+    const { pool } = require("../config/database");
+    const { rows } = await pool.query(
+      `SELECT container_id, container_name FROM deployments WHERE project_id = $1 ORDER BY created_at DESC LIMIT 1`,
+      [projectId],
+    );
+    if (rows[0]?.container_id && rows[0].container_id !== keepNorm) {
+      try {
+        const cont = docker.getContainer(rows[0].container_id);
+        await cont.stop({ t: 2 });
+      } catch {}
+    }
+    if (rows[0]?.container_name && rows[0].container_name !== keepNorm) {
+      try {
+        const cont = docker.getContainer(rows[0].container_name);
+        await cont.stop({ t: 2 });
+      } catch {}
+    }
+  } catch {}
+
+  // 2. Scan and stop all project containers matching prefixes
   try {
     const containers = await docker.listContainers({ all: true });
-    const pIdStr = String(projectId);
+    const prefix0 = `/echoserver-${pIdStr}-`;
     const prefix1 = `/echohub-${pIdStr}-`;
     const prefix2 = `/echo-project-${pIdStr}-`;
+    const exact0 = `/echoserver-${pIdStr}`;
     const exact1 = `/echohub-${pIdStr}`;
     const exact2 = `/echo-project-${pIdStr}`;
-
-    const keepNorm = exceptContainerId
-      ? String(exceptContainerId).replace(/^\//, "")
-      : null;
 
     for (const c of containers) {
       const names = c.Names || [];
       const matches = names.some(
         (n) =>
+          n === exact0 ||
           n === exact1 ||
           n === exact2 ||
+          n.startsWith(prefix0) ||
           n.startsWith(prefix1) ||
           n.startsWith(prefix2),
       );
@@ -442,8 +468,10 @@ const removeContainerByProject = async (
   try {
     const containers = await docker.listContainers({ all: true });
     const pIdStr = String(projectId);
+    const prefix0 = `/echoserver-${pIdStr}-`;
     const prefix1 = `/echohub-${pIdStr}-`;
     const prefix2 = `/echo-project-${pIdStr}-`;
+    const exact0 = `/echoserver-${pIdStr}`;
     const exact1 = `/echohub-${pIdStr}`;
     const exact2 = `/echo-project-${pIdStr}`;
 
@@ -455,8 +483,10 @@ const removeContainerByProject = async (
       const names = c.Names || [];
       const matches = names.some(
         (n) =>
+          n === exact0 ||
           n === exact1 ||
           n === exact2 ||
+          n.startsWith(prefix0) ||
           n.startsWith(prefix1) ||
           n.startsWith(prefix2),
       );
@@ -488,13 +518,20 @@ const removeContainerByProject = async (
 const getContainerStatus = async (projectId) => {
   try {
     const container = await findActiveContainer(projectId);
+    if (!container) {
+      return {
+        exists: false,
+        running: false,
+        status: "stopped",
+      };
+    }
     const info = await container.inspect();
 
     return {
       exists: true,
-      running: info.State.Running,
+      running: Boolean(info.State.Running),
 
-      status: info.State.Status,
+      status: info.State.Running ? "running" : "stopped",
 
       exitCode: info.State.ExitCode,
 
@@ -512,7 +549,7 @@ const getContainerStatus = async (projectId) => {
     return {
       exists: false,
       running: false,
-      status: "not_found",
+      status: "stopped",
     };
   }
 };

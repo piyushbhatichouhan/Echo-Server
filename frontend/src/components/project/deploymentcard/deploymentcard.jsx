@@ -47,8 +47,12 @@ export default function DeploymentCard({ status, projectId }) {
       <div className="eh-deployment-info">
         <div className="eh-info-row">
           <span>Status</span>
-          <strong className={`eh-status-val ${status?.running ? "running" : ""}`}>
-            {status?.status ?? "Unknown"}
+          <strong
+            className={`eh-status-val ${
+              status?.running ? "running" : status?.state || "stopped"
+            }`}
+          >
+            {status?.display || (status?.state ? status.state.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "Stopped")}
           </strong>
         </div>
 
@@ -94,8 +98,10 @@ export default function DeploymentCard({ status, projectId }) {
         <div className="eh-info-row">
           <span>Started</span>
           <strong>
-            {status?.startedAt
+            {status?.running && status?.startedAt
               ? new Date(status.startedAt).toLocaleString()
+              : !status?.running
+              ? "Stopped"
               : "-"}
           </strong>
         </div>

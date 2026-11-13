@@ -627,10 +627,16 @@ async function getStatus(context) {
     (deployment.status === "running" && containerStatus.running) ||
     (containerStatus.running && !deployment.stopped_by_user);
 
-  const effectiveState = isRunning ? "running" : deployment.status;
+  const effectiveState = isRunning
+    ? "running"
+    : deployment.status === "running"
+    ? "stopped"
+    : (deployment.status || "stopped");
 
   return {
     ...containerStatus,
+
+    status: effectiveState,
 
     state: effectiveState,
 

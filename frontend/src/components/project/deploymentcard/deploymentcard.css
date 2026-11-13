@@ -68,6 +68,14 @@
     color: #10b981;
 }
 
+.eh-status-val.stopped {
+    color: #94a3b8;
+}
+
+.eh-status-val.failed {
+    color: #ef4444;
+}
+
 /* ===========================
    Telemetry Progress Bars
 =========================== */
