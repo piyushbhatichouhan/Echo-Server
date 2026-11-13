@@ -29,5 +29,6 @@ export const useUsers = () => {
     deleteUser: adminApi.deleteUser,
     restoreUser: adminApi.restoreUser,
     toggleCustomSubdomain: adminApi.toggleCustomSubdomain,
+    updateUserLimits: adminApi.updateUserLimits,
   };
 };

@@ -291,6 +291,19 @@ const executeTerminal = async (req, res, next) => {
   }
 };
 
+const getUserResourceMetrics = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const metrics = await projectService.getUserResourceMetrics(userId);
+    res.json({
+      success: true,
+      data: metrics,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   create,
   list,
@@ -306,4 +319,5 @@ module.exports = {
   rollbackDeployment,
   getTelemetry,
   executeTerminal,
+  getUserResourceMetrics,
 };

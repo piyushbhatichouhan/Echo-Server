@@ -112,11 +112,65 @@ const assertHostCapacity = async () => {
   }
 };
 
+const assertUserResourceAllowance = async (ownerId, projectId) => {
+  const { pool } = require("../config/database");
+  const userRes = await pool.query(
+    "SELECT id, is_owner, COALESCE(ram_limit_mb, 512) AS ram_limit_mb, COALESCE(max_active_projects, 2) AS max_active_projects FROM users WHERE id = $1",
+    [ownerId],
+  );
+  const user = userRes.rows[0];
+  if (!user || user.is_owner) return; // Superadmin / Owner accounts are unconstrained
+
+  // Query all user's projects and their latest deployment status
+  const projectsRes = await pool.query(
+    `
+    SELECT p.id, COALESCE(d.status, 'Not Deployed') AS status
+    FROM projects p
+    LEFT JOIN LATERAL (
+      SELECT status FROM deployments WHERE project_id = p.id ORDER BY updated_at DESC LIMIT 1
+    ) d ON TRUE
+    WHERE p.owner_id = $1
+    `,
+    [ownerId],
+  );
+
+  // Other currently running projects (excluding current project being started/redeployed)
+  const otherRunning = projectsRes.rows.filter(
+    (p) =>
+      String(p.id) !== String(projectId) &&
+      (p.status || "").toLowerCase() === "running",
+  );
+
+  // 1. Check active projects cap
+  if (otherRunning.length + 1 > user.max_active_projects) {
+    const errorMsg = `Active projects limit reached (${otherRunning.length}/${user.max_active_projects} running). Please stop an existing running project before launching this one.`;
+    const err = new Error(errorMsg);
+    err.status = 403;
+    err.isUserError = true;
+    throw err;
+  }
+
+  // 2. Check RAM allowance (256 MB per container allocation)
+  const containerService = require("./container.service");
+  const limits = containerService.getContainerResourceLimits();
+  const perContainerMB = limits.maxMemoryMB || 256;
+  const currentAllocatedMB = otherRunning.length * perContainerMB;
+
+  if (currentAllocatedMB + perContainerMB > user.ram_limit_mb) {
+    const errorMsg = `RAM allowance exceeded. Launching this project requires ${perContainerMB}MB RAM (${currentAllocatedMB}MB currently used across running projects of ${user.ram_limit_mb}MB allowed). Please stop an unused running project or contact superadmin to increase your RAM limit.`;
+    const err = new Error(errorMsg);
+    err.status = 403;
+    err.isUserError = true;
+    throw err;
+  }
+};
+
 const deployProject = async (projectId, ownerId) => {
   await projectService.verifyProjectOwnership(projectId, ownerId);
 
   // Pre-flight circuit breaker: verify host RAM and disk before building
   await assertHostCapacity();
+  await assertUserResourceAllowance(ownerId, projectId);
 
   const repository = await git.getRepository(projectId, ownerId);
 
@@ -182,6 +236,8 @@ const stopProject = async (projectId, ownerId) => {
 
 const startProject = async (projectId, ownerId) => {
   await projectService.verifyProjectOwnership(projectId, ownerId);
+  await assertHostCapacity();
+  await assertUserResourceAllowance(ownerId, projectId);
 
   const project = await projectService.getProjectById(projectId, ownerId);
 

@@ -674,9 +674,11 @@ const getContainerTelemetry = async (projectId) => {
   try {
     const container = await findActiveContainer(projectId);
     const stats = await container.stats({ stream: false });
+    const limits = getContainerResourceLimits();
 
     const memoryUsed = stats.memory_stats?.usage || 0;
-    const memoryLimit = stats.memory_stats?.limit || 0;
+    // Container allowance memory limit (e.g. 256MB), NOT the whole host system RAM!
+    const memoryLimit = limits.memoryLimitBytes;
 
     let cpuPercent = 0;
     const cpuDelta =
@@ -697,11 +699,31 @@ const getContainerTelemetry = async (projectId) => {
       );
     }
 
+    // CPU measured against container's allowed CPU quota (e.g. 1.5 CPUs)
+    const maxCpus = limits.maxCpus || 1.5;
+    const cpuPercentOfAllowance = Math.min(
+      100,
+      Math.round((cpuPercent / maxCpus) * 10) / 10,
+    );
+
+    const memoryPercent =
+      memoryLimit > 0
+        ? Math.min(100, Math.round((memoryUsed / memoryLimit) * 1000) / 10)
+        : 0;
+
+    const memoryUsedMB = (memoryUsed / (1024 * 1024)).toFixed(1);
+    const memoryLimitMB = Math.round(memoryLimit / (1024 * 1024));
+    const memoryFormatted = `${memoryUsedMB} MB / ${memoryLimitMB} MB (${memoryPercent}%)`;
+
     return {
       running: true,
       memoryUsed,
       memoryLimit,
-      cpuPercent,
+      memoryPercent,
+      memoryFormatted,
+      cpuPercent: cpuPercentOfAllowance,
+      rawCpuPercent: cpuPercent,
+      maxCpus,
       pids: stats.pids_stats?.current || 0,
     };
   } catch {
@@ -709,6 +731,8 @@ const getContainerTelemetry = async (projectId) => {
       running: false,
       memoryUsed: 0,
       memoryLimit: 0,
+      memoryPercent: 0,
+      memoryFormatted: "0 MB",
       cpuPercent: 0,
       pids: 0,
     };

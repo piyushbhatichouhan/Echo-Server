@@ -34,6 +34,16 @@ export const toggleCustomSubdomain = async (id, enabled) => {
   return data;
 };
 
+export const updateUserLimits = async (id, limits) => {
+  const { data } = await api.patch(`/admin/users/${id}/limits`, limits);
+  return data;
+};
+
+export const getUsersResourceUsage = async () => {
+  const { data } = await api.get("/admin/users/resource-usage");
+  return data.data;
+};
+
 export const getSubdomainRequests = async (params = {}) => {
   const { data } = await api.get("/admin/subdomain-requests", { params });
   return data.data;

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Layers,
   Cpu,
@@ -9,11 +9,13 @@ import {
   X,
   Server,
   FolderPlus,
+  Activity,
 } from "lucide-react";
 import useProjects from "../../hooks/useProjects";
 import ProjectCard from "../../components/common/projectcard/projectcard";
 import CreateProjectModal from "../../components/projects/createprojectmodal/createprojectmodal";
 import { getMyStorageStats } from "../../services/storage.api";
+import { getUserResourceMetrics } from "../../services/project.api";
 import "./projects.css";
 
 function formatBytes(bytes) {
@@ -31,23 +33,46 @@ function formatBytes(bytes) {
 export default function Projects() {
   const [open, setOpen] = useState(false);
   const [stats, setStats] = useState(null);
+  const [resourceMetrics, setResourceMetrics] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
   const { projects = [], loading, refresh } = useProjects();
 
-  const refreshStats = async () => {
+  const refreshStats = useCallback(async () => {
     try {
-      const statsData = await getMyStorageStats();
-      setStats(statsData);
+      const [statsData, metricsData] = await Promise.all([
+        getMyStorageStats().catch(() => null),
+        getUserResourceMetrics().catch(() => null),
+      ]);
+      if (statsData) setStats(statsData);
+      if (metricsData) setResourceMetrics(metricsData);
     } catch (e) {
-      console.warn("Failed to load storage stats:", e);
+      console.warn("Failed to load metrics:", e);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    refreshStats();
+    let active = true;
+    const fetchInitial = async () => {
+      try {
+        const [statsData, metricsData] = await Promise.all([
+          getMyStorageStats().catch(() => null),
+          getUserResourceMetrics().catch(() => null),
+        ]);
+        if (active) {
+          if (statsData) setStats(statsData);
+          if (metricsData) setResourceMetrics(metricsData);
+        }
+      } catch (e) {
+        console.warn("Failed to load metrics:", e);
+      }
+    };
+    fetchInitial();
+    return () => {
+      active = false;
+    };
   }, []);
 
   const handleManualRefresh = async () => {
@@ -109,9 +134,23 @@ export default function Projects() {
     });
   }, [projects, searchQuery, statusFilter]);
 
+  // Resource metrics and allowance calculation
+  const isOwner = resourceMetrics?.isOwner;
+  const maxActive = isOwner ? null : resourceMetrics?.limits?.maxActiveProjects;
+  const maxProjects = isOwner ? null : resourceMetrics?.limits?.maxProjects;
+  const ramLimitMb = isOwner ? null : resourceMetrics?.limits?.ramLimitMb;
+
+  const usedRamMb = resourceMetrics?.usage?.usedRamMb ?? 0;
+  const ramPercentage = resourceMetrics?.usage?.ramPercentage ?? 0;
+  const cpuPercent = resourceMetrics?.usage?.cpuPercent ?? 0;
+  const activePercentage =
+    maxActive && maxActive > 0
+      ? Math.min(100, Math.round((runningCount / maxActive) * 100))
+      : 0;
+
   // Storage calculation
-  const usedBytes = stats?.used ?? 0;
-  const limitBytes = stats?.limit ?? null;
+  const usedBytes = stats?.used ?? (resourceMetrics?.usage?.usedStorageBytes ?? 0);
+  const limitBytes = stats?.limit ?? (resourceMetrics?.limits?.quotaBytes || null);
   const storagePercentage =
     limitBytes && limitBytes > 0
       ? Math.min(100, Math.round((usedBytes / limitBytes) * 100))
@@ -125,7 +164,7 @@ export default function Projects() {
           <div className="skeleton-bar subtitle-bar" />
         </div>
         <div className="projects-metrics-strip">
-          {[1, 2, 3].map((i) => (
+          {[1, 2, 3, 4].map((i) => (
             <div key={i} className="metric-strip-skeleton" />
           ))}
         </div>
@@ -190,31 +229,102 @@ export default function Projects() {
         </div>
       </div>
 
-      {/* Compact Hosting Overview Strip */}
+      {/* Compact Hosting Overview Strip (Allowance-Based Telemetry) */}
       <div className="projects-metrics-strip">
+        {/* Tile 1: Active Deployments vs Allowance */}
         <div className="project-metric-tile">
           <div className="metric-tile-icon">
             <Layers size={18} />
           </div>
           <div className="metric-tile-content">
-            <span className="metric-tile-label">Total Workspaces</span>
-            <h3 className="metric-tile-value">{projects.length}</h3>
+            <div className="metric-tile-storage-header">
+              <span className="metric-tile-label">Active Deployments</span>
+              <span className="metric-tile-percentage">
+                {maxActive ? `${activePercentage}%` : "Uncapped"}
+              </span>
+            </div>
+            <h3 className="metric-tile-storage-val">
+              {runningCount} {maxActive ? `/ ${maxActive} Active` : "Running"}
+            </h3>
+            <span className="metric-tile-subtext" title="Total workspace allowance">
+              {projects.length} Total {maxProjects ? `(Max ${maxProjects})` : ""}
+            </span>
+            <div className="metric-tile-progress-track">
+              <div
+                className="metric-tile-progress-fill"
+                style={{
+                  width: maxActive ? `${activePercentage}%` : `${runningCount > 0 ? 100 : 0}%`,
+                  backgroundColor:
+                    activePercentage >= 100
+                      ? "var(--danger, #ef4444)"
+                      : "var(--accent)",
+                }}
+              />
+            </div>
           </div>
         </div>
 
+        {/* Tile 2: Account RAM Usage vs Allowance */}
+        <div className="project-metric-tile">
+          <div className="metric-tile-icon ram">
+            <Activity size={18} />
+          </div>
+          <div className="metric-tile-content">
+            <div className="metric-tile-storage-header">
+              <span className="metric-tile-label">RAM Allowance</span>
+              <span className="metric-tile-percentage">
+                {ramLimitMb ? `${ramPercentage}%` : "Unlimited"}
+              </span>
+            </div>
+            <h3 className="metric-tile-storage-val">
+              {usedRamMb} MB {ramLimitMb ? `/ ${ramLimitMb} MB` : ""}
+            </h3>
+            <div className="metric-tile-progress-track">
+              <div
+                className="metric-tile-progress-fill"
+                style={{
+                  width: `${ramPercentage}%`,
+                  backgroundColor:
+                    ramPercentage > 85
+                      ? "var(--danger, #ef4444)"
+                      : "#c084fc",
+                }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Tile 3: CPU Usage from Allowance */}
         <div className="project-metric-tile">
           <div className="metric-tile-icon live">
             <Cpu size={18} />
           </div>
           <div className="metric-tile-content">
-            <span className="metric-tile-label">Running Instances</span>
-            <div className="metric-tile-value-row">
-              <h3 className="metric-tile-value">{runningCount}</h3>
-              <span className="metric-tile-pill">{runningCount > 0 ? "Operational" : "Idle"}</span>
+            <div className="metric-tile-storage-header">
+              <span className="metric-tile-label">CPU Allocation</span>
+              <span className="metric-tile-percentage">
+                {cpuPercent > 0 ? `${cpuPercent}%` : "Idle"}
+              </span>
+            </div>
+            <h3 className="metric-tile-storage-val">
+              {cpuPercent}% Capacity
+            </h3>
+            <div className="metric-tile-progress-track">
+              <div
+                className="metric-tile-progress-fill"
+                style={{
+                  width: `${Math.min(cpuPercent, 100)}%`,
+                  backgroundColor:
+                    cpuPercent > 85
+                      ? "var(--danger, #ef4444)"
+                      : "var(--success, #10b981)",
+                }}
+              />
             </div>
           </div>
         </div>
 
+        {/* Tile 4: Storage Allocated vs Quota */}
         <div className="project-metric-tile">
           <div className="metric-tile-icon storage">
             <HardDrive size={18} />

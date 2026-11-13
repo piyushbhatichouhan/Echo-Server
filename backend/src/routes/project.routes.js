@@ -24,6 +24,11 @@ const {
 
 router.post("/", authenticate, createProjectValidation, validate, create);
 router.get("/", authenticate, list);
+router.get(
+  "/resource-metrics",
+  authenticate,
+  projectController.getUserResourceMetrics,
+);
 router.get("/:id", authenticate, getById);
 router.patch("/:id", authenticate, updateProjectValidation, validate, update);
 router.delete("/:id", authenticate, remove);

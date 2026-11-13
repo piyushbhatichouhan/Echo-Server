@@ -9,22 +9,23 @@ import {
   X,
   RefreshCw,
   Users as UsersIcon,
-  UserCheck,
-  UserX,
   Mail,
   Calendar,
-  AlertTriangle,
   RotateCcw,
   Trash2,
   Lock,
   Unlock,
-  Key,
   Globe,
+  Sliders,
+  Cpu,
+  HardDrive,
+  Layers,
 } from "lucide-react";
 import { useUsers } from "../../../hooks/useUsers";
 import useAuth from "../../../hooks/useAuth";
 import { useToast } from "../../../context/ToastContext";
 import ConfirmationModal from "../../../components/common/modal/ConfirmationModal";
+import UserResourceLimitsModal from "../../../components/server/UserResourceLimitsModal/UserResourceLimitsModal";
 import "./manageUsers.css";
 
 const STATUS_FILTERS = [
@@ -48,6 +49,7 @@ export default function ManageUsers() {
     refresh,
     restoreUser,
     toggleCustomSubdomain,
+    updateUserLimits,
   } = useUsers();
 
   const [search, setSearch] = useState("");
@@ -58,6 +60,11 @@ export default function ManageUsers() {
   // Modal states
   const [selectedUser, setSelectedUser] = useState(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
+
+  // Resource caps modal state
+  const [limitsUser, setLimitsUser] = useState(null);
+  const [limitsModalOpen, setLimitsModalOpen] = useState(false);
+  const [savingLimits, setSavingLimits] = useState(false);
 
   // In-app modal confirmation for enable/disable instead of window.confirm
   const [actionModal, setActionModal] = useState({
@@ -224,6 +231,31 @@ export default function ManageUsers() {
       toast.error("Restore Failed", err.response?.data?.message || err.message);
     } finally {
       setWorkingUser(null);
+    }
+  };
+
+  const handleOpenLimitsModal = (u) => {
+    setLimitsUser(u);
+    setLimitsModalOpen(true);
+  };
+
+  const handleSaveLimits = async (limits) => {
+    if (!limitsUser) return;
+    setSavingLimits(true);
+    try {
+      await updateUserLimits(limitsUser.id, limits);
+      toast.success(
+        "Resource Allowances Updated",
+        `Allowances for ${limitsUser.username} set to ${limits.ramLimitMb} MB RAM and ${limits.maxActiveProjects} active projects.`,
+      );
+      setLimitsModalOpen(false);
+      setLimitsUser(null);
+      await refresh();
+    } catch (err) {
+      toast.error("Update Failed", err.response?.data?.message || err.message);
+      throw err;
+    } finally {
+      setSavingLimits(false);
     }
   };
 
@@ -409,6 +441,21 @@ export default function ManageUsers() {
                         </span>
                       )}
                     </div>
+
+                    <div className="user-caps-strip">
+                      <span className="user-cap-badge" title="Configured RAM limit">
+                        <HardDrive size={11} />
+                        <span>{u.ram_limit_mb || 512} MB RAM</span>
+                      </span>
+                      <span className="user-cap-badge" title="Maximum active running deployments">
+                        <Cpu size={11} />
+                        <span>{u.max_active_projects || 2} Active Max</span>
+                      </span>
+                      <span className="user-cap-badge" title="Total project workspaces cap">
+                        <Layers size={11} />
+                        <span>{u.max_projects || 5} Projects Max</span>
+                      </span>
+                    </div>
                   </div>
                 </div>
 
@@ -426,6 +473,18 @@ export default function ManageUsers() {
                     </button>
                   ) : (
                     <>
+                      {/* Resource Caps Button */}
+                      <button
+                        type="button"
+                        className="user-action-btn btn--caps"
+                        onClick={() => handleOpenLimitsModal(u)}
+                        disabled={isWorking}
+                        title="Configure RAM and Project Caps"
+                      >
+                        <Sliders size={14} />
+                        <span>Resource Caps</span>
+                      </button>
+
                       {/* Enable or Disable Button */}
                       {u.disabled ? (
                         <button
@@ -579,6 +638,19 @@ export default function ManageUsers() {
           </div>,
           document.body
         )}
+
+      {/* User Resource Caps Modal */}
+      <UserResourceLimitsModal
+        key={limitsUser?.id || "empty"}
+        open={limitsModalOpen}
+        user={limitsUser}
+        loading={savingLimits}
+        onClose={() => {
+          setLimitsModalOpen(false);
+          setLimitsUser(null);
+        }}
+        onSave={handleSaveLimits}
+      />
     </div>
   );
 }

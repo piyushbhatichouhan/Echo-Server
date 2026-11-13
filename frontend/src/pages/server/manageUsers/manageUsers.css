@@ -415,6 +415,27 @@
   flex-wrap: wrap;
 }
 
+.user-caps-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.user-cap-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 0.74rem;
+  font-weight: 500;
+}
+
 .user-meta-item {
   display: inline-flex;
   align-items: center;
@@ -446,6 +467,19 @@
 .user-action-btn:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+}
+
+.btn--caps {
+  background: var(--nav-hover-bg);
+  color: var(--accent);
+  border: 1px solid var(--border-glow);
+}
+
+.btn--caps:hover:not(:disabled) {
+  background: var(--nav-active-bg);
+  border-color: var(--accent);
+  box-shadow: var(--accent-glow);
+  transform: translateY(-1px);
 }
 
 .btn--enable {

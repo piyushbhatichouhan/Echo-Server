@@ -13,9 +13,14 @@ const getUsers = async () => {
       created_at,
       updated_at,
       pending_deletion,
-deletion_due_at,
-storage_limit,
-deletion_scheduled_at
+      deletion_due_at,
+      storage_limit,
+      deletion_scheduled_at,
+      COALESCE(ram_limit_mb, 512) AS ram_limit_mb,
+      COALESCE(max_active_projects, 2) AS max_active_projects,
+      COALESCE(max_projects, 5) AS max_projects,
+      quota_bytes,
+      used_bytes
     FROM users
     ORDER BY created_at DESC
     `,
@@ -229,6 +234,30 @@ const updateCustomSubdomainAccess = async (userId, enabled) => {
   return result.rows[0];
 };
 
+const updateUserLimits = async (userId, { ramLimitMb, maxActiveProjects, maxProjects }) => {
+  const result = await pool.query(
+    `
+    UPDATE users
+    SET
+      ram_limit_mb = COALESCE($2, ram_limit_mb),
+      max_active_projects = COALESCE($3, max_active_projects),
+      max_projects = COALESCE($4, max_projects),
+      updated_at = NOW()
+    WHERE id = $1
+    RETURNING
+      id,
+      username,
+      email,
+      ram_limit_mb,
+      max_active_projects,
+      max_projects
+    `,
+    [userId, ramLimitMb ?? null, maxActiveProjects ?? null, maxProjects ?? null],
+  );
+
+  return result.rows[0];
+};
+
 module.exports = {
   getUsers,
   getUserById,
@@ -246,4 +275,5 @@ module.exports = {
 
   getById,
   updateCustomSubdomainAccess,
+  updateUserLimits,
 };

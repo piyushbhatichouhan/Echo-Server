@@ -50,3 +50,8 @@ export const executeTerminalCommand = async (projectId, command) => {
   const res = await api.post(`/projects/${projectId}/terminal`, { command });
   return res.data.data;
 };
+
+export const getUserResourceMetrics = async () => {
+  const res = await api.get("/projects/resource-metrics");
+  return res.data.data;
+};

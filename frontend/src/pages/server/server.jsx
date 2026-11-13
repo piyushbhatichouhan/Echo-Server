@@ -5,6 +5,7 @@ import useAuth from "../../hooks/useAuth";
 import { useToast } from "../../context/ToastContext";
 import { cleanupPorts } from "../../services/server.api";
 import { getSubdomainRequestStats } from "../../services/admin.api";
+import UserResourceUsageSection from "../../components/server/UserResourceUsageSection/UserResourceUsageSection";
 
 export default function Server() {
   const { user } = useAuth();
@@ -103,6 +104,15 @@ export default function Server() {
       route: "/server/health",
       iconText: "⚡",
     },
+    {
+      title: "Resource Usage",
+      description: "Monitor per-user live RAM, active containers, CPU, and quota allowances.",
+      available: true,
+      onClick: () => {
+        document.getElementById("tenant-resource-usage")?.scrollIntoView({ behavior: "smooth" });
+      },
+      iconText: "📊",
+    },
   ];
 
   return (
@@ -140,6 +150,9 @@ export default function Server() {
           </div>
         ))}
       </div>
+
+      {/* Live Per-User Resource Usage Section */}
+      <UserResourceUsageSection />
     </div>
   );
 }

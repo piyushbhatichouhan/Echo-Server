@@ -224,6 +224,34 @@ const testNotification = async (req, res, next) => {
   }
 };
 
+const updateUserLimits = async (req, res, next) => {
+  try {
+    const updated = await adminService.updateUserLimits(
+      req.params.id,
+      req.body,
+    );
+    res.json({
+      success: true,
+      message: "User resource limits updated successfully.",
+      data: updated,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const getUsersResourceUsage = async (req, res, next) => {
+  try {
+    const data = await adminService.getUsersResourceUsage();
+    res.json({
+      success: true,
+      data,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getUsers,
   disableUser,
@@ -231,6 +259,8 @@ module.exports = {
   deleteUser,
   restoreUser,
   updateUserQuota,
+  updateUserLimits,
+  getUsersResourceUsage,
   toggleCustomSubdomainAccess,
   getSubdomainRequests,
   getSubdomainRequestStats,

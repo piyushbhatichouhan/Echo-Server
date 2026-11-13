@@ -35,6 +35,29 @@ const createProject = async (ownerId, projectData) => {
     throw error;
   }
 
+  // Enforce max projects cap per account (unless owner)
+  const userCheck = await pool.query(
+    "SELECT id, is_owner, COALESCE(max_projects, 5) AS max_projects FROM users WHERE id = $1",
+    [ownerId],
+  );
+  const userRow = userCheck.rows[0];
+  if (userRow && !userRow.is_owner) {
+    const countCheck = await pool.query(
+      "SELECT COUNT(*) AS count FROM projects WHERE owner_id = $1",
+      [ownerId],
+    );
+    const currentCount = parseInt(countCheck.rows[0]?.count || 0, 10);
+    const maxAllowed = userRow.max_projects;
+    if (currentCount >= maxAllowed) {
+      const error = new Error(
+        `Project limit reached (${currentCount}/${maxAllowed}). Delete an existing project or contact superadmin to increase your project allowance.`,
+      );
+      error.status = 403;
+      error.isUserError = true;
+      throw error;
+    }
+  }
+
   const preset = getRuntimePreset(applicationType);
 
   if (!preset) {
@@ -339,6 +362,104 @@ const updateApplicationType = async (projectId, applicationType) => {
   );
 };
 
+const getUserResourceMetrics = async (userId) => {
+  const userCheck = await pool.query(
+    `SELECT id, is_owner, COALESCE(ram_limit_mb, 512) AS ram_limit_mb,
+            COALESCE(max_active_projects, 2) AS max_active_projects,
+            COALESCE(max_projects, 5) AS max_projects,
+            COALESCE(quota_bytes, 0) AS quota_bytes,
+            COALESCE(used_bytes, 0) AS used_bytes
+     FROM users WHERE id = $1`,
+    [userId],
+  );
+  const user = userCheck.rows[0];
+  if (!user) {
+    const error = new Error("User not found");
+    error.status = 404;
+    throw error;
+  }
+
+  const projectsRes = await pool.query(
+    `
+    SELECT p.id, p.name, p.application_type, COALESCE(d.status, 'Not Deployed') AS status
+    FROM projects p
+    LEFT JOIN LATERAL (
+      SELECT status FROM deployments WHERE project_id = p.id ORDER BY updated_at DESC LIMIT 1
+    ) d ON TRUE
+    WHERE p.owner_id = $1
+    ORDER BY p.updated_at DESC
+    `,
+    [userId],
+  );
+  const projects = projectsRes.rows;
+
+  const runningProjects = projects.filter(
+    (p) => (p.status || "").toLowerCase() === "running",
+  );
+
+  const containerService = require("./container.service");
+  let totalMemoryUsedBytes = 0;
+  let totalCpuPercent = 0;
+  const runningContainers = [];
+
+  await Promise.all(
+    runningProjects.map(async (p) => {
+      try {
+        const tel = await containerService.getContainerTelemetry(p.id);
+        if (tel && tel.running) {
+          totalMemoryUsedBytes += tel.memoryUsed || 0;
+          totalCpuPercent += tel.cpuPercent || 0;
+          runningContainers.push({
+            projectId: p.id,
+            name: p.name,
+            memoryUsed: tel.memoryUsed,
+            cpuPercent: tel.cpuPercent,
+          });
+        }
+      } catch (err) {
+        // Container may be offline or transitional
+      }
+    }),
+  );
+
+  const isOwner = Boolean(user.is_owner);
+  const ramLimitMb = isOwner ? null : Number(user.ram_limit_mb);
+  const maxActiveProjects = isOwner ? null : Number(user.max_active_projects);
+  const maxProjects = isOwner ? null : Number(user.max_projects);
+
+  const usedRamMb =
+    Math.round((totalMemoryUsedBytes / (1024 * 1024)) * 10) / 10;
+  const ramPercentage =
+    ramLimitMb && ramLimitMb > 0
+      ? Math.min(100, Math.round((usedRamMb / ramLimitMb) * 100))
+      : 0;
+
+  const activeCount = runningProjects.length;
+  const effectiveCpuPercent =
+    activeCount > 0
+      ? Math.min(100, Math.round((totalCpuPercent / activeCount) * 10) / 10)
+      : 0;
+
+  return {
+    isOwner,
+    limits: {
+      ramLimitMb,
+      maxActiveProjects,
+      maxProjects,
+      quotaBytes: Number(user.quota_bytes),
+    },
+    usage: {
+      totalProjects: projects.length,
+      activeProjects: activeCount,
+      usedRamMb,
+      ramPercentage,
+      cpuPercent: effectiveCpuPercent,
+      usedStorageBytes: Number(user.used_bytes),
+    },
+    runningContainers,
+  };
+};
+
 module.exports = {
   createProject,
   getProjects,
@@ -350,4 +471,5 @@ module.exports = {
   deleteProjectRecord,
   deleteProjectCompletelyInternal,
   updateApplicationType,
+  getUserResourceMetrics,
 };

@@ -20,6 +20,7 @@ router.post("/mailer/send", mailerController.sendBroadcast);
 router.get("/mailer/history", mailerController.getHistory);
 
 router.get("/users", controller.getUsers);
+router.get("/users/resource-usage", controller.getUsersResourceUsage);
 
 router.patch("/users/:id/disable", controller.disableUser);
 
@@ -37,6 +38,11 @@ router.put(
   "/users/:id/quota",
 
   controller.updateUserQuota,
+);
+
+router.patch(
+  "/users/:id/limits",
+  controller.updateUserLimits,
 );
 
 router.patch(

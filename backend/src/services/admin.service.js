@@ -490,6 +490,213 @@ const deleteSubdomainRequest = async (requestId) => {
   return { success: true, message: "Subdomain request removed." };
 };
 
+const updateUserLimits = async (userId, limits = {}) => {
+  const user = await userRepository.getUserById(userId);
+  if (!user) {
+    const error = new Error("User not found");
+    error.status = 404;
+    throw error;
+  }
+
+  const ramLimitMb =
+    limits.ramLimitMb !== undefined ? Number(limits.ramLimitMb) : undefined;
+  const maxActiveProjects =
+    limits.maxActiveProjects !== undefined
+      ? Number(limits.maxActiveProjects)
+      : undefined;
+  const maxProjects =
+    limits.maxProjects !== undefined ? Number(limits.maxProjects) : undefined;
+
+  if (ramLimitMb !== undefined && (isNaN(ramLimitMb) || ramLimitMb < 64)) {
+    const error = new Error("RAM limit must be at least 64 MB.");
+    error.status = 400;
+    throw error;
+  }
+
+  if (
+    maxActiveProjects !== undefined &&
+    (isNaN(maxActiveProjects) || maxActiveProjects < 1)
+  ) {
+    const error = new Error("Active projects limit must be at least 1.");
+    error.status = 400;
+    throw error;
+  }
+
+  if (maxProjects !== undefined && (isNaN(maxProjects) || maxProjects < 1)) {
+    const error = new Error("Maximum projects must be at least 1.");
+    error.status = 400;
+    throw error;
+  }
+
+  return await userRepository.updateUserLimits(userId, {
+    ramLimitMb,
+    maxActiveProjects,
+    maxProjects,
+  });
+};
+
+const getUsersResourceUsage = async () => {
+  const os = require("os");
+
+  const usersRes = await pool.query(
+    `
+    SELECT
+      id,
+      username,
+      email,
+      is_owner,
+      disabled,
+      COALESCE(ram_limit_mb, 512) AS ram_limit_mb,
+      COALESCE(max_active_projects, 2) AS max_active_projects,
+      COALESCE(max_projects, 5) AS max_projects,
+      COALESCE(quota_bytes, 0) AS quota_bytes,
+      COALESCE(used_bytes, 0) AS used_bytes,
+      created_at
+    FROM users
+    ORDER BY is_owner DESC, username ASC
+    `,
+  );
+  const users = usersRes.rows;
+
+  const projectsRes = await pool.query(
+    `
+    SELECT p.id, p.name, p.owner_id, p.application_type,
+           COALESCE(d.status, 'Not Deployed') AS status
+    FROM projects p
+    LEFT JOIN LATERAL (
+      SELECT status FROM deployments WHERE project_id = p.id ORDER BY updated_at DESC LIMIT 1
+    ) d ON TRUE
+    `,
+  );
+  const projects = projectsRes.rows;
+
+  // Group projects by owner_id
+  const projectsByOwner = new Map();
+  for (const p of projects) {
+    if (!projectsByOwner.has(p.owner_id)) {
+      projectsByOwner.set(p.owner_id, []);
+    }
+    projectsByOwner.get(p.owner_id).push(p);
+  }
+
+  const containerService = require("./container.service");
+
+  // For all running projects, fetch telemetry in parallel
+  const runningProjects = projects.filter(
+    (p) => (p.status || "").toLowerCase() === "running",
+  );
+
+  const telemetryByProject = new Map();
+  await Promise.all(
+    runningProjects.map(async (p) => {
+      try {
+        const tel = await containerService.getContainerTelemetry(p.id);
+        if (tel && tel.running) {
+          telemetryByProject.set(p.id, tel);
+        }
+      } catch {
+        // Silently catch container lookup issues
+      }
+    }),
+  );
+
+  let totalAllocatedRamMb = 0;
+  let totalRunningContainers = 0;
+
+  const userUsageList = users.map((u) => {
+    const userProjects = projectsByOwner.get(u.id) || [];
+    const userRunningProjects = userProjects.filter(
+      (p) => (p.status || "").toLowerCase() === "running",
+    );
+
+    let userRamBytes = 0;
+    let userCpuSum = 0;
+    const containers = [];
+
+    for (const p of userRunningProjects) {
+      const tel = telemetryByProject.get(p.id);
+      if (tel) {
+        userRamBytes += tel.memoryUsed || 0;
+        userCpuSum += tel.cpuPercent || 0;
+        containers.push({
+          projectId: p.id,
+          name: p.name,
+          memoryUsedBytes: tel.memoryUsed || 0,
+          memoryUsedMb:
+            Math.round(((tel.memoryUsed || 0) / (1024 * 1024)) * 10) / 10,
+          cpuPercent: tel.cpuPercent || 0,
+        });
+      }
+    }
+
+    const usedRamMb = Math.round((userRamBytes / (1024 * 1024)) * 10) / 10;
+    const ramLimitMb = u.is_owner ? null : Number(u.ram_limit_mb);
+    const maxActiveProjects = u.is_owner ? null : Number(u.max_active_projects);
+    const maxProjects = u.is_owner ? null : Number(u.max_projects);
+
+    const ramPercentage =
+      ramLimitMb && ramLimitMb > 0
+        ? Math.min(100, Math.round((usedRamMb / ramLimitMb) * 100))
+        : 0;
+
+    const activeCount = userRunningProjects.length;
+    const activePercentage =
+      maxActiveProjects && maxActiveProjects > 0
+        ? Math.min(100, Math.round((activeCount / maxActiveProjects) * 100))
+        : 0;
+
+    const avgCpuPercent =
+      activeCount > 0 ? Math.round((userCpuSum / activeCount) * 10) / 10 : 0;
+
+    totalAllocatedRamMb += usedRamMb;
+    totalRunningContainers += activeCount;
+
+    return {
+      userId: u.id,
+      username: u.username,
+      email: u.email,
+      isOwner: u.is_owner,
+      disabled: u.disabled,
+      limits: {
+        ramLimitMb,
+        maxActiveProjects,
+        maxProjects,
+        quotaBytes: Number(u.quota_bytes),
+      },
+      usage: {
+        totalProjects: userProjects.length,
+        activeProjects: activeCount,
+        activePercentage,
+        usedRamMb,
+        ramPercentage,
+        cpuPercent: avgCpuPercent,
+        usedStorageBytes: Number(u.used_bytes),
+      },
+      containers,
+    };
+  });
+
+  const hostTotalRamMb = Math.round(os.totalmem() / (1024 * 1024));
+  const hostFreeRamMb = Math.round(os.freemem() / (1024 * 1024));
+  const hostUsedRamMb = hostTotalRamMb - hostFreeRamMb;
+  const hostRamUsagePercent = Math.round(
+    (hostUsedRamMb / hostTotalRamMb) * 100,
+  );
+
+  return {
+    system: {
+      hostTotalRamMb,
+      hostFreeRamMb,
+      hostUsedRamMb,
+      hostRamUsagePercent,
+      totalUsers: users.length,
+      totalRunningContainers,
+      totalAllocatedRamMb: Math.round(totalAllocatedRamMb * 10) / 10,
+    },
+    users: userUsageList,
+  };
+};
+
 module.exports = {
   getUsers,
   disableUser,
@@ -503,4 +710,6 @@ module.exports = {
   rejectSubdomainRequest,
   revokeCustomSubdomain,
   deleteSubdomainRequest,
+  updateUserLimits,
+  getUsersResourceUsage,
 };

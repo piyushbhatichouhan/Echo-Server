@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import "./deploymentcard.css";
 import { getContainerTelemetry } from "../../../services/project.api";
 import { Cpu, HardDrive } from "lucide-react";
@@ -7,10 +7,7 @@ export default function DeploymentCard({ status, projectId }) {
   const [telemetry, setTelemetry] = useState(null);
 
   useEffect(() => {
-    if (!projectId || !status?.running) {
-      setTelemetry(null);
-      return;
-    }
+    if (!projectId || !status?.running) return;
 
     let isMounted = true;
 
@@ -18,7 +15,7 @@ export default function DeploymentCard({ status, projectId }) {
       try {
         const data = await getContainerTelemetry(projectId);
         if (isMounted) setTelemetry(data);
-      } catch (err) {
+      } catch {
         // Silently skip if container is stopped/starting
       }
     };
@@ -32,8 +29,9 @@ export default function DeploymentCard({ status, projectId }) {
     };
   }, [projectId, status?.running]);
 
-  const cpuVal = telemetry?.cpuPercent ?? 0;
-  const ramVal = telemetry?.memoryPercent ?? 0;
+  const activeTelemetry = status?.running ? telemetry : null;
+  const cpuVal = activeTelemetry?.cpuPercent ?? 0;
+  const ramVal = activeTelemetry?.memoryPercent ?? 0;
 
   return (
     <div className="eh-deployment-card">
@@ -59,7 +57,7 @@ export default function DeploymentCard({ status, projectId }) {
             <div className="eh-telemetry-block">
               <div className="eh-telemetry-header">
                 <span className="eh-telemetry-label">
-                  <Cpu size={14} /> CPU Usage
+                  <Cpu size={14} /> CPU Usage (of quota)
                 </span>
                 <strong>{cpuVal.toFixed(1)}%</strong>
               </div>
@@ -74,9 +72,9 @@ export default function DeploymentCard({ status, projectId }) {
             <div className="eh-telemetry-block">
               <div className="eh-telemetry-header">
                 <span className="eh-telemetry-label">
-                  <HardDrive size={14} /> RAM Usage
+                  <HardDrive size={14} /> RAM Usage (of quota)
                 </span>
-                <strong>{telemetry?.memoryFormatted || `${ramVal.toFixed(1)}%`}</strong>
+                <strong>{activeTelemetry?.memoryFormatted || `${ramVal.toFixed(1)}%`}</strong>
               </div>
               <div className="eh-progress-track">
                 <div

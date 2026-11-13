@@ -94,6 +94,9 @@ async function checkDatabase() {
           ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_token_hash TEXT;
           ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_token_expires TIMESTAMPTZ;
           ALTER TABLE users ADD COLUMN IF NOT EXISTS can_custom_subdomain BOOLEAN NOT NULL DEFAULT FALSE;
+          ALTER TABLE users ADD COLUMN IF NOT EXISTS ram_limit_mb INT NOT NULL DEFAULT 512;
+          ALTER TABLE users ADD COLUMN IF NOT EXISTS max_active_projects INT NOT NULL DEFAULT 2;
+          ALTER TABLE users ADD COLUMN IF NOT EXISTS max_projects INT NOT NULL DEFAULT 5;
         END IF;
 
         IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'deployment_logs') THEN
