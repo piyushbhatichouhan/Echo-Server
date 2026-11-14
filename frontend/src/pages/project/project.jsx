@@ -31,6 +31,7 @@ import ProjectTerminal from "../../components/project/terminal/ProjectTerminal";
 import StorageStats from "../../components/cloud/StorageStats/StorageStats";
 import { getMyStorageStats } from "../../services/storage.api";
 import ProjectAnalytics from "../../components/project/analytics/ProjectAnalytics";
+import ProjectDatabases from "../../components/project/databases/ProjectDatabases";
 
 export default function Project() {
   const { id } = useParams();
@@ -278,6 +279,7 @@ export default function Project() {
         )}
 
         {activeTab === "environment" && <Environment projectId={project.id} />}
+        {activeTab === "databases" && <ProjectDatabases projectId={project.id} />}
         {activeTab === "settings" && <Settings projectId={id} />}
       </div>
     </div>

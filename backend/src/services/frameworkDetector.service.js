@@ -293,7 +293,116 @@ const inspectDirectory = async (targetDir, workingDir = ".") => {
     };
   }
 
-  // 4. Pure Static HTML/CSS/JS
+  // 4. Go Application (Smart Buildpack)
+  if (fileSet.has("go.mod") || fileSet.has("main.go")) {
+    return {
+      detected: true,
+      framework: "go",
+      title: workingDir === "." ? "Go Application (Buildpack)" : `Go (${workingDir})`,
+      runtime: "buildpack",
+      working_directory: workingDir,
+      install_command: "go mod download",
+      build_command: "go build -o server .",
+      start_command: "./server",
+      output_directory: ".",
+      port: 8080,
+      confidence: 0.95,
+      description: `Go application detected via ${fileSet.has("go.mod") ? "go.mod" : "main.go"} in ${workingDir === "." ? "root" : workingDir}. Universal Buildpack enabled.`,
+    };
+  }
+
+  // 5. Rust Application (Smart Buildpack)
+  if (fileSet.has("cargo.toml")) {
+    return {
+      detected: true,
+      framework: "rust",
+      title: workingDir === "." ? "Rust Application (Buildpack)" : `Rust (${workingDir})`,
+      runtime: "buildpack",
+      working_directory: workingDir,
+      install_command: "",
+      build_command: "cargo build --release",
+      start_command: "./target/release/app",
+      output_directory: ".",
+      port: 8080,
+      confidence: 0.95,
+      description: `Rust project detected via Cargo.toml in ${workingDir === "." ? "root" : workingDir}. Universal Buildpack enabled.`,
+    };
+  }
+
+  // 6. Bun Application (Smart Buildpack)
+  if (fileSet.has("bun.lockb") || fileSet.has("bun.lock")) {
+    return {
+      detected: true,
+      framework: "bun",
+      title: workingDir === "." ? "Bun Application (Buildpack)" : `Bun (${workingDir})`,
+      runtime: "buildpack",
+      working_directory: workingDir,
+      install_command: "bun install",
+      build_command: "",
+      start_command: "bun run start",
+      output_directory: ".",
+      port: 3000,
+      confidence: 0.95,
+      description: `Bun runtime project detected in ${workingDir === "." ? "root" : workingDir}. Universal Buildpack enabled.`,
+    };
+  }
+
+  // 7. Java Application (Maven / Gradle Buildpack)
+  if (fileSet.has("pom.xml") || fileSet.has("build.gradle")) {
+    const isMaven = fileSet.has("pom.xml");
+    return {
+      detected: true,
+      framework: isMaven ? "java-maven" : "java-gradle",
+      title: workingDir === "." ? `Java (${isMaven ? "Maven" : "Gradle"})` : `Java ${workingDir}`,
+      runtime: "buildpack",
+      working_directory: workingDir,
+      install_command: "",
+      build_command: isMaven ? "mvn clean package -DskipTests" : "gradle build -x test",
+      start_command: "java -jar target/*.jar",
+      output_directory: ".",
+      port: 8080,
+      confidence: 0.95,
+      description: `Java application detected via ${isMaven ? "pom.xml" : "build.gradle"} in ${workingDir === "." ? "root" : workingDir}. Universal Buildpack enabled.`,
+    };
+  }
+
+  // 8. PHP Application (Smart Buildpack)
+  if (fileSet.has("composer.json") || fileSet.has("index.php")) {
+    return {
+      detected: true,
+      framework: "php",
+      title: workingDir === "." ? "PHP Application (Buildpack)" : `PHP (${workingDir})`,
+      runtime: "buildpack",
+      working_directory: workingDir,
+      install_command: fileSet.has("composer.json") ? "composer install" : "",
+      build_command: "",
+      start_command: "apache2-foreground",
+      output_directory: ".",
+      port: 80,
+      confidence: 0.92,
+      description: `PHP web application detected in ${workingDir === "." ? "root" : workingDir}. Universal Buildpack enabled.`,
+    };
+  }
+
+  // 9. Ruby Application (Smart Buildpack)
+  if (fileSet.has("gemfile")) {
+    return {
+      detected: true,
+      framework: "ruby",
+      title: workingDir === "." ? "Ruby Application (Buildpack)" : `Ruby (${workingDir})`,
+      runtime: "buildpack",
+      working_directory: workingDir,
+      install_command: "bundle install",
+      build_command: "",
+      start_command: "bundle exec rackup --host 0.0.0.0 -p 3000",
+      output_directory: ".",
+      port: 3000,
+      confidence: 0.92,
+      description: `Ruby application detected via Gemfile in ${workingDir === "." ? "root" : workingDir}. Universal Buildpack enabled.`,
+    };
+  }
+
+  // 10. Pure Static HTML/CSS/JS
   if (fileSet.has("index.html")) {
     return {
       detected: true,

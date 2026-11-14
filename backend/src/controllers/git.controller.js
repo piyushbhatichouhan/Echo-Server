@@ -245,6 +245,44 @@ const getProjectDiffController = async (req, res, next) => {
   }
 };
 
+const toggleAutoDeployController = async (req, res, next) => {
+  try {
+    const projectId = req.params.id || req.params.projectId;
+    const { autoDeploy } = req.body;
+    const result = await gitService.toggleAutoDeploy(
+      projectId,
+      req.user.id,
+      autoDeploy,
+    );
+
+    res.json({
+      success: true,
+      data: result,
+      message: `Auto-deploy has been ${result.auto_deploy ? "enabled" : "disabled"}.`,
+    });
+  } catch (err) {
+    next(normalizeGitError(err));
+  }
+};
+
+const regenerateWebhookSecretController = async (req, res, next) => {
+  try {
+    const projectId = req.params.id || req.params.projectId;
+    const result = await gitService.regenerateWebhookSecret(
+      projectId,
+      req.user.id,
+    );
+
+    res.json({
+      success: true,
+      data: result,
+      message: "Webhook secret regenerated successfully.",
+    });
+  } catch (err) {
+    next(normalizeGitError(err));
+  }
+};
+
 module.exports = {
   getProjectRepository,
   connectProjectRepository,
@@ -260,4 +298,6 @@ module.exports = {
   getProjectBranchesController,
   switchProjectBranchController,
   getProjectDiffController,
+  toggleAutoDeployController,
+  regenerateWebhookSecretController,
 };

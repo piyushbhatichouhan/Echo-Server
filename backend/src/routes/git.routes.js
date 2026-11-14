@@ -19,6 +19,8 @@ const {
   getProjectBranchesController,
   switchProjectBranchController,
   getProjectDiffController,
+  toggleAutoDeployController,
+  regenerateWebhookSecretController,
 } = require("../controllers/git.controller");
 
 // Standard REST routes under /projects/:id/git/*
@@ -40,6 +42,8 @@ router.get("/projects/:id/git/commits", authenticate, getProjectCommitsControlle
 router.get("/projects/:id/git/branches", authenticate, getProjectBranchesController);
 router.post("/projects/:id/git/branch", authenticate, switchProjectBranchController);
 router.get("/projects/:id/git/diff", authenticate, getProjectDiffController);
+router.patch("/projects/:id/git/auto-deploy", authenticate, toggleAutoDeployController);
+router.post("/projects/:id/git/webhook-secret/regenerate", authenticate, regenerateWebhookSecretController);
 
 // Backward compatibility routes
 router.post("/:projectId/pull", authenticate, pullRepositoryController);

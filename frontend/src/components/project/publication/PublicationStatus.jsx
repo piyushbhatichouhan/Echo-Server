@@ -17,6 +17,8 @@ import {
   XCircle,
   RotateCcw,
   Sparkles,
+  Lock,
+  ShieldCheck,
 } from "lucide-react";
 import Button from "../../common/button/button";
 import useAuth from "../../../hooks/useAuth";
@@ -512,6 +514,10 @@ export default function PublicationStatus({
                 </>
               )}
             </span>
+            <span className="publication-mode-pill custom" title="Automated Edge SSL/TLS Active">
+              <ShieldCheck size={12} />
+              <span>SSL/TLS Active</span>
+            </span>
           </div>
         </div>
       </div>
@@ -525,6 +531,11 @@ export default function PublicationStatus({
         <StatusItem
           label="Domain Type"
           value={isCustomSubdomain ? "Custom Exclusive" : "Default Generated"}
+          isRaw
+        />
+        <StatusItem
+          label="SSL Security"
+          value={publication.ssl_status === "failed" ? "Failed" : "Active (HTTPS 🔒)"}
           isRaw
         />
       </div>

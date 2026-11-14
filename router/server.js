@@ -1,24 +1,116 @@
 require("dotenv").config();
 
 const http = require("http");
+const https = require("https");
+const tls = require("tls");
 const app = require("./src/app");
 const routerService = require("./src/router.service");
 const proxyService = require("./src/proxy.service");
+const routerRepository = require("./src/router.repository");
 const { connectDatabase, closeDatabase } = require("./src/config/database");
 
-const PORT = Number(process.env.PORT) || 8080;
+const HTTP_PORT = Number(process.env.PORT) || 8080;
+const HTTPS_PORT = Number(process.env.HTTPS_PORT) || 8443;
+const ENABLE_HTTPS_REDIRECT = process.env.ENABLE_HTTPS_REDIRECT === "true";
+
+// -----------------------------------------------------------------------------
+// In-Memory TLS SecureContext Cache with SNI Dynamic Resolution
+// -----------------------------------------------------------------------------
+const tlsCache = new Map();
+
+// Generate minimal fallback certificate for unknown domains during TLS handshake
+let fallbackContext = null;
+try {
+  const crypto = require("crypto");
+  const { generateKeyPairSync } = crypto;
+  const { privateKey, publicKey } = generateKeyPairSync("rsa", {
+    modulusLength: 2048,
+    publicKeyEncoding: { type: "spki", format: "pem" },
+    privateKeyEncoding: { type: "pkcs8", format: "pem" },
+  });
+  // We can use a bare self-signed cert or empty context fallback
+  fallbackContext = tls.createSecureContext({ key: privateKey, cert: publicKey });
+} catch (_) {}
+
+const resolveSecureContext = async (servername) => {
+  if (!servername) return fallbackContext;
+  const host = servername.trim().toLowerCase();
+
+  const cached = tlsCache.get(host);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.ctx;
+  }
+
+  try {
+    const certRecord = await routerRepository.getCertificateByHostname(host);
+    if (certRecord && certRecord.certificate && certRecord.private_key) {
+      const ctx = tls.createSecureContext({
+        cert: certRecord.certificate,
+        key: certRecord.private_key,
+      });
+
+      tlsCache.set(host, {
+        ctx,
+        expiresAt: Date.now() + 5 * 60 * 1000, // 5 min TTL
+      });
+
+      return ctx;
+    }
+  } catch (err) {
+    console.warn(`[Router TLS] Failed to load certificate for ${host}:`, err.message);
+  }
+
+  return fallbackContext;
+};
 
 (async () => {
   try {
     console.log("Connecting to PostgreSQL database...");
     await connectDatabase();
 
-    const server = http.createServer(app);
+    // -------------------------------------------------------------------------
+    // HTTP App with Optional HTTPS Redirect (Preserving ACME Challenge)
+    // -------------------------------------------------------------------------
+    const httpApp = (req, res) => {
+      // Allow ACME challenges to proceed over HTTP without redirect
+      if (req.url.startsWith("/.well-known/acme-challenge/")) {
+        return app(req, res);
+      }
+
+      if (ENABLE_HTTPS_REDIRECT) {
+        const rawHost = req.headers.host || "localhost";
+        const host = rawHost.replace(/:\d+$/, "");
+        const redirectUrl = `https://${host}${HTTPS_PORT === 443 ? "" : `:${HTTPS_PORT}`}${req.url}`;
+        res.writeHead(301, { Location: redirectUrl });
+        return res.end();
+      }
+
+      return app(req, res);
+    };
+
+    const httpServer = http.createServer(httpApp);
 
     // -------------------------------------------------------------------------
-    // WebSocket & HTTP Upgrade Forwarding
+    // HTTPS Server with Dynamic SNI Certificate Resolution
     // -------------------------------------------------------------------------
-    server.on("upgrade", async (req, socket, head) => {
+    const httpsServer = https.createServer(
+      {
+        SNICallback: async (servername, cb) => {
+          try {
+            const ctx = await resolveSecureContext(servername);
+            cb(null, ctx);
+          } catch (e) {
+            cb(e, fallbackContext);
+          }
+        },
+      },
+      app,
+    );
+
+    // -------------------------------------------------------------------------
+    // Shared WebSocket & Upgrade Handler
+    // -------------------------------------------------------------------------
+    const handleUpgrade = async (req, socket, head) => {
       try {
         const rawHost = req.headers.host;
         if (!rawHost) {
@@ -43,10 +135,17 @@ const PORT = Number(process.env.PORT) || 8080;
           socket.destroy();
         } catch (_) {}
       }
+    };
+
+    httpServer.on("upgrade", handleUpgrade);
+    httpsServer.on("upgrade", handleUpgrade);
+
+    httpServer.listen(HTTP_PORT, () => {
+      console.log(`🚀 Echo Edge Router (HTTP) listening on port ${HTTP_PORT}`);
     });
 
-    server.listen(PORT, () => {
-      console.log(`🚀 Echo Dynamic Edge Router listening on port ${PORT}`);
+    httpsServer.listen(HTTPS_PORT, () => {
+      console.log(`🔒 Echo Edge Router (HTTPS/TLS) listening on port ${HTTPS_PORT}`);
     });
 
     // -------------------------------------------------------------------------
@@ -54,8 +153,9 @@ const PORT = Number(process.env.PORT) || 8080;
     // -------------------------------------------------------------------------
     const handleShutdown = async (signal) => {
       console.log(`\n[Router] Received ${signal}. Draining connections...`);
-      server.close(async () => {
-        console.log("[Router] HTTP server closed.");
+      httpServer.close(() => {});
+      httpsServer.close(async () => {
+        console.log("[Router] HTTP/HTTPS servers closed.");
         try {
           await proxyService.flushTelemetry();
           await closeDatabase();
@@ -65,7 +165,6 @@ const PORT = Number(process.env.PORT) || 8080;
         process.exit(0);
       });
 
-      // Force terminate if sockets do not drain within 8 seconds
       setTimeout(() => {
         console.error("[Router] Forcing exit after drain timeout.");
         process.exit(1);

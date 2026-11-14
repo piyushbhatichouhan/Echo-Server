@@ -6,6 +6,7 @@ export default function ProjectTabs({ activeTab, onTabChange }) {
     "analytics",
     "files",
     "environment",
+    "databases",
     "terminal",
     "deployments",
     "settings",

@@ -91,6 +91,7 @@ async function createDeployment(context) {
     project.id,
     context.imageName,
     context.containerName,
+    context.gitMeta,
   );
 
   await context.infrastructure.deployment.updateStatus(

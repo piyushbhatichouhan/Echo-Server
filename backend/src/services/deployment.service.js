@@ -166,7 +166,7 @@ const assertUserResourceAllowance = async (ownerId, projectId) => {
   }
 };
 
-const deployProject = async (projectId, ownerId) => {
+const deployProject = async (projectId, ownerId, gitMeta = {}) => {
   await projectService.verifyProjectOwnership(projectId, ownerId);
 
   // Pre-flight circuit breaker: verify host RAM and disk before building
@@ -202,6 +202,9 @@ const deployProject = async (projectId, ownerId) => {
     userEnvironment,
   );
   deploymentContext.preflightWarnings = preflight.warnings;
+  if (gitMeta && typeof gitMeta === "object") {
+    deploymentContext.gitMeta = gitMeta;
+  }
 
   const runtime = runtimeResolver.getRuntimeHandler(settings.runtime);
 

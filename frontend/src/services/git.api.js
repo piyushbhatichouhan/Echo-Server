@@ -97,3 +97,18 @@ export const getFileDiff = async (projectId, file = null) => {
   return response.data.data;
 };
 
+export const toggleAutoDeploy = async (projectId, autoDeploy) => {
+  const response = await api.patch(`/projects/${projectId}/git/auto-deploy`, {
+    autoDeploy,
+  });
+
+  return response.data.data;
+};
+
+export const regenerateWebhookSecret = async (projectId) => {
+  const response = await api.post(`/projects/${projectId}/git/webhook-secret/regenerate`);
+
+  return response.data.data;
+};
+
+

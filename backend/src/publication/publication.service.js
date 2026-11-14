@@ -177,6 +177,14 @@ const publishProject = async (projectId, ownerId, options = {}) => {
     verification_status: "verified",
   });
 
+  // Zero-Config HTTPS: Provision SSL/TLS certificate automatically
+  try {
+    const sslService = require("../services/ssl.service");
+    sslService.provisionCertificate(hostname).catch((err) => {
+      console.warn("[Publication] Automated SSL provisioning background warning:", err.message);
+    });
+  } catch (_) {}
+
   return publication;
 };
 
@@ -250,6 +258,14 @@ const republishProject = async (projectId, ownerId = null) => {
     publication_status: "active",
     verification_status: "verified",
   });
+
+  // Zero-Config HTTPS: Provision SSL/TLS certificate automatically
+  try {
+    const sslService = require("../services/ssl.service");
+    sslService.provisionCertificate(hostname).catch((err) => {
+      console.warn("[Publication] Automated SSL provisioning background warning:", err.message);
+    });
+  } catch (_) {}
 
   return publication;
 };

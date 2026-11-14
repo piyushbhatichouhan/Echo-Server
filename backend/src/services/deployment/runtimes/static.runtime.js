@@ -203,6 +203,7 @@ async function createDeployment(context) {
     project.id,
     null,
     null,
+    context.gitMeta,
   );
 
   await context.infrastructure.deployment.updateStatus(

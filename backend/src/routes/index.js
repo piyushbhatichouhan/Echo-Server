@@ -18,10 +18,12 @@ const runtimeRoutes = require("./runtime.routes");
 const domainRoutes = require("../domain/domain.routes");
 const publicationRoutes = require("../publication/publication.routes");
 const analyticsRoutes = require("./analytics.routes");
+const managedDatabaseRoutes = require("./managed-database.routes");
 
 router.use("/webhooks", webhookRoutes);
 router.use("/auth", authRoutes);
 router.use("/projects", projectRoutes);
+router.use(managedDatabaseRoutes);
 router.use("/", fileRoutes);
 router.use(environmentRoutes);
 router.use(applicationRoutes);

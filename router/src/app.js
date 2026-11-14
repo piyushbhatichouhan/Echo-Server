@@ -34,6 +34,32 @@ app.post("/_cache/invalidate", (req, res) => {
 });
 
 // -----------------------------------------------------------------------------
+// ACME HTTP-01 Challenge Responder for Automated SSL/TLS
+// -----------------------------------------------------------------------------
+app.get("/.well-known/acme-challenge/:token", async (req, res) => {
+  const token = req.params.token;
+  if (!token) return res.status(404).send("Token required");
+
+  try {
+    const { pool } = require("./config/database");
+    const { rows } = await pool.query(
+      `SELECT key_authorization FROM acme_challenges WHERE token = $1 LIMIT 1`,
+      [token],
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).send("ACME challenge token not found or expired.");
+    }
+
+    res.setHeader("Content-Type", "text/plain");
+    return res.status(200).send(rows[0].key_authorization);
+  } catch (err) {
+    console.error("[ACME Challenge Error]:", err.message);
+    return res.status(500).send("ACME verification error.");
+  }
+});
+
+// -----------------------------------------------------------------------------
 // Response Helper: Clean HTML Error Pages vs. API JSON
 // -----------------------------------------------------------------------------
 const renderError = (req, res, { status, badge, badgeClass, title, message }) => {

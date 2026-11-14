@@ -1,4 +1,5 @@
 const { pool } = require("../config/database");
+const crypto = require("crypto");
 const projectService = require("./project.service");
 const verifyProjectOwnership = (projectId, ownerId) =>
   projectService.verifyProjectOwnership(projectId, ownerId);
@@ -64,7 +65,28 @@ const verifyProjectOwnership = (projectId, ownerId) =>
     [projectId],
   );
 
-  return result.rows[0] ?? null;
+  let repo = result.rows[0] ?? null;
+  if (!repo) return null;
+
+  if (!repo.webhook_secret) {
+    const generatedSecret = crypto.randomBytes(24).toString("hex");
+    try {
+      await pool.query(
+        `UPDATE project_repository SET webhook_secret = $1 WHERE project_id = $2`,
+        [generatedSecret, projectId],
+      );
+      repo.webhook_secret = generatedSecret;
+    } catch (_) {}
+  }
+
+  if (repo.auto_deploy === null || repo.auto_deploy === undefined) {
+    repo.auto_deploy = true;
+  }
+
+  const baseUrl = process.env.APP_URL || process.env.API_BASE_URL || "http://localhost:5000";
+  repo.webhook_url = `${baseUrl.replace(/\/+$/, "")}/api/webhooks/github/${projectId}`;
+
+  return repo;
 };
 
 const validateRepository = async (projectId, ownerId, url, branch, token = null) => {
@@ -173,6 +195,8 @@ const verifyProjectOwnership = (projectId, ownerId) =>
   }
 
   let repositoryRecord = null;
+  const initialSecret = crypto.randomBytes(24).toString("hex");
+
   if (existing.rows.length > 0) {
     const result = await pool.query(
       `
@@ -185,7 +209,10 @@ const verifyProjectOwnership = (projectId, ownerId) =>
           clone_url=$6,
           default_branch=$7,
           branch=$8,
-          access_token=$9
+          access_token=$9,
+          webhook_secret = COALESCE(webhook_secret, $10),
+          auto_deploy = COALESCE(auto_deploy, TRUE),
+          updated_at = NOW()
       WHERE project_id=$1
       RETURNING *
       `,
@@ -199,6 +226,7 @@ const verifyProjectOwnership = (projectId, ownerId) =>
         repo.default_branch,
         selectedBranch,
         token || null,
+        initialSecret,
       ],
     );
 
@@ -216,10 +244,12 @@ const verifyProjectOwnership = (projectId, ownerId) =>
           clone_url,
           default_branch,
           branch,
-          access_token
+          access_token,
+          webhook_secret,
+          auto_deploy
       )
       VALUES
-      ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+      ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,TRUE)
       RETURNING *
       `,
       [
@@ -232,6 +262,7 @@ const verifyProjectOwnership = (projectId, ownerId) =>
         repo.default_branch,
         selectedBranch,
         token || null,
+        initialSecret,
       ],
     );
 
@@ -790,6 +821,55 @@ const verifyProjectOwnership = (projectId, ownerId) =>
   return await gitOperations.diff(gitDirectory, file);
 };
 
+const toggleAutoDeploy = async (projectId, ownerId, autoDeploy) => {
+  const projectService = require("./project.service");
+  await projectService.verifyProjectOwnership(projectId, ownerId);
+
+  const result = await pool.query(
+    `
+    UPDATE project_repository
+    SET auto_deploy = $2, updated_at = NOW()
+    WHERE project_id = $1
+    RETURNING project_id, auto_deploy, webhook_secret
+    `,
+    [projectId, Boolean(autoDeploy)],
+  );
+
+  if (result.rows.length === 0) {
+    throw notConnectedError();
+  }
+
+  return result.rows[0];
+};
+
+const regenerateWebhookSecret = async (projectId, ownerId) => {
+  const projectService = require("./project.service");
+  await projectService.verifyProjectOwnership(projectId, ownerId);
+
+  const newSecret = crypto.randomBytes(24).toString("hex");
+  const result = await pool.query(
+    `
+    UPDATE project_repository
+    SET webhook_secret = $2, updated_at = NOW()
+    WHERE project_id = $1
+    RETURNING project_id, auto_deploy, webhook_secret
+    `,
+    [projectId, newSecret],
+  );
+
+  if (result.rows.length === 0) {
+    throw notConnectedError();
+  }
+
+  const baseUrl = process.env.APP_URL || process.env.API_BASE_URL || "http://localhost:5000";
+  const webhookUrl = `${baseUrl.replace(/\/+$/, "")}/api/webhooks/github/${projectId}`;
+
+  return {
+    ...result.rows[0],
+    webhook_url: webhookUrl,
+  };
+};
+
 module.exports = {
   getRepository,
   validateRepository,
@@ -811,4 +891,6 @@ module.exports = {
   getBranches,
   switchBranch,
   getDiff,
+  toggleAutoDeploy,
+  regenerateWebhookSecret,
 };

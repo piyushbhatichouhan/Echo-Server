@@ -1,0 +1,590 @@
+.eh-databases-view {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.eh-databases-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 12px;
+  padding: 20px 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.eh-databases-header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.eh-databases-icon-box {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: rgba(88, 166, 255, 0.12);
+  color: #58a6ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.eh-databases-header-left h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #f0f6fc;
+  margin: 0 0 4px 0;
+}
+
+.eh-databases-header-left p {
+  font-size: 0.88rem;
+  color: #8b949e;
+  margin: 0;
+}
+
+.eh-databases-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Loading & Empty states */
+.eh-databases-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  gap: 16px;
+  color: #8b949e;
+}
+
+.eh-databases-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 60px 24px;
+  background: #161b22;
+  border: 1px dashed #30363d;
+  border-radius: 12px;
+  max-width: 600px;
+  margin: 20px auto;
+}
+
+.eh-empty-icon-wrap {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(88, 166, 255, 0.1);
+  color: #58a6ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.eh-databases-empty h3 {
+  font-size: 1.2rem;
+  color: #f0f6fc;
+  margin: 0 0 8px 0;
+}
+
+.eh-databases-empty p {
+  font-size: 0.9rem;
+  color: #8b949e;
+  line-height: 1.5;
+  margin: 0 0 24px 0;
+}
+
+/* Grid of Databases */
+.eh-databases-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+  gap: 20px;
+}
+
+.eh-database-card {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transition: border-color 0.2s ease;
+}
+
+.eh-database-card:hover {
+  border-color: #58a6ff;
+}
+
+.eh-db-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.eh-db-title-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.eh-db-emoji-icon {
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+.eh-db-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 3px;
+}
+
+.eh-db-name-row h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #f0f6fc;
+  margin: 0;
+}
+
+.eh-db-engine-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.engine-postgres {
+  background: rgba(51, 103, 145, 0.25);
+  color: #79c0ff;
+  border: 1px solid rgba(51, 103, 145, 0.4);
+}
+
+.engine-redis {
+  background: rgba(220, 56, 45, 0.25);
+  color: #ff7b72;
+  border: 1px solid rgba(220, 56, 45, 0.4);
+}
+
+.engine-mysql {
+  background: rgba(0, 117, 143, 0.25);
+  color: #56d4dd;
+  border: 1px solid rgba(0, 117, 143, 0.4);
+}
+
+.engine-mongo {
+  background: rgba(19, 170, 82, 0.25);
+  color: #7ee787;
+  border: 1px solid rgba(19, 170, 82, 0.4);
+}
+
+.eh-db-container-name {
+  font-family: ui-monospace, monospace;
+  font-size: 0.76rem;
+  color: #8b949e;
+}
+
+.eh-db-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.eh-db-status-pill.running {
+  background: rgba(46, 160, 67, 0.18);
+  color: #3fb950;
+  border: 1px solid rgba(46, 160, 67, 0.4);
+}
+
+.eh-db-status-pill.stopped {
+  background: rgba(139, 148, 158, 0.18);
+  color: #8b949e;
+  border: 1px solid rgba(139, 148, 158, 0.3);
+}
+
+.eh-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.eh-db-status-pill.running .eh-status-dot {
+  box-shadow: 0 0 6px rgba(63, 185, 80, 0.8);
+}
+
+/* Specs */
+.eh-db-specs-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  background: #0d1117;
+  border: 1px solid #21262d;
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+.eh-spec-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.eh-spec-label {
+  font-size: 0.72rem;
+  color: #8b949e;
+}
+
+.eh-spec-value {
+  font-family: ui-monospace, monospace;
+  font-size: 0.82rem;
+  color: #f0f6fc;
+}
+
+.eh-spec-vol {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.76rem;
+  color: #c9d1d9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Connection string */
+.eh-db-connection-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.eh-db-conn-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.eh-db-conn-header label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #8b949e;
+}
+
+.eh-db-conn-tools {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.eh-conn-tool-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  border: 1px solid #30363d;
+  border-radius: 4px;
+  color: #c9d1d9;
+  padding: 2px 8px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.eh-conn-tool-btn:hover {
+  background: #21262d;
+  color: #f0f6fc;
+}
+
+.eh-conn-tool-btn .copied {
+  color: #3fb950;
+}
+
+.eh-db-conn-box {
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  padding: 8px 12px;
+  overflow-x: auto;
+}
+
+.eh-db-conn-box code {
+  font-family: ui-monospace, monospace;
+  font-size: 0.82rem;
+  color: #58a6ff;
+  white-space: nowrap;
+}
+
+/* Creds drawer */
+.eh-db-creds-drawer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.78rem;
+  color: #8b949e;
+  border-top: 1px solid #21262d;
+  padding-top: 10px;
+}
+
+.eh-cred-pill strong {
+  color: #c9d1d9;
+}
+
+/* Actions */
+.eh-db-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.eh-db-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.eh-db-btn.start {
+  background: rgba(46, 160, 67, 0.15);
+  border: 1px solid rgba(46, 160, 67, 0.4);
+  color: #3fb950;
+}
+
+.eh-db-btn.start:hover:not(:disabled) {
+  background: #238636;
+  color: #ffffff;
+}
+
+.eh-db-btn.stop {
+  background: rgba(210, 153, 34, 0.15);
+  border: 1px solid rgba(210, 153, 34, 0.4);
+  color: #d29922;
+}
+
+.eh-db-btn.stop:hover:not(:disabled) {
+  background: #9e6a03;
+  color: #ffffff;
+}
+
+.eh-db-btn.delete {
+  background: transparent;
+  border: 1px solid #30363d;
+  color: #f85149;
+  margin-left: auto;
+}
+
+.eh-db-btn.delete:hover:not(:disabled) {
+  background: rgba(248, 81, 73, 0.15);
+  border-color: rgba(248, 81, 73, 0.4);
+}
+
+.eh-db-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Modal */
+.eh-db-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.eh-db-modal {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 12px;
+  max-width: 580px;
+  width: 100%;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+.eh-db-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 24px;
+  border-bottom: 1px solid #21262d;
+}
+
+.eh-modal-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.eh-sparkle {
+  color: #d29922;
+}
+
+.eh-modal-title-group h3 {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #f0f6fc;
+  margin: 0;
+}
+
+.eh-modal-close {
+  background: transparent;
+  border: none;
+  color: #8b949e;
+  font-size: 1.4rem;
+  cursor: pointer;
+}
+
+.eh-modal-close:hover {
+  color: #f0f6fc;
+}
+
+.eh-db-modal-form {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.eh-modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.eh-modal-field label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #c9d1d9;
+}
+
+.eh-engine-select-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.eh-engine-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.eh-engine-option:hover {
+  border-color: #58a6ff;
+}
+
+.eh-engine-option.selected {
+  border-color: #58a6ff;
+  background: rgba(88, 166, 255, 0.08);
+}
+
+.eh-engine-opt-icon {
+  font-size: 1.5rem;
+}
+
+.eh-engine-opt-info strong {
+  display: block;
+  font-size: 0.9rem;
+  color: #f0f6fc;
+  margin-bottom: 2px;
+}
+
+.eh-engine-opt-info p {
+  font-size: 0.75rem;
+  color: #8b949e;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.eh-modal-field input,
+.eh-modal-field select {
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  padding: 10px 14px;
+  color: #f0f6fc;
+  font-size: 0.9rem;
+}
+
+.eh-modal-field input:focus,
+.eh-modal-field select:focus {
+  outline: none;
+  border-color: #58a6ff;
+}
+
+.eh-modal-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: rgba(56, 139, 253, 0.1);
+  border: 1px solid rgba(56, 139, 253, 0.3);
+  border-radius: 8px;
+  padding: 12px 14px;
+  color: #58a6ff;
+}
+
+.eh-modal-notice strong {
+  display: block;
+  font-size: 0.85rem;
+  margin-bottom: 3px;
+  color: #f0f6fc;
+}
+
+.eh-modal-notice p {
+  font-size: 0.8rem;
+  color: #8b949e;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.eh-modal-notice code {
+  background: #0d1117;
+  border: 1px solid #30363d;
+  padding: 1px 4px;
+  border-radius: 3px;
+  color: #79c0ff;
+}
+
+.eh-db-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 8px;
+}
+

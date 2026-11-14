@@ -49,6 +49,48 @@ const getProjectByHostname = async (hostname) => {
   return rows[0] || null;
 };
 
+const getCertificateByHostname = async (hostname) => {
+  if (!hostname) return null;
+  const normalized = String(hostname).trim().toLowerCase();
+
+  // 1. Try exact hostname match
+  let { rows } = await pool.query(
+    `SELECT certificate, private_key, hostname, expires_at
+     FROM domain_certificates
+     WHERE LOWER(hostname) = $1
+     LIMIT 1`,
+    [normalized],
+  );
+
+  if (rows.length > 0) return rows[0];
+
+  // 2. Try wildcard match for subdomains (e.g. *.devpiyush.in)
+  const parts = normalized.split(".");
+  if (parts.length > 2) {
+    const parentDomain = parts.slice(1).join(".");
+    const wildcard = `*.${parentDomain}`;
+    const wildcardRes = await pool.query(
+      `SELECT certificate, private_key, hostname, expires_at
+       FROM domain_certificates
+       WHERE LOWER(hostname) = $1
+       LIMIT 1`,
+      [wildcard],
+    );
+    if (wildcardRes.rows.length > 0) return wildcardRes.rows[0];
+  }
+
+  // 3. Fallback to most recently updated certificate if available
+  const fallbackRes = await pool.query(
+    `SELECT certificate, private_key, hostname, expires_at
+     FROM domain_certificates
+     ORDER BY updated_at DESC
+     LIMIT 1`,
+  );
+
+  return fallbackRes.rows[0] || null;
+};
+
 module.exports = {
   getProjectByHostname,
+  getCertificateByHostname,
 };

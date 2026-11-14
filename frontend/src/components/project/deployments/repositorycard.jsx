@@ -5,6 +5,7 @@ import RepositoryInfoCard from "../repository/info/RepositoryInfoCard";
 import GitStatusCard from "../repository/status/GitStatusCard";
 import RepositoryConnectionCard from "../repository/connection/RepositoryConnectionCard";
 import CommitCard from "../repository/commit/CommitCard";
+import WebhookCard from "../repository/webhook/WebhookCard";
 import { useToast } from "../../../context/ToastContext";
 import {
   GitCommit,
@@ -388,6 +389,14 @@ export default function RepositoryCard({
 
         <RepositoryInfoCard validation={validation} repository={repository} />
       </div>
+
+      {repository && (
+        <WebhookCard
+          projectId={projectId}
+          repository={repository}
+          onRefresh={refresh}
+        />
+      )}
 
       <GitStatusCard gitStatus={gitStatus} projectId={projectId} />
 

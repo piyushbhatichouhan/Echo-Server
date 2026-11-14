@@ -111,6 +111,56 @@ async function checkDatabase() {
           CREATE INDEX IF NOT EXISTS idx_deployments_status ON deployments(status);
         END IF;
 
+        IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'project_repository') THEN
+          ALTER TABLE project_repository ADD COLUMN IF NOT EXISTS webhook_secret VARCHAR(64);
+          ALTER TABLE project_repository ADD COLUMN IF NOT EXISTS auto_deploy BOOLEAN DEFAULT TRUE;
+        END IF;
+
+        CREATE TABLE IF NOT EXISTS acme_challenges (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          token VARCHAR(255) NOT NULL UNIQUE,
+          key_authorization TEXT NOT NULL,
+          hostname VARCHAR(255) NOT NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+        CREATE INDEX IF NOT EXISTS idx_acme_challenges_token ON acme_challenges(token);
+        CREATE INDEX IF NOT EXISTS idx_acme_challenges_host ON acme_challenges(hostname);
+
+        CREATE TABLE IF NOT EXISTS domain_certificates (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          hostname VARCHAR(255) NOT NULL UNIQUE,
+          certificate TEXT NOT NULL,
+          private_key TEXT NOT NULL,
+          issuer VARCHAR(100) DEFAULT 'letsencrypt',
+          expires_at TIMESTAMPTZ,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+        CREATE INDEX IF NOT EXISTS idx_domain_certs_hostname ON domain_certificates(hostname);
+
+        CREATE TABLE IF NOT EXISTS managed_databases (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+          owner_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          name VARCHAR(100) NOT NULL,
+          engine VARCHAR(30) NOT NULL,
+          version VARCHAR(30) NOT NULL,
+          container_name VARCHAR(150) NOT NULL UNIQUE,
+          host_port INT,
+          internal_port INT NOT NULL,
+          db_name VARCHAR(100),
+          db_user VARCHAR(100),
+          db_password TEXT,
+          status VARCHAR(30) DEFAULT 'provisioning',
+          volume_name VARCHAR(150) NOT NULL,
+          connection_string TEXT,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+        CREATE INDEX IF NOT EXISTS idx_managed_db_project ON managed_databases(project_id);
+        CREATE INDEX IF NOT EXISTS idx_managed_db_owner ON managed_databases(owner_id);
+        CREATE INDEX IF NOT EXISTS idx_managed_db_engine ON managed_databases(engine);
+
         CREATE TABLE IF NOT EXISTS password_reset_tokens (
           id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
           user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
