@@ -10,3 +10,12 @@ export const getOutboundIp = async (refresh = false) => {
   return res.data?.data?.outboundIp;
 };
 
+export const getCloudflareStatus = async () => {
+  try {
+    const res = await api.get("/system/cloudflare/status");
+    return res.data?.data;
+  } catch {
+    return { isConfigured: false };
+  }
+};
+

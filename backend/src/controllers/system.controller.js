@@ -42,8 +42,25 @@ const getDeploymentGuide = async (req, res, next) => {
   }
 };
 
+const getCloudflareConfig = async (req, res, next) => {
+  try {
+    const cloudflareService = require("../services/cloudflare.service");
+    const config = cloudflareService.getApiConfig();
+    res.json({
+      success: true,
+      data: {
+        isConfigured: config.isConfigured,
+        zoneId: config.zoneId ? `${config.zoneId.slice(0, 6)}...` : null,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   dockerInfo,
   getOutboundIp,
   getDeploymentGuide,
+  getCloudflareConfig,
 };

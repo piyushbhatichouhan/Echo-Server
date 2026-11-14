@@ -6,10 +6,12 @@ const {
   dockerInfo,
   getOutboundIp,
   getDeploymentGuide,
+  getCloudflareConfig,
 } = require("../controllers/system.controller");
 
 router.get("/system/docker", authenticate, requireOwner, dockerInfo);
 router.get("/system/outbound-ip", authenticate, getOutboundIp);
 router.get("/system/guide", authenticate, getDeploymentGuide);
+router.get("/system/cloudflare/status", authenticate, getCloudflareConfig);
 
 module.exports = router;

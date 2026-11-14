@@ -472,10 +472,18 @@ export default function ProjectDomains({
         <div className="eh-dns-cloudflare-callout">
           <AlertCircle size={20} style={{ color: "#d29922", flexShrink: 0, marginTop: 2 }} />
           <div>
-            <strong>Using Cloudflare for your domain? (Avoid Error 1014)</strong>
+            <strong>Behind CGNAT or Cloudflare Tunnel?</strong>
             <p>
-              If your custom domain is on Cloudflare, set the Proxy status to <strong>DNS only (Grey Cloud ☁️)</strong>. Cloudflare forbids cross-account CNAME proxying (<code>Error 1014: CNAME Cross-User Banned</code>). Or use an <strong>A Record</strong> pointing to <code>{serverIpTarget}</code>.
+              Because this server operates through Cloudflare Tunnel without direct port forwarding, <strong>do not use direct A-records pointing to IP addresses</strong> (which cause Cloudflare <code>Error 1000</code>).
             </p>
+            <ul style={{ margin: "8px 0 0 16px", padding: 0, lineHeight: 1.6 }}>
+              <li>
+                <strong>Same Cloudflare Account:</strong> In Cloudflare Zero Trust → Tunnels, add your custom domain as a <strong>Public Hostname</strong> pointing to <code>http://echo-router:8080</code> (or <code>localhost:80</code>).
+              </li>
+              <li>
+                <strong>External / Third-Party Domain:</strong> Add a <strong>CNAME</strong> pointing to <code>{baseDomainTarget}</code>. Configure Cloudflare Custom Hostnames on your base domain for zero-config automatic SSL and proxying.
+              </li>
+            </ul>
           </div>
         </div>
 

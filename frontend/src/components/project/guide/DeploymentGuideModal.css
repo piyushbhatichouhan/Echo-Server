@@ -343,6 +343,30 @@
   line-height: 1.45;
 }
 
+.eh-cgnat-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: 10px;
+  font-size: 0.84rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.eh-cgnat-notice strong {
+  display: block;
+  color: #34d399;
+  margin-bottom: 3px;
+}
+
+.eh-cgnat-notice p {
+  margin: 0;
+}
+
 .eh-tip-callout {
   padding: 12px 16px;
   background: rgba(59, 130, 246, 0.08);

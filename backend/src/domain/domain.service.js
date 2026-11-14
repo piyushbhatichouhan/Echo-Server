@@ -142,6 +142,14 @@ const addCustomDomain = async (projectId, rawHostname) => {
     });
   } catch (_) {}
 
+  // Automated Cloudflare for SaaS custom hostname registration (for Cloudflare Tunnel / CGNAT setups)
+  try {
+    const cloudflareService = require("../services/cloudflare.service");
+    cloudflareService.registerCustomHostname(hostname).catch((err) => {
+      console.warn(`[Cloudflare] Background registration notice for ${hostname}:`, err.message);
+    });
+  } catch (_) {}
+
   return domain;
 };
 
@@ -176,6 +184,14 @@ const deleteCustomDomain = async (projectId, domainId) => {
   // Clean up certificates
   try {
     await sslService.deleteCertificate(domain.hostname);
+  } catch (_) {}
+
+  // Clean up Cloudflare custom hostname if configured
+  try {
+    const cloudflareService = require("../services/cloudflare.service");
+    cloudflareService.deleteCustomHostname(domain.hostname).catch((err) => {
+      console.warn(`[Cloudflare] Background cleanup notice for ${domain.hostname}:`, err.message);
+    });
   } catch (_) {}
 
   return { success: true, message: `Domain '${domain.hostname}' removed.` };

@@ -837,6 +837,16 @@ app.get('*', (req, res) => {
                     </p>
                   </div>
 
+                  <div className="eh-cgnat-notice">
+                    <Sparkles size={16} style={{ color: "#34d399", flexShrink: 0, marginTop: 2 }} />
+                    <div>
+                      <strong>Behind CGNAT or Home Server? (Recommended)</strong>
+                      <p>
+                        If your server is behind CGNAT or a residential ISP, your carrier rotates outbound IP pools. In <strong>MongoDB Atlas Network Access</strong>, select <strong>"Allow Access From Anywhere (0.0.0.0/0)"</strong>. Combined with strong database user credentials and SSL/TLS, this prevents unexpected database disconnections when your ISP rotates IP pools.
+                      </p>
+                    </div>
+                  </div>
+
                   {/* Required Environment Variables */}
                   <div className="eh-db-env-section">
                     <h5>Required Environment Variables</h5>

@@ -696,7 +696,7 @@ export default function Settings() {
               </div>
 
               <span className="settings-tile-sub">
-                This is your server's public IPv4 egress address. Add this to your database whitelists (MongoDB Atlas, Supabase, Neon, AWS RDS, MySQL, Redis) and use it for DNS A-records.
+                This is your server's current public egress IPv4. For databases behind CGNAT, whitelist this IP or use 0.0.0.0/0 in MongoDB Atlas so dynamic ISP rotations do not disconnect your app.
               </span>
             </div>
 
