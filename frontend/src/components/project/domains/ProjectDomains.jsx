@@ -131,7 +131,13 @@ export default function ProjectDomains({
     }
   };
 
-  const customDomainsList = domains.filter((d) => d.is_custom);
+  const serverIpTarget =
+    import.meta.env.VITE_SERVER_IP ||
+    (window.location.hostname &&
+    window.location.hostname !== "localhost" &&
+    window.location.hostname !== "127.0.0.1"
+      ? window.location.hostname
+      : "127.0.0.1 (Server IP)");
   const primaryDomain = domains.find((d) => d.is_primary) || (publication?.hostname ? {
     hostname: publication.hostname,
     is_primary: true,
@@ -414,14 +420,14 @@ export default function ProjectDomains({
                   <code>@</code>
                 </td>
                 <td>
-                  <code className="eh-dns-target-val">127.0.0.1</code>
+                  <code className="eh-dns-target-val">{serverIpTarget}</code>
                 </td>
                 <td>Automatic / 3600</td>
                 <td>
                   <button
                     type="button"
                     className="eh-dns-copy-btn"
-                    onClick={() => handleCopy("127.0.0.1", "a-record")}
+                    onClick={() => handleCopy(serverIpTarget.split(" ")[0], "a-record")}
                   >
                     {copiedText === "a-record" ? <Check size={13} /> : <Copy size={13} />}
                     <span>{copiedText === "a-record" ? "Copied" : "Copy Value"}</span>

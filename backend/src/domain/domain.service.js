@@ -123,7 +123,7 @@ const addCustomDomain = async (projectId, rawHostname) => {
       is_primary,
       ssl_status,
       verification_status,
-      status,
+      publication_status,
       created_at,
       updated_at
     )

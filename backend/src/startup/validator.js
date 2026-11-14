@@ -116,6 +116,15 @@ async function checkDatabase() {
           ALTER TABLE project_repository ADD COLUMN IF NOT EXISTS auto_deploy BOOLEAN DEFAULT TRUE;
         END IF;
 
+        IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'project_domains') THEN
+          ALTER TABLE project_domains ADD COLUMN IF NOT EXISTS ssl_status VARCHAR(20) DEFAULT 'pending';
+          ALTER TABLE project_domains ADD COLUMN IF NOT EXISTS verification_status VARCHAR(20) DEFAULT 'pending';
+          ALTER TABLE project_domains ADD COLUMN IF NOT EXISTS publication_status VARCHAR(20) DEFAULT 'active';
+          ALTER TABLE project_domains ADD COLUMN IF NOT EXISTS is_custom BOOLEAN DEFAULT FALSE;
+          ALTER TABLE project_domains ADD COLUMN IF NOT EXISTS is_primary BOOLEAN DEFAULT FALSE;
+          ALTER TABLE project_domains ADD COLUMN IF NOT EXISTS custom_domain VARCHAR(255);
+        END IF;
+
         CREATE TABLE IF NOT EXISTS acme_challenges (
           id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
           token VARCHAR(255) NOT NULL UNIQUE,
