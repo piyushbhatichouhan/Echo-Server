@@ -12,6 +12,15 @@ const isPublicIpv4 = (ip) =>
     ip.trim(),
   );
 
+const isPublicIpv6 = (ip) => {
+  if (typeof ip !== "string") return false;
+  const s = ip.trim().toLowerCase();
+  if (s === "::1" || s.startsWith("fe80") || s.startsWith("fc") || s.startsWith("fd")) return false;
+  return s.includes(":") && s.length >= 3;
+};
+
+const isPublicIp = (ip) => isPublicIpv4(ip) || isPublicIpv6(ip);
+
 const withTimeout = (promise, ms = 2500) => {
   let timer;
   const timeoutPromise = new Promise((_, reject) => {
@@ -25,49 +34,66 @@ const getDockerInfo = async () => {
 };
 
 const getOutboundIp = async (forceRefresh = false, fallbackClientIp = null) => {
-  if (process.env.SERVER_PUBLIC_IP && isPublicIpv4(process.env.SERVER_PUBLIC_IP)) {
+  if (process.env.SERVER_PUBLIC_IP && isPublicIp(process.env.SERVER_PUBLIC_IP)) {
     return process.env.SERVER_PUBLIC_IP.trim();
   }
 
   const now = Date.now();
-  if (!forceRefresh && cachedOutboundIp && isPublicIpv4(cachedOutboundIp) && now - lastIpFetchTime < IP_CACHE_TTL_MS) {
+  if (!forceRefresh && cachedOutboundIp && isPublicIp(cachedOutboundIp) && now - lastIpFetchTime < IP_CACHE_TTL_MS) {
     return cachedOutboundIp;
   }
 
-  // Fast concurrent dynamic public IPv4 detection using DNS resolver and HTTP reflectors with hard 2.5s timeout
+  const httpHeaders = { "User-Agent": "curl/8.0" };
+
+  // Fast concurrent dynamic public IP detection
   const fetchers = [
+    async () => {
+      const res = await axios.get("https://api4.ipify.org?format=json", {
+        timeout: 2500,
+        headers: httpHeaders,
+      });
+      if (res.data?.ip && isPublicIp(res.data.ip)) return String(res.data.ip).trim();
+      throw new Error("No IP");
+    },
+    async () => {
+      const res = await axios.get("https://ipv4.icanhazip.com", {
+        timeout: 2500,
+        responseType: "text",
+        headers: httpHeaders,
+      });
+      if (res.data && isPublicIp(res.data)) return String(res.data).trim();
+      throw new Error("No IP");
+    },
+    async () => {
+      const res = await axios.get("https://checkip.amazonaws.com", {
+        timeout: 2500,
+        responseType: "text",
+        headers: httpHeaders,
+      });
+      if (res.data && isPublicIp(res.data)) return String(res.data).trim();
+      throw new Error("No IP");
+    },
+    async () => {
+      const res = await axios.get("https://ifconfig.me/ip", {
+        timeout: 2500,
+        responseType: "text",
+        headers: httpHeaders,
+      });
+      if (res.data && isPublicIp(res.data)) return String(res.data).trim();
+      throw new Error("No IP");
+    },
     async () => {
       const resolver = new Resolver();
       resolver.setServers(["208.67.222.222", "208.67.220.220"]);
       const res = await withTimeout(resolver.resolve4("myip.opendns.com"), 2000);
-      if (res && res[0] && isPublicIpv4(res[0])) return res[0].trim();
+      if (res && res[0] && isPublicIp(res[0])) return res[0].trim();
       throw new Error("No DNS IP");
-    },
-    async () => {
-      const res = await axios.get("https://api4.ipify.org?format=json", { timeout: 2500 });
-      if (res.data?.ip && isPublicIpv4(res.data.ip)) return String(res.data.ip).trim();
-      throw new Error("No IP");
-    },
-    async () => {
-      const res = await axios.get("https://ipv4.icanhazip.com", { timeout: 2500, responseType: "text" });
-      if (res.data && isPublicIpv4(res.data)) return String(res.data).trim();
-      throw new Error("No IP");
-    },
-    async () => {
-      const res = await axios.get("https://checkip.amazonaws.com", { timeout: 2500, responseType: "text" });
-      if (res.data && isPublicIpv4(res.data)) return String(res.data).trim();
-      throw new Error("No IP");
-    },
-    async () => {
-      const res = await axios.get("https://ifconfig.me/ip", { timeout: 2500, responseType: "text" });
-      if (res.data && isPublicIpv4(res.data)) return String(res.data).trim();
-      throw new Error("No IP");
     },
   ];
 
   try {
     const ip = await Promise.any(fetchers.map((fn) => fn()));
-    if (isPublicIpv4(ip)) {
+    if (isPublicIp(ip)) {
       cachedOutboundIp = ip;
       lastIpFetchTime = now;
       return cachedOutboundIp;
@@ -77,22 +103,22 @@ const getOutboundIp = async (forceRefresh = false, fallbackClientIp = null) => {
   }
 
   // Fallback 1: Connecting client IP (from Cloudflare cf-connecting-ip or reverse proxy)
-  if (fallbackClientIp && isPublicIpv4(fallbackClientIp)) {
+  if (fallbackClientIp && isPublicIp(fallbackClientIp)) {
     cachedOutboundIp = fallbackClientIp.trim();
     lastIpFetchTime = now;
     return cachedOutboundIp;
   }
 
   // Fallback 2: Environment variables
-  if (process.env.SERVER_PUBLIC_IP && isPublicIpv4(process.env.SERVER_PUBLIC_IP)) {
+  if (process.env.SERVER_PUBLIC_IP && isPublicIp(process.env.SERVER_PUBLIC_IP)) {
     return process.env.SERVER_PUBLIC_IP.trim();
   }
 
-  if (process.env.SERVER_IP && isPublicIpv4(process.env.SERVER_IP)) {
+  if (process.env.SERVER_IP && isPublicIp(process.env.SERVER_IP)) {
     return process.env.SERVER_IP.trim();
   }
 
-  return cachedOutboundIp && isPublicIpv4(cachedOutboundIp) ? cachedOutboundIp : null;
+  return cachedOutboundIp && isPublicIp(cachedOutboundIp) ? cachedOutboundIp : null;
 };
 
 const DATABASE_PRESETS = [

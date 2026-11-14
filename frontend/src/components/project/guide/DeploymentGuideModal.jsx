@@ -320,11 +320,13 @@ export default function DeploymentGuideModal({ isOpen, onClose, initialTab = "ru
 
   const toast = useToast();
 
-  const isPublicIpv4 = (val) =>
-    typeof val === "string" &&
-    /^(?!0\.)(?!127\.)(?!10\.)(?!172\.(1[6-9]|2\d|3[01])\.)(?!192\.168\.)(\d{1,3}\.){3}\d{1,3}$/.test(
-      val.trim()
-    );
+  const isPublicIpv4 = (val) => {
+    if (!val || typeof val !== "string") return false;
+    const s = val.trim();
+    const isV4 = /^(?!0\.)(?!127\.)(?!10\.)(?!172\.(1[6-9]|2\d|3[01])\.)(?!192\.168\.)(\d{1,3}\.){3}\d{1,3}$/.test(s);
+    if (isV4) return true;
+    return s.includes(":") && !s.startsWith("fe80") && !s.startsWith("fc") && !s.startsWith("fd") && s !== "::1";
+  };
 
   const fetchIp = useCallback(async (force = false) => {
     try {
