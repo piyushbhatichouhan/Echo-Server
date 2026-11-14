@@ -352,7 +352,7 @@ export default function Settings() {
           </div>
         </div>
       </div>
-
+  
       {/* Profile Details Card */}
       <div className="settings-section">
         <div className="settings-section-title">
