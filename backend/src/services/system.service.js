@@ -9,39 +9,57 @@ const getDockerInfo = async () => {
   return await docker.info();
 };
 
-const getOutboundIp = async () => {
+const getOutboundIp = async (forceRefresh = false) => {
   if (process.env.SERVER_PUBLIC_IP) {
     return process.env.SERVER_PUBLIC_IP.trim();
   }
 
   const now = Date.now();
-  if (cachedOutboundIp && now - lastIpFetchTime < IP_CACHE_TTL_MS) {
+  if (!forceRefresh && cachedOutboundIp && now - lastIpFetchTime < IP_CACHE_TTL_MS) {
     return cachedOutboundIp;
   }
 
+  // IPv4 provider candidates running concurrently via Promise.any
+  const fetchers = [
+    async () => {
+      const res = await axios.get("https://api4.ipify.org?format=json", { timeout: 3500 });
+      if (res.data?.ip) return String(res.data.ip).trim();
+      throw new Error("No IP");
+    },
+    async () => {
+      const res = await axios.get("https://ipv4.icanhazip.com", { timeout: 3500, responseType: "text" });
+      if (res.data) return String(res.data).trim();
+      throw new Error("No IP");
+    },
+    async () => {
+      const res = await axios.get("https://v4.ident.me", { timeout: 3500, responseType: "text" });
+      if (res.data) return String(res.data).trim();
+      throw new Error("No IP");
+    },
+    async () => {
+      const res = await axios.get("https://api.ipify.org?format=json", { timeout: 3500 });
+      if (res.data?.ip) return String(res.data.ip).trim();
+      throw new Error("No IP");
+    },
+    async () => {
+      const res = await axios.get("https://checkip.amazonaws.com", { timeout: 3500, responseType: "text" });
+      if (res.data) return String(res.data).trim();
+      throw new Error("No IP");
+    },
+  ];
+
   try {
-    const res = await axios.get("https://api.ipify.org?format=json", {
-      timeout: 2000,
-    });
-    if (res.data?.ip) {
-      cachedOutboundIp = res.data.ip;
+    const ip = await Promise.any(fetchers.map((fn) => fn()));
+    if (ip && /^(\d{1,3}\.){3}\d{1,3}$/.test(ip)) {
+      cachedOutboundIp = ip;
       lastIpFetchTime = now;
       return cachedOutboundIp;
     }
-  } catch {}
+  } catch (err) {
+    console.warn("[System] Outbound IP resolution notice:", err.message);
+  }
 
-  try {
-    const res = await axios.get("https://ifconfig.me/ip", {
-      timeout: 2000,
-    });
-    if (res.data && typeof res.data === "string") {
-      cachedOutboundIp = res.data.trim();
-      lastIpFetchTime = now;
-      return cachedOutboundIp;
-    }
-  } catch {}
-
-  return cachedOutboundIp || "127.0.0.1";
+  return cachedOutboundIp || process.env.SERVER_IP || "127.0.0.1";
 };
 
 const DATABASE_PRESETS = [

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Modal from "../../common/modal/modal";
 import {
   BookOpen,
@@ -12,8 +12,10 @@ import {
   Database,
   ExternalLink,
   Sparkles,
+  RefreshCw,
 } from "lucide-react";
-import { getDeploymentGuide } from "../../../services/system.api";
+import { getDeploymentGuide, getOutboundIp } from "../../../services/system.api";
+import { useToast } from "../../../context/ToastContext";
 import "./DeploymentGuideModal.css";
 
 const DB_IDS = ["mongodb", "postgresql", "mysql", "redis", "firebase"];
@@ -312,6 +314,27 @@ export default function DeploymentGuideModal({ isOpen, onClose, initialTab = "ru
   const [activeDb, setActiveDb] = useState(DB_IDS.includes(initialTab) ? initialTab : "mongodb");
   const [guideData, setGuideData] = useState(null);
   const [copiedKey, setCopiedKey] = useState(null);
+  const [ip, setIp] = useState(null);
+  const [loadingIp, setLoadingIp] = useState(false);
+  const [refreshingIp, setRefreshingIp] = useState(false);
+
+  const toast = useToast();
+
+  const fetchIp = useCallback(async (force = false) => {
+    try {
+      if (force) setRefreshingIp(true);
+      else setLoadingIp(true);
+      const resIp = await getOutboundIp(force);
+      if (resIp && resIp !== "Auto-detected") {
+        setIp(resIp);
+      }
+    } catch (e) {
+      console.warn("Failed to fetch outbound IP:", e);
+    } finally {
+      setLoadingIp(false);
+      setRefreshingIp(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -327,19 +350,33 @@ export default function DeploymentGuideModal({ isOpen, onClose, initialTab = "ru
       }
       if (!guideData) {
         getDeploymentGuide()
-          .then((data) => setGuideData(data))
+          .then((data) => {
+            setGuideData(data);
+            if (data?.outboundIp && data.outboundIp !== "Auto-detected") {
+              setIp(data.outboundIp);
+            }
+          })
           .catch(() => {});
       }
+      if (!ip) {
+        fetchIp();
+      }
     }
-  }, [isOpen, initialTab, guideData]);
+  }, [isOpen, initialTab, guideData, ip, fetchIp]);
 
   const copyToClipboard = (text, key) => {
+    if (!text || text === "Auto-detected" || text === "Detecting..." || text === "Loading...") {
+      toast?.info?.("Detecting IP", "Still detecting server outbound IP, please wait...");
+      fetchIp(true);
+      return;
+    }
     navigator.clipboard.writeText(text);
     setCopiedKey(key);
+    toast?.success?.("Copied to Clipboard", `Server Outbound IP ${text} copied.`);
     setTimeout(() => setCopiedKey(null), 2000);
   };
 
-  const outboundIp = guideData?.outboundIp || "Auto-detected";
+  const outboundIp = ip || guideData?.outboundIp || (loadingIp ? "Detecting..." : "127.0.0.1");
   const databaseList = guideData?.databases || FALLBACK_DATABASES;
   const currentDb = databaseList.find((d) => d.id === activeDb) || databaseList[0];
 
@@ -468,12 +505,31 @@ export default function DeploymentGuideModal({ isOpen, onClose, initialTab = "ru
                     </p>
                     <div className="eh-ip-pill">
                       <span>Server Outbound IP:</span>
-                      <code>{outboundIp}</code>
+                      <code>
+                        {loadingIp && !ip ? (
+                          <span className="eh-ip-loading-inline">
+                            <RefreshCw size={11} className="eh-spin" /> Detecting...
+                          </span>
+                        ) : (
+                          outboundIp
+                        )}
+                      </code>
                       <button
                         type="button"
                         onClick={() => copyToClipboard(outboundIp, "ip1")}
+                        disabled={loadingIp && !ip}
+                        title={loadingIp && !ip ? "Detecting IP..." : "Copy IP"}
                       >
                         {copiedKey === "ip1" ? <Check size={13} color="#34d399" /> : <Copy size={13} />}
+                      </button>
+                      <button
+                        type="button"
+                        className="eh-inline-refresh-btn"
+                        onClick={() => fetchIp(true)}
+                        disabled={refreshingIp}
+                        title="Re-check Server Outbound IP"
+                      >
+                        <RefreshCw size={12} className={refreshingIp ? "eh-spin" : ""} />
                       </button>
                     </div>
                   </div>
@@ -725,22 +781,47 @@ app.get('*', (req, res) => {
                   <div className="eh-outbound-box">
                     <div className="eh-outbound-head">
                       <span className="eh-outbound-label">Server Outbound IP:</span>
-                      <code className="eh-outbound-val">{outboundIp}</code>
+                      <code className="eh-outbound-val">
+                        {loadingIp && !ip ? (
+                          <span className="eh-ip-loading-inline">
+                            <RefreshCw size={12} className="eh-spin" /> Detecting...
+                          </span>
+                        ) : (
+                          outboundIp
+                        )}
+                      </code>
                       <button
                         type="button"
                         className="eh-copy-ip-btn"
                         onClick={() => copyToClipboard(outboundIp, `ip_${currentDb.id}`)}
+                        disabled={loadingIp && !ip}
+                        title={loadingIp && !ip ? "Detecting IP..." : "Copy IP"}
                       >
                         {copiedKey === `ip_${currentDb.id}` ? (
-                          <Check size={14} color="#34d399" />
+                          <Check size={14} color="#032115" />
                         ) : (
                           <Copy size={14} />
                         )}
                         <span>{copiedKey === `ip_${currentDb.id}` ? "Copied" : "Copy IP"}</span>
                       </button>
+                      <button
+                        type="button"
+                        className="eh-ip-refresh-btn"
+                        onClick={() => fetchIp(true)}
+                        disabled={refreshingIp}
+                        title="Re-check Server Outbound IP"
+                      >
+                        <RefreshCw size={13} className={refreshingIp ? "eh-spin" : ""} />
+                        <span>{refreshingIp ? "Checking..." : "Refresh"}</span>
+                      </button>
                     </div>
                     <p className="eh-outbound-hint">
-                      {currentDb.whitelistInstruction?.replace(/{{IP}}/g, outboundIp)}
+                      {currentDb.whitelistInstruction?.replace(
+                        /{{IP}}/g,
+                        outboundIp !== "Auto-detected" && outboundIp !== "Detecting..."
+                          ? outboundIp
+                          : "YOUR_SERVER_IP"
+                      )}
                     </p>
                   </div>
 

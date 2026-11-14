@@ -267,8 +267,73 @@
   transition: all 0.15s ease;
 }
 
-.eh-copy-ip-btn:hover {
+.eh-copy-ip-btn:hover:not(:disabled) {
   background: #34d399;
+}
+
+.eh-copy-ip-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.eh-ip-refresh-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.eh-ip-refresh-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+
+.eh-ip-refresh-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.eh-inline-refresh-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.eh-inline-refresh-btn:hover:not(:disabled) {
+  color: var(--text-primary);
+}
+
+.eh-ip-loading-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-muted);
+  font-weight: 500;
+  font-size: 0.82rem;
+}
+
+.eh-spin {
+  animation: ehSpin 0.75s linear infinite;
+}
+
+@keyframes ehSpin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .eh-outbound-hint {

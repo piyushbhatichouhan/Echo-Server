@@ -8,6 +8,7 @@ import {
   updateUsername as updateUsernameApi,
 } from "../../services/auth.api";
 import cloudWorkspace from "../../services/cloudWorkspace";
+import { getOutboundIp } from "../../services/system.api";
 import ConfirmationModal from "../../components/common/modal/ConfirmationModal";
 import useAuth from "../../hooks/useAuth";
 import { useToast } from "../../context/ToastContext";
@@ -42,6 +43,7 @@ import {
   Pencil,
   Globe,
   Info,
+  RefreshCw,
 } from "lucide-react";
 
 export default function Settings() {
@@ -64,6 +66,29 @@ export default function Settings() {
   const [deleting, setDeleting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [copiedField, setCopiedField] = useState(null);
+  const [outboundIp, setOutboundIp] = useState(null);
+  const [ipLoading, setIpLoading] = useState(true);
+  const [refreshingIp, setRefreshingIp] = useState(false);
+
+  const loadOutboundIp = useCallback(async (force = false) => {
+    try {
+      if (force) setRefreshingIp(true);
+      else setIpLoading(true);
+      const ip = await getOutboundIp(force);
+      if (ip) {
+        setOutboundIp(ip);
+      }
+    } catch (err) {
+      console.warn("Failed to load outbound IP:", err);
+    } finally {
+      setIpLoading(false);
+      setRefreshingIp(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadOutboundIp();
+  }, [loadOutboundIp]);
 
   const handleCopy = (text, fieldName) => {
     if (!text) return;
@@ -239,6 +264,13 @@ export default function Settings() {
       ? Math.min(100, Math.round((storageUsed / storageLimit) * 100))
       : 0;
   const storageRemaining = Math.max(0, storageLimit - storageUsed);
+  const baseDomain =
+    import.meta.env.VITE_BASE_DOMAIN ||
+    (window.location.hostname &&
+    window.location.hostname !== "localhost" &&
+    window.location.hostname !== "127.0.0.1"
+      ? window.location.hostname
+      : "devpiyush.in");
 
   return (
     <div className="settings-page">
@@ -578,6 +610,100 @@ export default function Settings() {
               <Database size={16} />
               <span>
                 Need more cloud disk quota? Platform administrators can adjust storage allocations from Server Management.
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Server & Network Infrastructure */}
+      <div className="settings-section">
+        <div className="settings-section-title">
+          <Globe size={18} />
+          <h2>Server & Network Infrastructure</h2>
+        </div>
+
+        <div className="settings-card">
+          <div className="settings-grid-tiles">
+            {/* Tile 1: Server Outbound IPv4 */}
+            <div className="settings-tile">
+              <div className="settings-tile-header">
+                <div className="settings-tile-header-left">
+                  <span className="settings-tile-label">Server Outbound IPv4</span>
+                  <span className="settings-status-badge settings-status-badge--live">
+                    <span className="settings-pulse-dot" />
+                    <span>Live Public IP</span>
+                  </span>
+                </div>
+                <div className="settings-tile-header-actions">
+                  <button
+                    type="button"
+                    className="settings-tile-edit-btn"
+                    onClick={() => {
+                      loadOutboundIp(true);
+                      toast?.info("Checking IP", "Re-detecting server public IP...");
+                    }}
+                    disabled={refreshingIp}
+                    title="Refresh server outbound IP"
+                  >
+                    <RefreshCw size={12} className={refreshingIp ? "settings-spin" : ""} />
+                    <span>{refreshingIp ? "Checking..." : "Refresh"}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="settings-tile-copy-btn"
+                    onClick={() => handleCopy(outboundIp, "tile-outbound-ip")}
+                    disabled={!outboundIp || outboundIp === "Detecting..."}
+                    aria-label="Copy Outbound IP"
+                    title="Copy Outbound IP"
+                  >
+                    {copiedField === "tile-outbound-ip" ? (
+                      <Check size={14} />
+                    ) : (
+                      <Copy size={14} />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              <div className="settings-tile-value settings-tile-value--mono">
+                {ipLoading && !outboundIp ? (
+                  <span className="settings-ip-detecting">
+                    <RefreshCw size={14} className="settings-spin" /> Detecting Outbound IP...
+                  </span>
+                ) : (
+                  outboundIp || "127.0.0.1"
+                )}
+              </div>
+
+              <span className="settings-tile-sub">
+                This is your server's public IPv4 egress address. Add this to your database whitelists (MongoDB Atlas, Supabase, Neon, AWS RDS, MySQL, Redis) and use it for DNS A-records.
+              </span>
+            </div>
+
+            {/* Tile 2: Platform Base Domain */}
+            <div className="settings-tile">
+              <div className="settings-tile-header">
+                <span className="settings-tile-label">Edge Router Base Domain</span>
+                <button
+                  type="button"
+                  className="settings-tile-copy-btn"
+                  onClick={() => handleCopy(baseDomain, "tile-base-domain")}
+                  aria-label="Copy Base Domain"
+                  title="Copy Base Domain"
+                >
+                  {copiedField === "tile-base-domain" ? (
+                    <Check size={14} />
+                  ) : (
+                    <Copy size={14} />
+                  )}
+                </button>
+              </div>
+
+              <div className="settings-tile-value settings-tile-value--mono">{baseDomain}</div>
+
+              <span className="settings-tile-sub">
+                Target host for custom subdomain CNAME records and automated reverse proxy traffic routing.
               </span>
             </div>
           </div>

@@ -15,7 +15,8 @@ const dockerInfo = async (req, res, next) => {
 
 const getOutboundIp = async (req, res, next) => {
   try {
-    const ip = await systemService.getOutboundIp();
+    const refresh = req.query.refresh === "true" || req.query.refresh === "1";
+    const ip = await systemService.getOutboundIp(refresh);
 
     res.json({
       success: true,
