@@ -27,6 +27,7 @@ services:
 
     environment:
       - DOCKER_NETWORK=echo-network
+      - SERVER_PUBLIC_IP=${SERVER_PUBLIC_IP:-103.82.99.186}
 
     depends_on:
       - postgres
@@ -75,6 +76,8 @@ services:
       dockerfile: frontend/Dockerfile
       args:
         VITE_API_URL: https://api.devpiyush.in
+        VITE_SERVER_IP: 103.82.99.186
+        VITE_BASE_DOMAIN: devpiyush.in
 
     container_name: echo-frontend
 

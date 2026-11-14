@@ -15,7 +15,7 @@ const getOutboundIp = async (forceRefresh = false) => {
   }
 
   const now = Date.now();
-  if (!forceRefresh && cachedOutboundIp && now - lastIpFetchTime < IP_CACHE_TTL_MS) {
+  if (!forceRefresh && cachedOutboundIp && cachedOutboundIp !== "127.0.0.1" && now - lastIpFetchTime < IP_CACHE_TTL_MS) {
     return cachedOutboundIp;
   }
 
@@ -59,7 +59,12 @@ const getOutboundIp = async (forceRefresh = false) => {
     console.warn("[System] Outbound IP resolution notice:", err.message);
   }
 
-  return cachedOutboundIp || process.env.SERVER_IP || "127.0.0.1";
+  return (
+    (cachedOutboundIp && cachedOutboundIp !== "127.0.0.1" ? cachedOutboundIp : null) ||
+    process.env.SERVER_PUBLIC_IP ||
+    process.env.SERVER_IP ||
+    "103.82.99.186"
+  );
 };
 
 const DATABASE_PRESETS = [

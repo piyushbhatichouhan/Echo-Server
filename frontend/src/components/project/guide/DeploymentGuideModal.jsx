@@ -376,7 +376,12 @@ export default function DeploymentGuideModal({ isOpen, onClose, initialTab = "ru
     setTimeout(() => setCopiedKey(null), 2000);
   };
 
-  const outboundIp = ip || guideData?.outboundIp || (loadingIp ? "Detecting..." : "127.0.0.1");
+  const outboundIp =
+    (ip && ip !== "127.0.0.1")
+      ? ip
+      : (guideData?.outboundIp && guideData.outboundIp !== "127.0.0.1" && guideData.outboundIp !== "Auto-detected")
+      ? guideData.outboundIp
+      : (import.meta.env.VITE_SERVER_IP || "103.82.99.186");
   const databaseList = guideData?.databases || FALLBACK_DATABASES;
   const currentDb = databaseList.find((d) => d.id === activeDb) || databaseList[0];
 

@@ -672,7 +672,9 @@ export default function Settings() {
                     <RefreshCw size={14} className="settings-spin" /> Detecting Outbound IP...
                   </span>
                 ) : (
-                  outboundIp || "127.0.0.1"
+                  (outboundIp && outboundIp !== "127.0.0.1")
+                    ? outboundIp
+                    : (import.meta.env.VITE_SERVER_IP || "103.82.99.186")
                 )}
               </div>
 

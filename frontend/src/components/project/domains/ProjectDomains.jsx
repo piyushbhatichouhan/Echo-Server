@@ -148,9 +148,11 @@ export default function ProjectDomains({
 
   const customDomainsList = domains.filter((d) => d.is_custom);
   const serverIpTarget =
-    serverIp ||
-    import.meta.env.VITE_SERVER_IP ||
-    "YOUR_SERVER_IP";
+    (serverIp && serverIp !== "127.0.0.1")
+      ? serverIp
+      : (import.meta.env.VITE_SERVER_IP && import.meta.env.VITE_SERVER_IP !== "127.0.0.1")
+      ? import.meta.env.VITE_SERVER_IP
+      : "103.82.99.186";
   const baseDomainTarget =
     import.meta.env.VITE_BASE_DOMAIN ||
     "devpiyush.in";
