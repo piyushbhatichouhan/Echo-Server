@@ -105,6 +105,12 @@ async function checkDatabase() {
           CREATE INDEX IF NOT EXISTS idx_deployment_logs_deployment_id ON deployment_logs(deployment_id);
         END IF;
 
+        IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'deployments') THEN
+          ALTER TABLE deployments ADD COLUMN IF NOT EXISTS stopped_by_user BOOLEAN DEFAULT FALSE;
+          CREATE INDEX IF NOT EXISTS idx_deployments_stopped_by_user ON deployments(stopped_by_user);
+          CREATE INDEX IF NOT EXISTS idx_deployments_status ON deployments(status);
+        END IF;
+
         CREATE TABLE IF NOT EXISTS password_reset_tokens (
           id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
           user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,

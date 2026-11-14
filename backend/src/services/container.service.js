@@ -118,7 +118,7 @@ const findActiveContainer = async (projectId) => {
     try {
       const { pool } = require("../config/database");
       const { rows } = await pool.query(
-        `SELECT container_id, container_name FROM deployments WHERE project_id = $1 AND status = 'running' ORDER BY created_at DESC LIMIT 1`,
+        `SELECT container_id, container_name FROM deployments WHERE project_id = $1 AND status = 'running' ORDER BY updated_at DESC, created_at DESC LIMIT 1`,
         [projectId],
       );
       if (rows[0]?.container_id) {
@@ -400,7 +400,7 @@ const stopContainerByProject = async (projectId, exceptContainerId = null) => {
   try {
     const { pool } = require("../config/database");
     const { rows } = await pool.query(
-      `SELECT container_id, container_name FROM deployments WHERE project_id = $1 ORDER BY created_at DESC LIMIT 1`,
+      `SELECT container_id, container_name FROM deployments WHERE project_id = $1 ORDER BY CASE WHEN status = 'running' THEN 0 ELSE 1 END, updated_at DESC, created_at DESC LIMIT 1`,
       [projectId],
     );
     if (rows[0]?.container_id && rows[0].container_id !== keepNorm) {
@@ -465,19 +465,43 @@ const removeContainerByProject = async (
   exceptContainerId = null,
 ) => {
   if (!projectId) return;
+  const pIdStr = String(projectId);
+  const keepNorm = exceptContainerId
+    ? String(exceptContainerId).replace(/^\//, "")
+    : null;
+
+  // 1. Direct removal by recorded container_id or container_name from database
+  try {
+    const { pool } = require("../config/database");
+    const { rows } = await pool.query(
+      `SELECT container_id, container_name FROM deployments WHERE project_id = $1 ORDER BY CASE WHEN status = 'running' THEN 0 ELSE 1 END, updated_at DESC, created_at DESC LIMIT 1`,
+      [projectId],
+    );
+    if (rows[0]?.container_id && rows[0].container_id !== keepNorm) {
+      try {
+        const cont = docker.getContainer(rows[0].container_id);
+        await cont.stop({ t: 1 }).catch(() => {});
+        await cont.remove({ force: true }).catch(() => {});
+      } catch {}
+    }
+    if (rows[0]?.container_name && rows[0].container_name !== keepNorm) {
+      try {
+        const cont = docker.getContainer(rows[0].container_name);
+        await cont.stop({ t: 1 }).catch(() => {});
+        await cont.remove({ force: true }).catch(() => {});
+      } catch {}
+    }
+  } catch {}
+
+  // 2. Scan Docker containers
   try {
     const containers = await docker.listContainers({ all: true });
-    const pIdStr = String(projectId);
     const prefix0 = `/echoserver-${pIdStr}-`;
     const prefix1 = `/echohub-${pIdStr}-`;
     const prefix2 = `/echo-project-${pIdStr}-`;
     const exact0 = `/echoserver-${pIdStr}`;
     const exact1 = `/echohub-${pIdStr}`;
     const exact2 = `/echo-project-${pIdStr}`;
-
-    const keepNorm = exceptContainerId
-      ? String(exceptContainerId).replace(/^\//, "")
-      : null;
 
     for (const c of containers) {
       const names = c.Names || [];

@@ -225,7 +225,7 @@ const republishProject = async (projectId, ownerId = null) => {
   let containerName = null;
   try {
     const deploymentRes = await pool.query(
-      `SELECT container_name FROM deployments WHERE project_id = $1 AND status = 'running' ORDER BY created_at DESC LIMIT 1`,
+      `SELECT container_name FROM deployments WHERE project_id = $1 AND status = 'running' ORDER BY updated_at DESC, created_at DESC LIMIT 1`,
       [projectId],
     );
     containerName = deploymentRes.rows[0]?.container_name || null;

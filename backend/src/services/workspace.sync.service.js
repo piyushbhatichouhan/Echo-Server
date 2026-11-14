@@ -1,5 +1,6 @@
 const { getProjectFilesRoot } = require("../storage/project.storage.manager");
-const { getProjectGitDirectory, copyDirectory } = require("./git.service");
+const { getGitRoot } = require("../storage/git.storage.manager");
+const getProjectGitDirectory = (projectId) => getGitRoot(projectId);
 const { pool } = require("../config/database");
 const fs = require("fs/promises");
 const path = require("path");

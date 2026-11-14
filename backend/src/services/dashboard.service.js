@@ -51,7 +51,7 @@ const getDashboard = async (userId) => {
          SELECT status, port, git_branch, commit_hash, commit_message, created_at
          FROM deployments
          WHERE project_id = p.id
-         ORDER BY updated_at DESC
+         ORDER BY CASE WHEN status = 'running' THEN 0 ELSE 1 END, updated_at DESC, created_at DESC
          LIMIT 1
        ) d ON TRUE
        WHERE p.owner_id = $1

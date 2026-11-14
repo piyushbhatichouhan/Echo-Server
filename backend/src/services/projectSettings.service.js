@@ -1,5 +1,7 @@
 const { pool } = require("../config/database");
-const { verifyProjectOwnership } = require("./project.service");
+const projectService = require("./project.service");
+const verifyProjectOwnership = (projectId, ownerId) =>
+  projectService.verifyProjectOwnership(projectId, ownerId);
 
 const getProjectSettings = async (projectId, ownerId) => {
   await verifyProjectOwnership(projectId, ownerId);

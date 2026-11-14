@@ -145,7 +145,7 @@ LEFT JOIN LATERAL (
         updated_at
     FROM deployments
     WHERE project_id = p.id
-    ORDER BY updated_at DESC
+    ORDER BY CASE WHEN status = 'running' THEN 0 ELSE 1 END, updated_at DESC, created_at DESC
     LIMIT 1
 ) d ON TRUE
 WHERE p.owner_id = $1
@@ -384,7 +384,7 @@ const getUserResourceMetrics = async (userId) => {
     SELECT p.id, p.name, p.application_type, COALESCE(d.status, 'Not Deployed') AS status
     FROM projects p
     LEFT JOIN LATERAL (
-      SELECT status FROM deployments WHERE project_id = p.id ORDER BY updated_at DESC LIMIT 1
+      SELECT status FROM deployments WHERE project_id = p.id ORDER BY CASE WHEN status = 'running' THEN 0 ELSE 1 END, updated_at DESC, created_at DESC LIMIT 1
     ) d ON TRUE
     WHERE p.owner_id = $1
     ORDER BY p.updated_at DESC

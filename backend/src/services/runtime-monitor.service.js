@@ -28,6 +28,17 @@ const start = () => {
               deployment.id,
               "crashed",
             );
+            try {
+              const deploymentLogRepository = require("../repositories/deployment-log.repository");
+              const exitMsg = status.exitCode !== undefined && status.exitCode !== null ? ` with exit code ${status.exitCode}` : "";
+              const oomMsg = status.oomKilled ? " (OOM Killed - Application Exceeded Memory Limit)" : "";
+              await deploymentLogRepository.addLog(
+                deployment.id,
+                `[Watchdog] Container stopped running${exitMsg}${oomMsg}. Marked as crashed.`,
+                "error",
+                "system",
+              );
+            } catch (_) {}
           }
         }
       }

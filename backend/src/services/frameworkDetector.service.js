@@ -1,7 +1,9 @@
 const fs = require("fs/promises");
 const path = require("path");
 const workspace = require("./workspace/workspace.service");
-const { verifyProjectOwnership } = require("./project.service");
+const projectService = require("./project.service");
+const verifyProjectOwnership = (projectId, ownerId) =>
+  projectService.verifyProjectOwnership(projectId, ownerId);
 
 /**
  * Inspects a specific directory for framework indicators.

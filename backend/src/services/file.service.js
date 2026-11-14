@@ -1,7 +1,9 @@
 const { pool } = require("../config/database");
 const fs = require("fs/promises");
 const path = require("path");
-const { verifyProjectOwnership } = require("./project.service");
+const projectService = require("./project.service");
+const verifyProjectOwnership = (projectId, ownerId) =>
+  projectService.verifyProjectOwnership(projectId, ownerId);
 const {
   getProjectFilesRoot,
   resolveProjectStoragePath,
@@ -30,7 +32,9 @@ const { ZipArchive } = require("archiver");
 const AdmZip = require("adm-zip");
 
 const saveFile = async (projectId, ownerId, file) => {
-  const { verifyProjectOwnership } = require("./project.service");
+  const projectService = require("./project.service");
+const verifyProjectOwnership = (projectId, ownerId) =>
+  projectService.verifyProjectOwnership(projectId, ownerId);
 
   await verifyProjectOwnership(projectId, ownerId);
 
@@ -152,7 +156,9 @@ const saveFile = async (projectId, ownerId, file) => {
 };
 
 const getProjectFiles = async (projectId, ownerId) => {
-  const { verifyProjectOwnership } = require("./project.service");
+  const projectService = require("./project.service");
+const verifyProjectOwnership = (projectId, ownerId) =>
+  projectService.verifyProjectOwnership(projectId, ownerId);
   await verifyProjectOwnership(projectId, ownerId);
 
   const result = await pool.query(
@@ -483,7 +489,9 @@ const updateFileContent = async (fileId, ownerId, content) => {
 };
 
 const renamePath = async (projectId, ownerId, oldPath, newPath, type) => {
-  const { verifyProjectOwnership } = require("./project.service");
+  const projectService = require("./project.service");
+const verifyProjectOwnership = (projectId, ownerId) =>
+  projectService.verifyProjectOwnership(projectId, ownerId);
   await verifyProjectOwnership(projectId, ownerId);
 
   const oldStoragePath = resolveProjectStoragePath(projectId, oldPath);
@@ -556,7 +564,9 @@ const renamePath = async (projectId, ownerId, oldPath, newPath, type) => {
 };
 
 const createFolder = async (projectId, ownerId, relativePath) => {
-  const { verifyProjectOwnership } = require("./project.service");
+  const projectService = require("./project.service");
+const verifyProjectOwnership = (projectId, ownerId) =>
+  projectService.verifyProjectOwnership(projectId, ownerId);
   await verifyProjectOwnership(projectId, ownerId);
 
   const folderPath = resolveProjectStoragePath(projectId, relativePath);
@@ -590,7 +600,9 @@ const createFolder = async (projectId, ownerId, relativePath) => {
 };
 
 const createEmptyFile = async (projectId, ownerId, relativePath) => {
-  const { verifyProjectOwnership } = require("./project.service");
+  const projectService = require("./project.service");
+const verifyProjectOwnership = (projectId, ownerId) =>
+  projectService.verifyProjectOwnership(projectId, ownerId);
   await verifyProjectOwnership(projectId, ownerId);
 
   const fullPath = resolveProjectStoragePath(projectId, relativePath);
@@ -635,7 +647,9 @@ const createEmptyFile = async (projectId, ownerId, relativePath) => {
 };
 
 const deletePath = async (projectId, ownerId, relativePath, type, permanent = false) => {
-  const { verifyProjectOwnership } = require("./project.service");
+  const projectService = require("./project.service");
+const verifyProjectOwnership = (projectId, ownerId) =>
+  projectService.verifyProjectOwnership(projectId, ownerId);
   await verifyProjectOwnership(projectId, ownerId);
 
   const dirPrefix = relativePath.endsWith("/") ? relativePath : `${relativePath}/`;
@@ -756,7 +770,9 @@ const deletePath = async (projectId, ownerId, relativePath, type, permanent = fa
 };
 
 const copyPath = async (projectId, ownerId, relativePath, type) => {
-  const { verifyProjectOwnership } = require("./project.service");
+  const projectService = require("./project.service");
+const verifyProjectOwnership = (projectId, ownerId) =>
+  projectService.verifyProjectOwnership(projectId, ownerId);
   await verifyProjectOwnership(projectId, ownerId);
 
   return {
@@ -768,7 +784,9 @@ const copyPath = async (projectId, ownerId, relativePath, type) => {
 };
 
 const cutPath = async (projectId, ownerId, relativePath, type) => {
-  const { verifyProjectOwnership } = require("./project.service");
+  const projectService = require("./project.service");
+const verifyProjectOwnership = (projectId, ownerId) =>
+  projectService.verifyProjectOwnership(projectId, ownerId);
   await verifyProjectOwnership(projectId, ownerId);
 
   return {
@@ -780,7 +798,9 @@ const cutPath = async (projectId, ownerId, relativePath, type) => {
 };
 
 const pastePath = async (projectId, ownerId, clipboard, destination = "") => {
-  const { verifyProjectOwnership } = require("./project.service");
+  const projectService = require("./project.service");
+const verifyProjectOwnership = (projectId, ownerId) =>
+  projectService.verifyProjectOwnership(projectId, ownerId);
   await verifyProjectOwnership(projectId, ownerId);
 
   const sourceRelative = normalizeRelativePath(clipboard.relativePath || "");
@@ -1107,7 +1127,9 @@ const getFileForDownload = async (fileId, ownerId) => {
 };
 
 const deletePaths = async (projectId, ownerId, items, permanent = false) => {
-  const { verifyProjectOwnership } = require("./project.service");
+  const projectService = require("./project.service");
+const verifyProjectOwnership = (projectId, ownerId) =>
+  projectService.verifyProjectOwnership(projectId, ownerId);
   await verifyProjectOwnership(projectId, ownerId);
 
   if (!Array.isArray(items) || items.length === 0) {
@@ -1158,7 +1180,9 @@ const createDownloadArchive = async (projectId, items, output) => {
 };
 
 const downloadPaths = async (projectId, ownerId, items) => {
-  const { verifyProjectOwnership } = require("./project.service");
+  const projectService = require("./project.service");
+const verifyProjectOwnership = (projectId, ownerId) =>
+  projectService.verifyProjectOwnership(projectId, ownerId);
   await verifyProjectOwnership(projectId, ownerId);
 
   if (!Array.isArray(items) || items.length === 0) {
@@ -1209,7 +1233,9 @@ const downloadPaths = async (projectId, ownerId, items) => {
 };
 
 const getProjectStats = async (projectId, ownerId) => {
-  const { verifyProjectOwnership } = require("./project.service");
+  const projectService = require("./project.service");
+const verifyProjectOwnership = (projectId, ownerId) =>
+  projectService.verifyProjectOwnership(projectId, ownerId);
   await verifyProjectOwnership(projectId, ownerId);
 
   const result = await pool.query(
@@ -1234,7 +1260,9 @@ const getProjectStats = async (projectId, ownerId) => {
 };
 
 const extractArchive = async (projectId, ownerId, relativePath, destination = "") => {
-  const { verifyProjectOwnership } = require("./project.service");
+  const projectService = require("./project.service");
+const verifyProjectOwnership = (projectId, ownerId) =>
+  projectService.verifyProjectOwnership(projectId, ownerId);
   await verifyProjectOwnership(projectId, ownerId);
 
   const zipStoragePath = resolveProjectStoragePath(projectId, relativePath);
@@ -1324,7 +1352,9 @@ const extractArchive = async (projectId, ownerId, relativePath, destination = ""
 };
 
 const getProjectTrash = async (projectId, ownerId) => {
-  const { verifyProjectOwnership } = require("./project.service");
+  const projectService = require("./project.service");
+const verifyProjectOwnership = (projectId, ownerId) =>
+  projectService.verifyProjectOwnership(projectId, ownerId);
   await verifyProjectOwnership(projectId, ownerId);
 
   const result = await pool.query(
@@ -1374,7 +1404,9 @@ const restoreProjectParentDirectories = async (projectId, relativePath) => {
 };
 
 const restoreProjectTrash = async (projectId, ownerId, fileId) => {
-  const { verifyProjectOwnership } = require("./project.service");
+  const projectService = require("./project.service");
+const verifyProjectOwnership = (projectId, ownerId) =>
+  projectService.verifyProjectOwnership(projectId, ownerId);
   await verifyProjectOwnership(projectId, ownerId);
 
   const fileRes = await pool.query(
@@ -1421,7 +1453,9 @@ const restoreProjectTrash = async (projectId, ownerId, fileId) => {
 };
 
 const emptyProjectTrash = async (projectId, ownerId) => {
-  const { verifyProjectOwnership } = require("./project.service");
+  const projectService = require("./project.service");
+const verifyProjectOwnership = (projectId, ownerId) =>
+  projectService.verifyProjectOwnership(projectId, ownerId);
   await verifyProjectOwnership(projectId, ownerId);
 
   const result = await pool.query(
@@ -1476,7 +1510,9 @@ const compressProjectPaths = async (
   zipName = "archive.zip",
   destination = "",
 ) => {
-  const { verifyProjectOwnership } = require("./project.service");
+  const projectService = require("./project.service");
+const verifyProjectOwnership = (projectId, ownerId) =>
+  projectService.verifyProjectOwnership(projectId, ownerId);
   await verifyProjectOwnership(projectId, ownerId);
 
   if (!Array.isArray(items) || items.length === 0) {
@@ -1556,7 +1592,9 @@ const compressProjectPaths = async (
 };
 
 const searchProjectFiles = async (projectId, ownerId, query) => {
-  const { verifyProjectOwnership } = require("./project.service");
+  const projectService = require("./project.service");
+const verifyProjectOwnership = (projectId, ownerId) =>
+  projectService.verifyProjectOwnership(projectId, ownerId);
   await verifyProjectOwnership(projectId, ownerId);
 
   if (!query || !query.trim()) {
@@ -1593,7 +1631,9 @@ const exportProjectToCloud = async (
   items,
   destination = "",
 ) => {
-  const { verifyProjectOwnership } = require("./project.service");
+  const projectService = require("./project.service");
+const verifyProjectOwnership = (projectId, ownerId) =>
+  projectService.verifyProjectOwnership(projectId, ownerId);
   await verifyProjectOwnership(projectId, ownerId);
 
   if (!Array.isArray(items) || items.length === 0) {
@@ -1695,7 +1735,9 @@ const importCloudToProject = async (
   items,
   destination = "",
 ) => {
-  const { verifyProjectOwnership } = require("./project.service");
+  const projectService = require("./project.service");
+const verifyProjectOwnership = (projectId, ownerId) =>
+  projectService.verifyProjectOwnership(projectId, ownerId);
   await verifyProjectOwnership(projectId, ownerId);
 
   if (!Array.isArray(items) || items.length === 0) {

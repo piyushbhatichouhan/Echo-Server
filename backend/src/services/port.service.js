@@ -57,7 +57,7 @@ const cleanupPseudoPorts = async () => {
     await pool.query(`
       WITH duplicate_running AS (
         SELECT id,
-               ROW_NUMBER() OVER (PARTITION BY project_id ORDER BY created_at DESC) as rn
+               ROW_NUMBER() OVER (PARTITION BY project_id ORDER BY updated_at DESC, created_at DESC) as rn
         FROM deployments
         WHERE status = 'running' AND port IS NOT NULL
       )
@@ -94,7 +94,7 @@ const getAvailablePort = async (
       WHERE project_id = $1
         AND port IS NOT NULL
         AND status = 'running'
-      ORDER BY created_at DESC
+      ORDER BY updated_at DESC, created_at DESC
       LIMIT 1
       `,
       [forProjectId],

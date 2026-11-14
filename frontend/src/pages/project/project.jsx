@@ -63,6 +63,7 @@ export default function Project() {
     setLogs,
     clearAllLogs,
     deployments,
+    refreshDeployments,
   } = useDeployment(id);
 
   const isRunning = status?.running;
@@ -118,7 +119,11 @@ export default function Project() {
 
       await action(id);
 
-      await Promise.all([refreshStatus(), refreshLogs()]);
+      await Promise.all([
+        refreshStatus(),
+        refreshLogs(),
+        refreshDeployments?.(),
+      ]);
       const { title, message } = actionMessages[name];
 
       toast.success(title, message);
@@ -262,6 +267,7 @@ export default function Project() {
               onRollback={() => {
                 refreshStatus();
                 refreshLogs();
+                refreshDeployments?.();
               }}
             />
           </div>

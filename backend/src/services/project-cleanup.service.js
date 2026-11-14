@@ -20,22 +20,78 @@ const { getGitRoot } = require("../storage/git.storage.manager");
  * Completely deletes a project when the project itself is deleted.
  */
 const cleanupProject = async (projectId) => {
-  // 1. Stop running container
+  const pIdStr = String(projectId);
+
+  // 1. Stop running containers
   try {
     await containerService.stopContainerByProject(projectId);
   } catch {}
 
-  // 2. Remove container
+  // 2. Remove all project containers
   try {
     await containerService.removeContainerByProject(projectId);
   } catch {}
 
-  // 3. Remove docker image
+  try {
+    await containerService.removePreviousContainers(projectId);
+  } catch {}
+
+  // Scan Docker to catch any lingering containers matching project prefixes
+  try {
+    const containers = await docker.listContainers({ all: true });
+    for (const c of containers) {
+      const names = c.Names || [];
+      const matches = names.some(
+        (n) =>
+          n.includes(`echoserver-${pIdStr}`) ||
+          n.includes(`echohub-${pIdStr}`) ||
+          n.includes(`echo-project-${pIdStr}`) ||
+          n.includes(`echo_${pIdStr}`),
+      );
+      if (matches) {
+        try {
+          const cont = docker.getContainer(c.Id);
+          await cont.stop({ t: 1 }).catch(() => {});
+          await cont.remove({ force: true }).catch(() => {});
+        } catch {}
+      }
+    }
+  } catch {}
+
+  // 3. Release any allocated network port
+  try {
+    await portService.releasePort(projectId);
+  } catch {}
+
+  // 4. Remove all project Docker images (including all version tags)
   try {
     await imageService.removeImage(imageService.getImageName(projectId));
   } catch {}
 
-  // 4. Remove routing
+  try {
+    const images = await docker.listImages({ all: true });
+    const targetTagPrefix = `echoserver-${projectId}`;
+    for (const img of images) {
+      const tags = img.RepoTags || [];
+      const matches = tags.some((t) => t.includes(targetTagPrefix));
+      if (matches) {
+        try {
+          const dockerImg = docker.getImage(img.Id);
+          await dockerImg.remove({ force: true });
+        } catch {}
+      }
+    }
+  } catch {}
+
+  // 5. Prune dangling layers and builder cache (best effort)
+  try {
+    await docker.pruneImages({ filters: { dangling: { true: true } } }).catch(() => {});
+    if (typeof docker.pruneBuilder === "function") {
+      await docker.pruneBuilder().catch(() => {});
+    }
+  } catch {}
+
+  // 6. Remove routing
   try {
     console.log(`ProjectId: ${projectId}`);
     await routingService.unpublish({
@@ -43,7 +99,7 @@ const cleanupProject = async (projectId) => {
     });
   } catch {}
 
-  // 5. Delete project files
+  // 7. Delete project files and storage
   try {
     await removeProjectDirectory(projectId);
   } catch {}

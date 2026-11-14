@@ -1,6 +1,8 @@
 const applicationRepository = require("../repositories/application.repository");
 
-const { verifyProjectOwnership } = require("./project.service");
+const projectService = require("./project.service");
+const verifyProjectOwnership = (projectId, ownerId) =>
+  projectService.verifyProjectOwnership(projectId, ownerId);
 
 const saveApplication = async (projectId, ownerId, application) => {
   await verifyProjectOwnership(projectId, ownerId);

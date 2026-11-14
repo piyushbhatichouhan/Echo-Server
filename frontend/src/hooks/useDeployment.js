@@ -66,7 +66,7 @@ export default function useDeployment(projectId) {
     return () => {
       clearInterval(statusInterval);
     };
-  }, [projectId, refreshStatus, refreshLogs]);
+  }, [projectId, refreshStatus, refreshLogs, refreshDeployments]);
 
   return {
     status,

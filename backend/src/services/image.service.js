@@ -105,11 +105,18 @@ const buildImage = async (projectId, settings, log, version = null) => {
 };
 
 const removeImage = async (imageName) => {
-  const image = docker.getImage(imageName);
-
-  await image.remove({
-    force: true,
-  });
+  if (!imageName) return;
+  try {
+    const image = docker.getImage(imageName);
+    await image.remove({
+      force: true,
+    });
+  } catch (err) {
+    // Gracefully handle if image does not exist
+    if (err.statusCode !== 404 && !err.message?.includes("404")) {
+      console.warn(`[ImageService] Could not remove image ${imageName}:`, err.message);
+    }
+  }
 };
 
 module.exports = {

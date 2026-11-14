@@ -1,8 +1,9 @@
 const applicationService = require("./application.service");
 const environmentService = require("./environment.service");
-const { verifyProjectOwnership } = require("./project.service");
-const { getRuntime } = require("../runtime");
 const projectService = require("./project.service");
+const verifyProjectOwnership = (projectId, ownerId) =>
+  projectService.verifyProjectOwnership(projectId, ownerId);
+const { getRuntime } = require("../runtime");
 const workspaceService = require("./workspace.service");
 const path = require("path");
 const fs = require("fs/promises");
@@ -127,7 +128,7 @@ const assertUserResourceAllowance = async (ownerId, projectId) => {
     SELECT p.id, COALESCE(d.status, 'Not Deployed') AS status
     FROM projects p
     LEFT JOIN LATERAL (
-      SELECT status FROM deployments WHERE project_id = p.id ORDER BY updated_at DESC LIMIT 1
+      SELECT status FROM deployments WHERE project_id = p.id ORDER BY CASE WHEN status = 'running' THEN 0 ELSE 1 END, updated_at DESC, created_at DESC LIMIT 1
     ) d ON TRUE
     WHERE p.owner_id = $1
     `,
@@ -231,7 +232,8 @@ const stopProject = async (projectId, ownerId) => {
 
   const runtime = runtimeResolver.getRuntimeHandler(settings.runtime);
 
-  return await runtime.stop(context);
+  const result = await runtime.stop(context);
+  return result || { success: true, message: "Project stopped successfully" };
 };
 
 const startProject = async (projectId, ownerId) => {
@@ -463,6 +465,8 @@ const deploy = async (projectId, ownerId) => {
 
 const rollbackDeployment = async (projectId, ownerId, targetDeploymentId) => {
   await projectService.verifyProjectOwnership(projectId, ownerId);
+  await assertHostCapacity();
+  await assertUserResourceAllowance(ownerId, projectId);
 
   const targetDeployment =
     await deploymentRepository.getDeploymentById(targetDeploymentId);

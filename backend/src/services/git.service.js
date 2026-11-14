@@ -1,5 +1,7 @@
 const { pool } = require("../config/database");
-const { verifyProjectOwnership } = require("./project.service");
+const projectService = require("./project.service");
+const verifyProjectOwnership = (projectId, ownerId) =>
+  projectService.verifyProjectOwnership(projectId, ownerId);
 const github = require("../utils/github.api");
 const path = require("path");
 const fs = require("fs/promises");
@@ -48,7 +50,9 @@ const getRepository = async (projectId, ownerId) => {
     indexWorkspace,
     syncWorkspaceToGit,
   } = require("./workspace.sync.service");
-  const { verifyProjectOwnership } = require("./project.service");
+  const projectService = require("./project.service");
+const verifyProjectOwnership = (projectId, ownerId) =>
+  projectService.verifyProjectOwnership(projectId, ownerId);
   await verifyProjectOwnership(projectId, ownerId);
 
   const result = await pool.query(
@@ -64,7 +68,9 @@ const getRepository = async (projectId, ownerId) => {
 };
 
 const validateRepository = async (projectId, ownerId, url, branch, token = null) => {
-  const { verifyProjectOwnership } = require("./project.service");
+  const projectService = require("./project.service");
+const verifyProjectOwnership = (projectId, ownerId) =>
+  projectService.verifyProjectOwnership(projectId, ownerId);
   await verifyProjectOwnership(projectId, ownerId);
 
   const parsed = github.parseGitHubUrl(url);
@@ -101,7 +107,9 @@ const validateRepository = async (projectId, ownerId, url, branch, token = null)
 };
 
 const connectRepository = async (projectId, ownerId, repositoryUrl, branch, token = null) => {
-  const { verifyProjectOwnership } = require("./project.service");
+  const projectService = require("./project.service");
+const verifyProjectOwnership = (projectId, ownerId) =>
+  projectService.verifyProjectOwnership(projectId, ownerId);
   await verifyProjectOwnership(projectId, ownerId);
 
   const parsed = github.parseGitHubUrl(repositoryUrl);
@@ -234,7 +242,9 @@ const connectRepository = async (projectId, ownerId, repositoryUrl, branch, toke
 };
 
 const disconnectRepository = async (projectId, ownerId) => {
-  const { verifyProjectOwnership } = require("./project.service");
+  const projectService = require("./project.service");
+const verifyProjectOwnership = (projectId, ownerId) =>
+  projectService.verifyProjectOwnership(projectId, ownerId);
   await verifyProjectOwnership(projectId, ownerId);
 
   const gitDirectory = getProjectGitDirectory(projectId);
@@ -286,7 +296,9 @@ const cloneRepository = async (projectId, ownerId) => {
     indexWorkspace,
     syncWorkspaceToGit,
   } = require("./workspace.sync.service");
-  const { verifyProjectOwnership } = require("./project.service");
+  const projectService = require("./project.service");
+const verifyProjectOwnership = (projectId, ownerId) =>
+  projectService.verifyProjectOwnership(projectId, ownerId);
 
   // Verify ownership
   await verifyProjectOwnership(projectId, ownerId);
@@ -419,7 +431,9 @@ const copyDirectory = async (source, destination) => {
 };
 
 const getGitStatus = async (projectId, ownerId) => {
-  const { verifyProjectOwnership } = require("./project.service");
+  const projectService = require("./project.service");
+const verifyProjectOwnership = (projectId, ownerId) =>
+  projectService.verifyProjectOwnership(projectId, ownerId);
   await verifyProjectOwnership(projectId, ownerId);
 
   const repository = await getRepository(projectId, ownerId);
@@ -504,7 +518,9 @@ const getGitStatus = async (projectId, ownerId) => {
 };
 
 const commitChanges = async (projectId, ownerId, message) => {
-  const { verifyProjectOwnership } = require("./project.service");
+  const projectService = require("./project.service");
+const verifyProjectOwnership = (projectId, ownerId) =>
+  projectService.verifyProjectOwnership(projectId, ownerId);
   await verifyProjectOwnership(projectId, ownerId);
 
   const repository = await getRepository(projectId, ownerId);
@@ -520,7 +536,9 @@ const commitChanges = async (projectId, ownerId, message) => {
 };
 
 const pullRepository = async (projectId, ownerId) => {
-  const { verifyProjectOwnership } = require("./project.service");
+  const projectService = require("./project.service");
+const verifyProjectOwnership = (projectId, ownerId) =>
+  projectService.verifyProjectOwnership(projectId, ownerId);
 
   const {
     syncGitToWorkspace,
@@ -556,7 +574,9 @@ const pullRepository = async (projectId, ownerId) => {
 };
 
 const pushRepository = async (projectId, ownerId) => {
-  const { verifyProjectOwnership } = require("./project.service");
+  const projectService = require("./project.service");
+const verifyProjectOwnership = (projectId, ownerId) =>
+  projectService.verifyProjectOwnership(projectId, ownerId);
 
   await verifyProjectOwnership(projectId, ownerId);
 
@@ -583,7 +603,9 @@ const pushRepository = async (projectId, ownerId) => {
 };
 
 const fetchRepository = async (projectId, ownerId) => {
-  const { verifyProjectOwnership } = require("./project.service");
+  const projectService = require("./project.service");
+const verifyProjectOwnership = (projectId, ownerId) =>
+  projectService.verifyProjectOwnership(projectId, ownerId);
 
   await verifyProjectOwnership(projectId, ownerId);
 
@@ -615,7 +637,9 @@ const updateRepository = async (projectId, ownerId) => {
     indexWorkspace,
     syncWorkspaceToGit,
   } = require("./workspace.sync.service");
-  const { verifyProjectOwnership } = require("./project.service");
+  const projectService = require("./project.service");
+const verifyProjectOwnership = (projectId, ownerId) =>
+  projectService.verifyProjectOwnership(projectId, ownerId);
   await verifyProjectOwnership(projectId, ownerId);
 
   const repository = await getRepository(projectId, ownerId);
@@ -646,7 +670,9 @@ const updateRepository = async (projectId, ownerId) => {
 };
 
 const getCommits = async (projectId, ownerId, limit = 15) => {
-  const { verifyProjectOwnership } = require("./project.service");
+  const projectService = require("./project.service");
+const verifyProjectOwnership = (projectId, ownerId) =>
+  projectService.verifyProjectOwnership(projectId, ownerId);
   await verifyProjectOwnership(projectId, ownerId);
 
   const repository = await getRepository(projectId, ownerId);
@@ -669,7 +695,9 @@ const getCommits = async (projectId, ownerId, limit = 15) => {
 };
 
 const getBranches = async (projectId, ownerId) => {
-  const { verifyProjectOwnership } = require("./project.service");
+  const projectService = require("./project.service");
+const verifyProjectOwnership = (projectId, ownerId) =>
+  projectService.verifyProjectOwnership(projectId, ownerId);
   await verifyProjectOwnership(projectId, ownerId);
 
   const repository = await getRepository(projectId, ownerId);
@@ -695,7 +723,9 @@ const getBranches = async (projectId, ownerId) => {
 };
 
 const switchBranch = async (projectId, ownerId, branch) => {
-  const { verifyProjectOwnership } = require("./project.service");
+  const projectService = require("./project.service");
+const verifyProjectOwnership = (projectId, ownerId) =>
+  projectService.verifyProjectOwnership(projectId, ownerId);
   const {
     syncGitToWorkspace,
     indexWorkspace,
@@ -736,7 +766,9 @@ const switchBranch = async (projectId, ownerId, branch) => {
 };
 
 const getDiff = async (projectId, ownerId, file = null) => {
-  const { verifyProjectOwnership } = require("./project.service");
+  const projectService = require("./project.service");
+const verifyProjectOwnership = (projectId, ownerId) =>
+  projectService.verifyProjectOwnership(projectId, ownerId);
   await verifyProjectOwnership(projectId, ownerId);
 
   const repository = await getRepository(projectId, ownerId);

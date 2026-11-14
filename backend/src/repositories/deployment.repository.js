@@ -63,7 +63,8 @@ const updateDeploymentStatus = async (deploymentId, status) => {
   UPDATE deployments
   SET
       status = $2,
-      port = CASE WHEN $2 IN ('stopped', 'failed') THEN NULL ELSE port END,
+      port = CASE WHEN $2 IN ('stopped', 'failed', 'crashed') THEN NULL ELSE port END,
+      stopped_by_user = CASE WHEN $2 = 'running' THEN FALSE ELSE stopped_by_user END,
       updated_at = NOW()
   WHERE
       id = $1
@@ -81,7 +82,7 @@ const getLatestDeployment = async (projectId) => {
     SELECT *
     FROM deployments
     WHERE project_id = $1
-    ORDER BY created_at DESC
+    ORDER BY CASE WHEN status = 'running' THEN 0 ELSE 1 END, updated_at DESC, created_at DESC
     LIMIT 1
     `,
     [projectId],
@@ -94,7 +95,7 @@ const stopDeployments = async (projectId, exceptDeploymentId = null) => {
     await pool.query(
       `
       UPDATE deployments
-      SET status = 'stopped', port = NULL
+      SET status = 'stopped', port = NULL, stopped_by_user = TRUE, updated_at = NOW()
       WHERE project_id = $1
         AND status = 'running'
         AND id != $2
@@ -105,7 +106,7 @@ const stopDeployments = async (projectId, exceptDeploymentId = null) => {
     await pool.query(
       `
       UPDATE deployments
-      SET status = 'stopped', port = NULL
+      SET status = 'stopped', port = NULL, stopped_by_user = TRUE, updated_at = NOW()
       WHERE project_id = $1
         AND status = 'running'
       `,
@@ -168,9 +169,9 @@ const updateDeploymentImage = async (deploymentId, imageName) => {
 
 const getRunningDeployments = async () => {
   const { rows } = await pool.query(`
-        SELECT *
-        FROM project_deployments
-        WHERE status='running'
+        SELECT id, project_id, image_name, container_name, port, status, COALESCE(stopped_by_user, false) AS stopped_by_user
+        FROM deployments
+        WHERE status = 'running'
     `);
 
   return rows;
@@ -179,12 +180,22 @@ const getRunningDeployments = async () => {
 const markStoppedByUser = async (projectId, value) => {
   await pool.query(
     `
-    UPDATE project_deployments
+    UPDATE deployments
     SET stopped_by_user = $2
     WHERE project_id = $1
     `,
     [projectId, value],
   );
+  try {
+    await pool.query(
+      `
+      UPDATE project_deployments
+      SET stopped_by_user = $2
+      WHERE project_id = $1
+      `,
+      [projectId, value],
+    );
+  } catch (_) {}
 };
 
 const updateDeploymentContainer = async (
@@ -229,6 +240,7 @@ const updateDeploymentPort = async (deploymentId, port) => {
 module.exports = {
   createDeployment,
   updateDeploymentStatus,
+  updateStatus: updateDeploymentStatus,
   getLatestDeployment,
   stopDeployments,
   getProjectDeployments,
