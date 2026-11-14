@@ -156,14 +156,11 @@ const githubWebhook = async (req, res) => {
       );
 
       // Async background pull and deploy
-      gitService
-        .updateRepository(project.project_id, project.owner_id)
-        .then(() =>
-          deploymentService.deployProject(
-            project.project_id,
-            project.owner_id,
-            gitMeta,
-          ),
+      deploymentService
+        .deployProject(
+          project.project_id,
+          project.owner_id,
+          gitMeta,
         )
         .then((deployment) => {
           console.log(
@@ -233,14 +230,11 @@ const githubWebhook = async (req, res) => {
             `[Webhook] Global trigger: Auto-deploying project ${project.project_id} (branch: ${branch})`,
           );
 
-          gitService
-            .updateRepository(project.project_id, project.owner_id)
-            .then(() =>
-              deploymentService.deployProject(
-                project.project_id,
-                project.owner_id,
-                gitMeta,
-              ),
+          deploymentService
+            .deployProject(
+              project.project_id,
+              project.owner_id,
+              gitMeta,
             )
             .catch((err) =>
               console.error(

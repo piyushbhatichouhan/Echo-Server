@@ -3,6 +3,8 @@
  */
 function generateDockerfileForLanguage(language, { port = 3000, buildCommand = "", startCommand = "" } = {}) {
   const safePort = Number(port) || 3000;
+  const toCmdArray = (cmd, defaultArray) =>
+    cmd && cmd.trim() ? JSON.stringify(cmd.trim().split(/\s+/)) : defaultArray;
 
   switch (language) {
     case "go":
@@ -49,7 +51,7 @@ RUN bun install --production || bun install
 COPY . .
 EXPOSE ${safePort}
 ENV PORT=${safePort} NODE_ENV=production
-CMD ${startCommand ? JSON.stringify(startCommand.split(" ")) : '["bun", "run", "start"]'}
+CMD ${toCmdArray(startCommand, '["bun", "run", "start"]')}
 `;
 
     case "php":
@@ -96,7 +98,7 @@ COPY requirements*.txt pyproject.toml* ./
 RUN pip install --no-cache-dir -r requirements.txt || true
 COPY . .
 EXPOSE ${safePort}
-CMD ${startCommand ? JSON.stringify(startCommand.split(" ")) : '["python", "app.py"]'}
+CMD ${toCmdArray(startCommand, '["python", "app.py"]')}
 `;
 
     case "static":
@@ -116,7 +118,7 @@ RUN npm install --production || npm install
 COPY . .
 ${buildCommand ? `RUN ${buildCommand}` : ""}
 EXPOSE ${safePort}
-CMD ${startCommand ? JSON.stringify(startCommand.split(" ")) : '["npm", "start"]'}
+CMD ${toCmdArray(startCommand, '["npm", "start"]')}
 `;
   }
 }

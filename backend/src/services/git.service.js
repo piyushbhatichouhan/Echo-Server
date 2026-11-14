@@ -83,7 +83,7 @@ const verifyProjectOwnership = (projectId, ownerId) =>
     repo.auto_deploy = true;
   }
 
-  const baseUrl = process.env.APP_URL || process.env.API_BASE_URL || "http://localhost:5000";
+  const baseUrl = process.env.APP_URL || process.env.API_BASE_URL || "http://localhost:3000";
   repo.webhook_url = `${baseUrl.replace(/\/+$/, "")}/api/webhooks/github/${projectId}`;
 
   return repo;
@@ -861,7 +861,7 @@ const regenerateWebhookSecret = async (projectId, ownerId) => {
     throw notConnectedError();
   }
 
-  const baseUrl = process.env.APP_URL || process.env.API_BASE_URL || "http://localhost:5000";
+  const baseUrl = process.env.APP_URL || process.env.API_BASE_URL || "http://localhost:3000";
   const webhookUrl = `${baseUrl.replace(/\/+$/, "")}/api/webhooks/github/${projectId}`;
 
   return {

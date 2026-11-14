@@ -106,16 +106,31 @@ const getAvailablePort = async (
     }
   }
 
-  // Get all ports currently used by active deployments in database (running, building, or queued)
-  const result = await pool.query(`
-    SELECT port
-    FROM deployments
-    WHERE port IS NOT NULL
-      AND status IN ('running', 'building', 'queued')
-    ORDER BY port
-  `);
+  // Get all ports currently used by active deployments and managed databases
+  let resultRows = [];
+  try {
+    const result = await pool.query(`
+      SELECT port
+      FROM deployments
+      WHERE port IS NOT NULL
+        AND status IN ('running', 'building', 'queued')
+      UNION
+      SELECT host_port AS port
+      FROM managed_databases
+      WHERE host_port IS NOT NULL
+    `);
+    resultRows = result.rows;
+  } catch (_) {
+    const fallbackResult = await pool.query(`
+      SELECT port
+      FROM deployments
+      WHERE port IS NOT NULL
+        AND status IN ('running', 'building', 'queued')
+    `);
+    resultRows = fallbackResult.rows;
+  }
 
-  const dbUsed = new Set(result.rows.map((r) => Number(r.port)));
+  const dbUsed = new Set(resultRows.map((r) => Number(r.port)));
   const dockerUsed = await getDockerMappedPorts();
 
   let port = START_PORT;

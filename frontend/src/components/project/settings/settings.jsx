@@ -170,6 +170,90 @@ const FRAMEWORK_PRESETS = [
     description: "Pure static files served directly by high-performance Nginx.",
   },
   {
+    id: "go-buildpack",
+    title: "Go (Golang)",
+    icon: "🔵",
+    runtime: "buildpack",
+    working_directory: ".",
+    install_command: "go mod download",
+    build_command: "go build -o server .",
+    start_command: "./server",
+    output_directory: ".",
+    description: "Multi-stage compiled Go service running on minimal Alpine Linux.",
+  },
+  {
+    id: "rust-buildpack",
+    title: "Rust",
+    icon: "🦀",
+    runtime: "buildpack",
+    working_directory: ".",
+    install_command: "",
+    build_command: "cargo build --release",
+    start_command: "./target/release/app",
+    output_directory: ".",
+    description: "High-performance Rust applications built with Cargo.",
+  },
+  {
+    id: "bun-buildpack",
+    title: "Bun",
+    icon: "🥟",
+    runtime: "buildpack",
+    working_directory: ".",
+    install_command: "bun install",
+    build_command: "",
+    start_command: "bun run start",
+    output_directory: ".",
+    description: "Fast all-in-one JavaScript and TypeScript runtime.",
+  },
+  {
+    id: "php-buildpack",
+    title: "PHP",
+    icon: "🐘",
+    runtime: "buildpack",
+    working_directory: ".",
+    install_command: "composer install",
+    build_command: "",
+    start_command: "",
+    output_directory: ".",
+    description: "PHP 8.2 web applications running on Apache.",
+  },
+  {
+    id: "ruby-buildpack",
+    title: "Ruby",
+    icon: "💎",
+    runtime: "buildpack",
+    working_directory: ".",
+    install_command: "bundle install",
+    build_command: "",
+    start_command: "bundle exec rackup -p 3000",
+    output_directory: ".",
+    description: "Ruby on Rails, Sinatra, and Rack applications with Bundler.",
+  },
+  {
+    id: "java-buildpack",
+    title: "Java (Spring Boot / Maven)",
+    icon: "☕",
+    runtime: "buildpack",
+    working_directory: ".",
+    install_command: "",
+    build_command: "mvn clean package -DskipTests",
+    start_command: "java -jar target/*.jar",
+    output_directory: ".",
+    description: "Spring Boot, Quarkus, and Java services on OpenJDK 17.",
+  },
+  {
+    id: "smart-buildpack",
+    title: "Universal Smart Buildpack (Auto-Detect)",
+    icon: "⚡",
+    runtime: "buildpack",
+    working_directory: ".",
+    install_command: "",
+    build_command: "",
+    start_command: "",
+    output_directory: ".",
+    description: "Auto-detects language and compiles production container automatically.",
+  },
+  {
     id: "dockerfile",
     title: "Custom Dockerfile",
     icon: "⚙️",
@@ -404,6 +488,55 @@ export default function Settings({ projectId }) {
           name: "Static Web (SPA)",
           description: "Built HTML/CSS/JS deployed to high-performance Nginx with SPA routing fallback.",
           defaultPort: "80",
+        };
+      case "buildpack":
+        return {
+          icon: "⚡",
+          name: "Universal Smart Buildpack",
+          description: "Multi-language automated buildpack engine for Go, Rust, Bun, PHP, Ruby, Java, Node, Python.",
+          defaultPort: "8080",
+        };
+      case "go":
+        return {
+          icon: "🔵",
+          name: "Go (Golang)",
+          description: "Compiled multi-stage Go server running on minimal Alpine Linux.",
+          defaultPort: "8080",
+        };
+      case "rust":
+        return {
+          icon: "🦀",
+          name: "Rust",
+          description: "High-performance Rust application built with Cargo.",
+          defaultPort: "8080",
+        };
+      case "bun":
+        return {
+          icon: "🥟",
+          name: "Bun",
+          description: "Fast JavaScript and TypeScript runtime.",
+          defaultPort: "3000",
+        };
+      case "php":
+        return {
+          icon: "🐘",
+          name: "PHP",
+          description: "PHP web application running on Apache.",
+          defaultPort: "80",
+        };
+      case "ruby":
+        return {
+          icon: "💎",
+          name: "Ruby",
+          description: "Ruby on Rails / Rack application running with Bundler and Puma.",
+          defaultPort: "3000",
+        };
+      case "java":
+        return {
+          icon: "☕",
+          name: "Java",
+          description: "Spring Boot / Maven Java application running on OpenJDK.",
+          defaultPort: "8080",
         };
       case "custom":
         return {

@@ -408,6 +408,29 @@ const deleteDatabase = async (projectId, databaseId, ownerId) => {
     console.warn(`[ManagedDB] Remove volume warning:`, err.message);
   }
 
+  // Clean up auto-injected environment variables for this database
+  try {
+    const config = ENGINE_CONFIGS[db.engine];
+    if (config) {
+      const envVars = config.getEnvVars({
+        host: "localhost",
+        port: db.host_port,
+        dbName: db.db_name,
+        dbUser: db.db_user,
+        dbPassword: db.db_password,
+        connectionString: db.connection_string,
+      });
+      for (const key of Object.keys(envVars)) {
+        await pool.query(
+          `DELETE FROM environment_variables WHERE project_id = $1 AND variable_key = $2`,
+          [projectId, key],
+        );
+      }
+    }
+  } catch (cleanErr) {
+    console.warn(`[ManagedDB] Env var cleanup warning:`, cleanErr.message);
+  }
+
   // Delete DB record
   await pool.query(`DELETE FROM managed_databases WHERE id = $1`, [databaseId]);
 

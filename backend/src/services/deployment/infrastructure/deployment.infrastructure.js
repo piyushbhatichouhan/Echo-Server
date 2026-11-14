@@ -81,6 +81,7 @@ module.exports = {
   updateImage,
   markStoppedByUser,
   getLatestDeployment,
+  getLatest: getLatestDeployment,
   getProjectDeployments,
   fail,
   running,

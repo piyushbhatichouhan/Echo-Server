@@ -29,11 +29,52 @@ export default function WebhookCard({ projectId, repository, onRefresh }) {
 
   const toast = useToast();
 
-  if (!repository) return null;
+  if (!repository) {
+    return (
+      <div className="eh-webhook-card eh-webhook-unconnected">
+        <div className="eh-webhook-header">
+          <div className="eh-webhook-title-group">
+            <div className="eh-webhook-icon-bubble">
+              <Zap size={20} className="eh-webhook-icon" />
+            </div>
+            <div>
+              <div className="eh-webhook-heading-row">
+                <h2>Automated Git Push-to-Deploy</h2>
+                <span className="eh-webhook-status-badge paused">
+                  Connect Repository Above
+                </span>
+              </div>
+              <p>
+                Trigger instant zero-downtime container builds whenever code is pushed to your
+                GitHub repository.
+              </p>
+            </div>
+          </div>
+        </div>
 
+        <div className="eh-webhook-guide-callout" style={{ marginTop: "16px" }}>
+          <div className="eh-callout-icon">
+            <HelpCircle size={18} />
+          </div>
+          <div>
+            <strong>Automated Webhook Pipeline:</strong>
+            <p style={{ margin: "4px 0 0 0", color: "#8b949e", fontSize: "0.85rem" }}>
+              Once you connect a GitHub or GitLab repository above, EchoServer will generate an automated webhook endpoint and SHA-256 HMAC secret. Any <code>git push</code> will automatically build and hot-swap your live container.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const apiBase =
+    import.meta.env.VITE_API_URL ||
+    (window.location.origin.includes(":5173")
+      ? "http://localhost:3000"
+      : window.location.origin);
   const webhookUrl =
     repository.webhook_url ||
-    `${window.location.origin}/api/webhooks/github/${projectId}`;
+    `${apiBase}/api/webhooks/github/${projectId}`;
   const webhookSecret = repository.webhook_secret || "••••••••••••••••••••••••";
   const autoDeploy = repository.auto_deploy !== false;
 

@@ -7,6 +7,7 @@ const app = require("./src/app");
 const routerService = require("./src/router.service");
 const proxyService = require("./src/proxy.service");
 const routerRepository = require("./src/router.repository");
+const { generateCertificate } = require("./src/cert.generator");
 const { connectDatabase, closeDatabase } = require("./src/config/database");
 
 const HTTP_PORT = Number(process.env.PORT) || 8080;
@@ -18,19 +19,14 @@ const ENABLE_HTTPS_REDIRECT = process.env.ENABLE_HTTPS_REDIRECT === "true";
 // -----------------------------------------------------------------------------
 const tlsCache = new Map();
 
-// Generate minimal fallback certificate for unknown domains during TLS handshake
+// Generate valid fallback X.509 certificate for unknown domains during TLS handshake
 let fallbackContext = null;
 try {
-  const crypto = require("crypto");
-  const { generateKeyPairSync } = crypto;
-  const { privateKey, publicKey } = generateKeyPairSync("rsa", {
-    modulusLength: 2048,
-    publicKeyEncoding: { type: "spki", format: "pem" },
-    privateKeyEncoding: { type: "pkcs8", format: "pem" },
-  });
-  // We can use a bare self-signed cert or empty context fallback
-  fallbackContext = tls.createSecureContext({ key: privateKey, cert: publicKey });
-} catch (_) {}
+  const { certificate, privateKey } = generateCertificate("localhost", 365);
+  fallbackContext = tls.createSecureContext({ cert: certificate, key: privateKey });
+} catch (err) {
+  console.warn("[Router TLS] Fallback context warning:", err.message);
+}
 
 const resolveSecureContext = async (servername) => {
   if (!servername) return fallbackContext;

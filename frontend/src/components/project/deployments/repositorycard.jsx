@@ -390,13 +390,11 @@ export default function RepositoryCard({
         <RepositoryInfoCard validation={validation} repository={repository} />
       </div>
 
-      {repository && (
-        <WebhookCard
-          projectId={projectId}
-          repository={repository}
-          onRefresh={refresh}
-        />
-      )}
+      <WebhookCard
+        projectId={projectId}
+        repository={repository}
+        onRefresh={refresh}
+      />
 
       <GitStatusCard gitStatus={gitStatus} projectId={projectId} />
 

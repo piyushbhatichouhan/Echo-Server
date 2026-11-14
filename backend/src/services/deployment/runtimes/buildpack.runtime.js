@@ -39,7 +39,12 @@ async function deploy(context) {
 async function prepare(context) {
   const { project, settings } = context;
 
-  context.cwd = workspace.getProjectFilesDirectory(project.id);
+  const baseDir = workspace.getProjectFilesDirectory(project.id);
+  const workingDir =
+    settings?.working_directory && settings.working_directory !== "."
+      ? path.join(baseDir, settings.working_directory)
+      : baseDir;
+  context.cwd = workingDir;
 
   // 1. Detect language / framework from workspace files
   const detected = await detectBuildpack(context.cwd);
@@ -173,6 +178,13 @@ async function start(context) {
   context.container = container;
   await context.infrastructure.container.start(container, deployment.id);
 
+  // Record container metadata in database
+  await context.infrastructure.deployment.updateContainer(
+    deployment.id,
+    context.containerName,
+    context.containerPort,
+  );
+
   await context.infrastructure.logger.info(
     deployment.id,
     `Container online on host port ${deployment.port} -> container port ${context.containerPort}`,
@@ -180,49 +192,48 @@ async function start(context) {
 }
 
 async function healthCheck(context) {
-  const { deployment } = context;
+  const { project, deployment } = context;
 
   await context.infrastructure.logger.stage(
     deployment.id,
-    "Performing Health Check",
+    "Performing Health Check & Port Probe",
   );
 
-  const host = "127.0.0.1";
-  const port = deployment.port;
-  const timeoutMs = 30000;
-  const startTime = Date.now();
+  const result = await healthService.verifyAndDetectPort(
+    context.container?.id || project.id,
+    context.containerPort,
+    {
+      deploymentId: deployment.id,
+      logger: context.infrastructure.logger,
+      hostPort: deployment.port,
+      maxWaitMs: 25000,
+      checkIntervalMs: 1000,
+    },
+  );
 
-  let isHealthy = false;
-  while (Date.now() - startTime < timeoutMs) {
-    try {
-      const net = require("net");
-      await new Promise((resolve, reject) => {
-        const sock = net.createConnection({ host, port, timeout: 2000 }, () => {
-          sock.end();
-          resolve();
-        });
-        sock.on("error", reject);
-        sock.on("timeout", () => {
-          sock.destroy();
-          reject(new Error("Timeout"));
-        });
-      });
-      isHealthy = true;
-      break;
-    } catch {
-      await new Promise((r) => setTimeout(r, 1000));
-    }
+  if (result.autoDetected) {
+    context.containerPort = result.port;
   }
 
-  if (!isHealthy) {
+  if (result.success) {
     await context.infrastructure.logger.info(
       deployment.id,
-      "Health check port probe completed (proceeding).",
+      `Application confirmed online and listening on port ${result.port}.`,
     );
   } else {
-    await context.infrastructure.logger.info(
+    const status = await context.infrastructure.container.getStatus(project.id);
+    if (!status.running) {
+      const error = new Error(
+        `Application container exited prematurely (Exit code: ${status.exitCode}). Check logs for details.`,
+      );
+      error.status = 400;
+      error.isUserError = true;
+      throw error;
+    }
+
+    await context.infrastructure.logger.warn(
       deployment.id,
-      "Health check verified: Service responding on designated port.",
+      `Application did not respond to HTTP probe on port ${context.containerPort} within 25 seconds. Container is still running in background.`,
     );
   }
 }
@@ -284,7 +295,8 @@ async function cleanup(context) {
 async function stop(context) {
   const { project } = context;
   await context.infrastructure.container.stopByProject(project.id);
-  const latestDeployment = await context.infrastructure.deployment.getLatest(project.id);
+  const latestDeployment =
+    await context.infrastructure.deployment.getLatestDeployment(project.id);
   if (latestDeployment) {
     await context.infrastructure.deployment.updateStatus(latestDeployment.id, "stopped");
     await context.infrastructure.deployment.markStoppedByUser(project.id, true);
@@ -295,7 +307,8 @@ async function stop(context) {
 async function restart(context) {
   const { project, deployment } = context;
   await context.infrastructure.container.restart(project.id, deployment?.id);
-  const latestDeployment = await context.infrastructure.deployment.getLatest(project.id);
+  const latestDeployment =
+    await context.infrastructure.deployment.getLatestDeployment(project.id);
   if (latestDeployment) {
     await context.infrastructure.deployment.updateStatus(latestDeployment.id, "running");
     await context.infrastructure.deployment.markStoppedByUser(project.id, false);

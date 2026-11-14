@@ -265,8 +265,9 @@ export default function ProjectDatabases({ projectId }) {
       ) : (
         <div className="eh-databases-grid">
           {databases.map((db) => {
-            const engineInfo = ENGINE_DETAILS[db.engine] || {
-              name: db.engine,
+            const engineKey = db.engine ? String(db.engine).toLowerCase() : "";
+            const engineInfo = ENGINE_DETAILS[engineKey] || {
+              name: db.engine || "Database",
               icon: "🗄️",
               badgeClass: "",
             };
@@ -277,10 +278,12 @@ export default function ProjectDatabases({ projectId }) {
             // Formatted connection string with password masking if hidden
             let displayConnStr = db.connection_string || "";
             if (!isPasswordVisible && db.db_password && displayConnStr) {
-              displayConnStr = displayConnStr.replace(
-                encodeURIComponent(db.db_password),
-                "••••••••••••••••",
-              );
+              const encodedPw = encodeURIComponent(db.db_password);
+              if (displayConnStr.includes(encodedPw)) {
+                displayConnStr = displayConnStr.split(encodedPw).join("••••••••••••••••");
+              } else if (displayConnStr.includes(db.db_password)) {
+                displayConnStr = displayConnStr.split(db.db_password).join("••••••••••••••••");
+              }
             }
 
             return (

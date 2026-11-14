@@ -18,6 +18,9 @@ import {
   FolderPlus,
   Plus,
   AlertTriangle,
+  Cpu,
+  Code2,
+  Coffee,
 } from "lucide-react";
 
 const APPLICATIONS = {
@@ -73,6 +76,72 @@ const APPLICATIONS = {
     install: "pip install -r requirements.txt",
     build: "-",
     start: "python app.py",
+    output: "-",
+  },
+
+  go: {
+    title: "Go (Golang)",
+    icon: <Cpu size={24} />,
+    description: "Compiled Go web services and APIs via multi-stage Alpine buildpack.",
+    runtime: "Go 1.23 Alpine",
+    install: "go mod download",
+    build: "go build -o server .",
+    start: "./server",
+    output: "-",
+  },
+
+  rust: {
+    title: "Rust",
+    icon: <Cpu size={24} />,
+    description: "High-performance Rust applications built with Cargo.",
+    runtime: "Rust 1.82 Alpine",
+    install: "-",
+    build: "cargo build --release",
+    start: "./target/release/app",
+    output: "-",
+  },
+
+  bun: {
+    title: "Bun",
+    icon: <Zap size={24} />,
+    description: "Fast all-in-one JavaScript and TypeScript runtime.",
+    runtime: "Bun Latest Alpine",
+    install: "bun install",
+    build: "-",
+    start: "bun run start",
+    output: "-",
+  },
+
+  php: {
+    title: "PHP",
+    icon: <Globe size={24} />,
+    description: "PHP 8.2 web applications running on Apache.",
+    runtime: "PHP 8.2 Apache",
+    install: "composer install",
+    build: "-",
+    start: "Apache HTTP Server",
+    output: "-",
+  },
+
+  ruby: {
+    title: "Ruby",
+    icon: <Code2 size={24} />,
+    description: "Ruby on Rails, Sinatra, and Rack applications with Bundler.",
+    runtime: "Ruby 3.3 Alpine",
+    install: "bundle install",
+    build: "-",
+    start: "bundle exec rackup -p 3000",
+    output: "-",
+  },
+
+  java: {
+    title: "Java",
+    icon: <Coffee size={24} />,
+    description: "Spring Boot, Quarkus, and Java services running on OpenJDK 17.",
+    runtime: "OpenJDK 17 / Maven",
+    install: "-",
+    build: "mvn clean package -DskipTests",
+    start: "java -jar target/*.jar",
     output: "-",
   },
 

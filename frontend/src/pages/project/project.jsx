@@ -32,6 +32,7 @@ import StorageStats from "../../components/cloud/StorageStats/StorageStats";
 import { getMyStorageStats } from "../../services/storage.api";
 import ProjectAnalytics from "../../components/project/analytics/ProjectAnalytics";
 import ProjectDatabases from "../../components/project/databases/ProjectDatabases";
+import ProjectDomains from "../../components/project/domains/ProjectDomains";
 
 export default function Project() {
   const { id } = useParams();
@@ -278,8 +279,19 @@ export default function Project() {
           <ProjectTerminal projectId={id} isRunning={isRunning} />
         )}
 
-        {activeTab === "environment" && <Environment projectId={project.id} />}
-        {activeTab === "databases" && <ProjectDatabases projectId={project.id} />}
+        {activeTab === "domains" && (
+          <ProjectDomains
+            projectId={project?.id || id}
+            project={project}
+            publication={publication}
+            onPublish={handlePublish}
+            onUpdateSubdomain={handleUpdateSubdomain}
+            onUnpublish={handleUnpublish}
+            pubRefresh={pubrefresh}
+          />
+        )}
+        {activeTab === "environment" && <Environment projectId={project?.id || id} />}
+        {activeTab === "databases" && <ProjectDatabases projectId={project?.id || id} />}
         {activeTab === "settings" && <Settings projectId={id} />}
       </div>
     </div>

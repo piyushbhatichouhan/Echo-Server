@@ -2,25 +2,26 @@ import "./projecttabs.css";
 
 export default function ProjectTabs({ activeTab, onTabChange }) {
   const tabs = [
-    "overview",
-    "analytics",
-    "files",
-    "environment",
-    "databases",
-    "terminal",
-    "deployments",
-    "settings",
+    { id: "overview", label: "Overview" },
+    { id: "analytics", label: "Analytics" },
+    { id: "files", label: "Files" },
+    { id: "domains", label: "Domains & SSL" },
+    { id: "environment", label: "Environment" },
+    { id: "databases", label: "Databases" },
+    { id: "terminal", label: "Terminal" },
+    { id: "deployments", label: "Deployments & Git" },
+    { id: "settings", label: "Settings" },
   ];
 
   return (
     <div className="eh-project-tabs">
       {tabs.map((tab) => (
         <button
-          key={tab}
-          className={`eh-project-tab ${activeTab === tab ? "active" : ""}`}
-          onClick={() => onTabChange(tab)}
+          key={tab.id}
+          className={`eh-project-tab ${activeTab === tab.id ? "active" : ""}`}
+          onClick={() => onTabChange(tab.id)}
         >
-          {tab.charAt(0).toUpperCase() + tab.slice(1)}
+          {tab.label}
         </button>
       ))}
     </div> 
