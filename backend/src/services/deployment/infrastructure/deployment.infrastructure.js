@@ -60,16 +60,28 @@ const running = async (deploymentId) =>
 
 const updateContainer = async (
   deploymentId,
-  containerId,
-  containerName,
+  containerIdOrName,
+  containerNameOrPort,
   containerPort,
-) =>
-  deploymentRepository.updateDeploymentContainer(
+) => {
+  let finalContainerId = containerIdOrName;
+  let finalContainerName = containerNameOrPort;
+  let finalPort = containerPort;
+
+  // Flexible argument handling: (id, name, port) vs (id, containerId, name, port)
+  if (containerPort === undefined) {
+    finalContainerId = containerIdOrName;
+    finalContainerName = containerIdOrName;
+    finalPort = containerNameOrPort;
+  }
+
+  return deploymentRepository.updateDeploymentContainer(
     deploymentId,
-    containerId,
-    containerName,
-    containerPort,
+    finalContainerId,
+    finalContainerName,
+    finalPort,
   );
+};
 
 const updatePort = async (deploymentId, port) =>
   deploymentRepository.updateDeploymentPort(deploymentId, port);

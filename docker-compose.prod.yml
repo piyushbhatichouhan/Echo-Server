@@ -61,6 +61,10 @@ services:
 
     ports:
       - "80:8080"
+      - "443:8443"
+
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
     networks:
       - echo-network

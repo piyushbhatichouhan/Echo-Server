@@ -156,16 +156,40 @@ const queueTelemetry = (projectInfo, req, res, startHrTime, initialBytesWritten 
   }
 };
 
-const resolveTarget = (deployment) => {
-  // Support local host testing (127.0.0.1:port) vs Docker container network (containerName:containerPort)
+const resolveCandidateTargets = (deployment) => {
+  const candidates = [];
+  const containerName = deployment.containerName;
+  const containerPort = Number(deployment.containerPort) || 3000;
+  const hostPort = Number(deployment.port) || containerPort;
+
+  // 1. If explicit localhost mode, prioritize localhost
   if (process.env.ROUTER_TARGET === "localhost") {
-    const port = deployment.port || deployment.containerPort || 3000;
-    return `http://127.0.0.1:${port}`;
+    candidates.push(`http://127.0.0.1:${hostPort}`);
+    if (containerName && isNaN(Number(containerName))) {
+      candidates.push(`http://${containerName}:${containerPort}`);
+    }
+    return candidates;
   }
 
-  const containerName = deployment.containerName;
-  const containerPort = deployment.containerPort || deployment.port || 3000;
-  return `http://${containerName}:${containerPort}`;
+  // 2. In container/production mode:
+  // First try direct container DNS name if valid string (not purely numeric like "3000")
+  if (containerName && isNaN(Number(containerName))) {
+    candidates.push(`http://${containerName}:${containerPort}`);
+  }
+
+  // Fallbacks: host-mapped port via host.docker.internal, Docker bridge gateway IP, or 127.0.0.1
+  if (hostPort) {
+    candidates.push(`http://host.docker.internal:${hostPort}`);
+    candidates.push(`http://172.17.0.1:${hostPort}`);
+    candidates.push(`http://127.0.0.1:${hostPort}`);
+  }
+
+  return candidates.length > 0 ? candidates : [`http://127.0.0.1:${hostPort || 3000}`];
+};
+
+const resolveTarget = (deployment) => {
+  const candidates = resolveCandidateTargets(deployment);
+  return candidates[0];
 };
 
 const proxyRequest = (req, res, deployment, projectInfo = null) => {
@@ -176,37 +200,77 @@ const proxyRequest = (req, res, deployment, projectInfo = null) => {
     queueTelemetry(projectInfo, req, res, startHrTime, initialBytesWritten);
   });
 
-  const target = resolveTarget(deployment);
+  const candidates = resolveCandidateTargets(deployment);
+  let candidateIndex = 0;
 
-  proxy.web(
-    req,
-    res,
-    {
-      target,
-      changeOrigin: true,
-      xfwd: true,
-      headers: {
-        "X-Forwarded-Host": req.headers.host || "",
-        "X-Forwarded-Proto":
-          req.headers["x-forwarded-proto"] ||
-          (req.socket?.encrypted ? "https" : "http"),
-        "X-Real-IP":
-          req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
-          req.socket?.remoteAddress ||
-          "127.0.0.1",
+  const tryProxy = (target) => {
+    proxy.web(
+      req,
+      res,
+      {
+        target,
+        changeOrigin: true,
+        xfwd: true,
+        headers: {
+          "X-Forwarded-Host": req.headers.host || "",
+          "X-Forwarded-Proto":
+            req.headers["x-forwarded-proto"] ||
+            (req.socket?.encrypted ? "https" : "http"),
+          "X-Real-IP":
+            req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
+            req.socket?.remoteAddress ||
+            "127.0.0.1",
+        },
       },
-    },
-    (err) => {
-      // Inline proxy error callback if not caught by event listener
-      if (res && !res.headersSent && typeof res.status === "function") {
-        res.status(502).json({
-          success: false,
-          message: "Target application failed to respond.",
-          error: err.message,
-        });
-      }
-    },
-  );
+      (err) => {
+        candidateIndex++;
+        if (candidateIndex < candidates.length && !res.headersSent) {
+          console.warn(
+            `[Proxy Notice] Upstream ${target} unreachable (${err.code || err.message}). Retrying fallback ${candidates[candidateIndex]}...`
+          );
+          tryProxy(candidates[candidateIndex]);
+        } else if (res && !res.headersSent && typeof res.status === "function") {
+          const isHtml = (req.headers?.accept || "").includes("text/html");
+          if (isHtml) {
+            res.status(502).set("Content-Type", "text/html").send(`
+              <!DOCTYPE html>
+              <html lang="en">
+              <head>
+                <meta charset="utf-8">
+                <title>502 - Application Unavailable</title>
+                <style>
+                  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0d1117; color: #c9d1d9; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+                  .card { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 40px; max-width: 500px; text-align: center; box-shadow: 0 12px 32px rgba(0,0,0,0.4); }
+                  h1 { color: #f85149; margin-top: 0; font-size: 26px; }
+                  p { color: #8b949e; line-height: 1.6; margin-bottom: 24px; }
+                  .badge { display: inline-block; padding: 4px 10px; background: rgba(248,81,73,0.15); color: #f85149; border-radius: 20px; font-size: 12px; font-weight: 600; text-transform: uppercase; margin-bottom: 16px; }
+                  .retry-btn { display: inline-block; padding: 10px 24px; background: #238636; color: #fff; text-decoration: none; border-radius: 6px; font-weight: 500; font-size: 14px; cursor: pointer; border: none; }
+                  .retry-btn:hover { background: #2ea043; }
+                </style>
+              </head>
+              <body>
+                <div class="card">
+                  <span class="badge">502 Bad Gateway</span>
+                  <h1>Application Unavailable</h1>
+                  <p>The container for this application is currently starting, restarting, or failed to respond. Please try again in a few moments.</p>
+                  <button class="retry-btn" onclick="window.location.reload()">Reload Application</button>
+                </div>
+              </body>
+              </html>
+            `);
+          } else {
+            res.status(502).json({
+              success: false,
+              message: "Target application is currently unavailable or restarting.",
+              error: err.code || err.message,
+            });
+          }
+        }
+      },
+    );
+  };
+
+  tryProxy(candidates[0]);
 };
 
 const proxyWebSocket = (req, socket, head, deployment, projectInfo = null) => {

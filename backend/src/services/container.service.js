@@ -299,6 +299,14 @@ const createContainer = async (
       PidsLimit: 256, // Prevent fork bomb DoS from exhausting host kernel process table
       SecurityOpt: ["no-new-privileges:true"], // Block privilege escalation inside container
     },
+
+    NetworkingConfig: process.env.DOCKER_NETWORK
+      ? {
+          EndpointsConfig: {
+            [process.env.DOCKER_NETWORK]: {},
+          },
+        }
+      : undefined,
   };
 
   const container = await docker.createContainer(containerOptions);

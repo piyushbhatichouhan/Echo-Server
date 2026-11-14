@@ -73,10 +73,14 @@ const resolveSecureContext = async (servername) => {
         return app(req, res);
       }
 
-      if (ENABLE_HTTPS_REDIRECT) {
+      const isAlreadyHttps =
+        req.socket?.encrypted ||
+        req.headers["x-forwarded-proto"] === "https";
+
+      if (ENABLE_HTTPS_REDIRECT && !isAlreadyHttps) {
         const rawHost = req.headers.host || "localhost";
         const host = rawHost.replace(/:\d+$/, "");
-        const redirectUrl = `https://${host}${HTTPS_PORT === 443 ? "" : `:${HTTPS_PORT}`}${req.url}`;
+        const redirectUrl = `https://${host}${req.url}`;
         res.writeHead(301, { Location: redirectUrl });
         return res.end();
       }

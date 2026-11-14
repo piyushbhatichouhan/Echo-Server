@@ -181,6 +181,7 @@ async function start(context) {
   // Record container metadata in database
   await context.infrastructure.deployment.updateContainer(
     deployment.id,
+    context.container?.id || context.containerName,
     context.containerName,
     context.containerPort,
   );
