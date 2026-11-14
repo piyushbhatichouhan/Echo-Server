@@ -13,21 +13,10 @@ const dockerInfo = async (req, res, next) => {
   }
 };
 
-const extractClientIp = (req) => {
-  return (
-    req.headers["cf-connecting-ip"] ||
-    req.headers["x-real-ip"] ||
-    (req.headers["x-forwarded-for"] ? req.headers["x-forwarded-for"].split(",")[0].trim() : null) ||
-    req.socket?.remoteAddress ||
-    null
-  );
-};
-
 const getOutboundIp = async (req, res, next) => {
   try {
     const refresh = req.query.refresh === "true" || req.query.refresh === "1";
-    const clientIp = extractClientIp(req);
-    const ip = await systemService.getOutboundIp(refresh, clientIp);
+    const ip = await systemService.getOutboundIp(refresh);
 
     res.json({
       success: true,
@@ -42,8 +31,7 @@ const getOutboundIp = async (req, res, next) => {
 
 const getDeploymentGuide = async (req, res, next) => {
   try {
-    const clientIp = extractClientIp(req);
-    const guide = await systemService.getDeploymentGuide(clientIp);
+    const guide = await systemService.getDeploymentGuide();
 
     res.json({
       success: true,

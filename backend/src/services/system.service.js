@@ -33,7 +33,7 @@ const getDockerInfo = async () => {
   return await docker.info();
 };
 
-const getOutboundIp = async (forceRefresh = false, fallbackClientIp = null) => {
+const getOutboundIp = async (forceRefresh = false) => {
   if (process.env.SERVER_PUBLIC_IP && isPublicIp(process.env.SERVER_PUBLIC_IP)) {
     return process.env.SERVER_PUBLIC_IP.trim();
   }
@@ -45,7 +45,7 @@ const getOutboundIp = async (forceRefresh = false, fallbackClientIp = null) => {
 
   const httpHeaders = { "User-Agent": "curl/8.0" };
 
-  // Fast concurrent dynamic public IP detection
+  // Fast concurrent dynamic public IP detection from server
   const fetchers = [
     async () => {
       const res = await axios.get("https://api4.ipify.org?format=json", {
@@ -102,14 +102,7 @@ const getOutboundIp = async (forceRefresh = false, fallbackClientIp = null) => {
     // Expected on airgapped or heavily filtered CGNAT environments
   }
 
-  // Fallback 1: Connecting client IP (from Cloudflare cf-connecting-ip or reverse proxy)
-  if (fallbackClientIp && isPublicIp(fallbackClientIp)) {
-    cachedOutboundIp = fallbackClientIp.trim();
-    lastIpFetchTime = now;
-    return cachedOutboundIp;
-  }
-
-  // Fallback 2: Environment variables
+  // Fallback: Environment variables
   if (process.env.SERVER_PUBLIC_IP && isPublicIp(process.env.SERVER_PUBLIC_IP)) {
     return process.env.SERVER_PUBLIC_IP.trim();
   }
@@ -408,8 +401,8 @@ print("Firebase Admin Initialized")`,
   },
 ];
 
-const getDeploymentGuide = async (fallbackClientIp = null) => {
-  const outboundIp = await getOutboundIp(false, fallbackClientIp);
+const getDeploymentGuide = async () => {
+  const outboundIp = await getOutboundIp(false);
 
   // Populate dynamic IP into whitelist instructions
   const databases = DATABASE_PRESETS.map((db) => ({
