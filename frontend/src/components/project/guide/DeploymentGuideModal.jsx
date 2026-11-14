@@ -364,8 +364,14 @@ export default function DeploymentGuideModal({ isOpen, onClose, initialTab = "ru
     }
   }, [isOpen, initialTab, guideData, ip, fetchIp]);
 
+  const isPublicIpv4 = (val) =>
+    typeof val === "string" &&
+    /^(?!0\.)(?!127\.)(?!10\.)(?!172\.(1[6-9]|2\d|3[01])\.)(?!192\.168\.)(\d{1,3}\.){3}\d{1,3}$/.test(
+      val.trim()
+    );
+
   const copyToClipboard = (text, key) => {
-    if (!text || text === "Auto-detected" || text === "Detecting..." || text === "Loading...") {
+    if (!isPublicIpv4(text)) {
       toast?.info?.("Detecting IP", "Still detecting server outbound IP, please wait...");
       fetchIp(true);
       return;
@@ -376,12 +382,13 @@ export default function DeploymentGuideModal({ isOpen, onClose, initialTab = "ru
     setTimeout(() => setCopiedKey(null), 2000);
   };
 
-  const outboundIp =
-    (ip && ip !== "127.0.0.1")
-      ? ip
-      : (guideData?.outboundIp && guideData.outboundIp !== "127.0.0.1" && guideData.outboundIp !== "Auto-detected")
-      ? guideData.outboundIp
-      : (import.meta.env.VITE_SERVER_IP || "103.82.99.186");
+  const outboundIp = isPublicIpv4(ip)
+    ? ip.trim()
+    : isPublicIpv4(guideData?.outboundIp)
+    ? guideData.outboundIp.trim()
+    : isPublicIpv4(import.meta.env.VITE_SERVER_IP)
+    ? import.meta.env.VITE_SERVER_IP.trim()
+    : "Detecting...";
   const databaseList = guideData?.databases || FALLBACK_DATABASES;
   const currentDb = databaseList.find((d) => d.id === activeDb) || databaseList[0];
 

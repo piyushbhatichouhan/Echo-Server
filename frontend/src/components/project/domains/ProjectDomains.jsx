@@ -146,13 +146,19 @@ export default function ProjectDomains({
     }
   };
 
+  const isPublicIpv4 = (ip) =>
+    typeof ip === "string" &&
+    /^(?!0\.)(?!127\.)(?!10\.)(?!172\.(1[6-9]|2\d|3[01])\.)(?!192\.168\.)(\d{1,3}\.){3}\d{1,3}$/.test(
+      ip.trim()
+    );
+
   const customDomainsList = domains.filter((d) => d.is_custom);
   const serverIpTarget =
-    (serverIp && serverIp !== "127.0.0.1")
-      ? serverIp
-      : (import.meta.env.VITE_SERVER_IP && import.meta.env.VITE_SERVER_IP !== "127.0.0.1")
-      ? import.meta.env.VITE_SERVER_IP
-      : "103.82.99.186";
+    isPublicIpv4(serverIp)
+      ? serverIp.trim()
+      : isPublicIpv4(import.meta.env.VITE_SERVER_IP)
+      ? import.meta.env.VITE_SERVER_IP.trim()
+      : "Detecting...";
   const baseDomainTarget =
     import.meta.env.VITE_BASE_DOMAIN ||
     "devpiyush.in";
@@ -445,7 +451,14 @@ export default function ProjectDomains({
                   <button
                     type="button"
                     className="eh-dns-copy-btn"
-                    onClick={() => handleCopy(serverIpTarget, "a-record")}
+                    onClick={() => {
+                      if (!isPublicIpv4(serverIpTarget)) {
+                        toast.info("Public IP still resolving. Please wait a moment.");
+                        return;
+                      }
+                      handleCopy(serverIpTarget, "a-record");
+                    }}
+                    disabled={!isPublicIpv4(serverIpTarget)}
                   >
                     {copiedText === "a-record" ? <Check size={13} /> : <Copy size={13} />}
                     <span>{copiedText === "a-record" ? "Copied" : "Copy Value"}</span>

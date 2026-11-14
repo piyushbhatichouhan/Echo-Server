@@ -70,12 +70,18 @@ export default function Settings() {
   const [ipLoading, setIpLoading] = useState(true);
   const [refreshingIp, setRefreshingIp] = useState(false);
 
+  const isPublicIpv4 = (val) =>
+    typeof val === "string" &&
+    /^(?!0\.)(?!127\.)(?!10\.)(?!172\.(1[6-9]|2\d|3[01])\.)(?!192\.168\.)(\d{1,3}\.){3}\d{1,3}$/.test(
+      val.trim()
+    );
+
   const loadOutboundIp = useCallback(async (force = false) => {
     try {
       if (force) setRefreshingIp(true);
       else setIpLoading(true);
       const ip = await getOutboundIp(force);
-      if (ip) {
+      if (ip && isPublicIpv4(ip)) {
         setOutboundIp(ip);
       }
     } catch (err) {
@@ -652,10 +658,17 @@ export default function Settings() {
                   <button
                     type="button"
                     className="settings-tile-copy-btn"
-                    onClick={() => handleCopy(outboundIp, "tile-outbound-ip")}
-                    disabled={!outboundIp || outboundIp === "Detecting..."}
+                    onClick={() => {
+                      if (!isPublicIpv4(outboundIp)) {
+                        toast?.info("Detecting IP", "Still detecting server outbound IP, please wait...");
+                        loadOutboundIp(true);
+                        return;
+                      }
+                      handleCopy(outboundIp, "tile-outbound-ip");
+                    }}
+                    disabled={!isPublicIpv4(outboundIp)}
                     aria-label="Copy Outbound IP"
-                    title="Copy Outbound IP"
+                    title={isPublicIpv4(outboundIp) ? "Copy Outbound IP" : "Detecting IP..."}
                   >
                     {copiedField === "tile-outbound-ip" ? (
                       <Check size={14} />
@@ -667,14 +680,18 @@ export default function Settings() {
               </div>
 
               <div className="settings-tile-value settings-tile-value--mono">
-                {ipLoading && !outboundIp ? (
+                {ipLoading && !isPublicIpv4(outboundIp) ? (
                   <span className="settings-ip-detecting">
                     <RefreshCw size={14} className="settings-spin" /> Detecting Outbound IP...
                   </span>
+                ) : isPublicIpv4(outboundIp) ? (
+                  outboundIp
+                ) : isPublicIpv4(import.meta.env.VITE_SERVER_IP) ? (
+                  import.meta.env.VITE_SERVER_IP
                 ) : (
-                  (outboundIp && outboundIp !== "127.0.0.1")
-                    ? outboundIp
-                    : (import.meta.env.VITE_SERVER_IP || "103.82.99.186")
+                  <span className="settings-ip-detecting" style={{ color: "var(--accent)" }}>
+                    Click Refresh to detect IP
+                  </span>
                 )}
               </div>
 

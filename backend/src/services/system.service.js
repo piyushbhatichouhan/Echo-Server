@@ -1,70 +1,87 @@
 const docker = require("../docker/docker.client");
 const axios = require("axios");
+const { Resolver } = require("dns").promises;
 
 let cachedOutboundIp = null;
 let lastIpFetchTime = 0;
 const IP_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+
+const isPublicIpv4 = (ip) =>
+  typeof ip === "string" &&
+  /^(?!0\.)(?!127\.)(?!10\.)(?!172\.(1[6-9]|2\d|3[01])\.)(?!192\.168\.)(\d{1,3}\.){3}\d{1,3}$/.test(
+    ip.trim(),
+  );
 
 const getDockerInfo = async () => {
   return await docker.info();
 };
 
 const getOutboundIp = async (forceRefresh = false) => {
-  if (process.env.SERVER_PUBLIC_IP) {
+  if (process.env.SERVER_PUBLIC_IP && isPublicIpv4(process.env.SERVER_PUBLIC_IP)) {
     return process.env.SERVER_PUBLIC_IP.trim();
   }
 
   const now = Date.now();
-  if (!forceRefresh && cachedOutboundIp && cachedOutboundIp !== "127.0.0.1" && now - lastIpFetchTime < IP_CACHE_TTL_MS) {
+  if (!forceRefresh && cachedOutboundIp && isPublicIpv4(cachedOutboundIp) && now - lastIpFetchTime < IP_CACHE_TTL_MS) {
     return cachedOutboundIp;
   }
 
-  // IPv4 provider candidates running concurrently via Promise.any
+  // Fast concurrent dynamic public IPv4 detection using DNS resolver and HTTP reflectors
   const fetchers = [
     async () => {
-      const res = await axios.get("https://api4.ipify.org?format=json", { timeout: 3500 });
-      if (res.data?.ip) return String(res.data.ip).trim();
+      const resolver = new Resolver();
+      resolver.setServers(["208.67.222.222", "208.67.220.220"]);
+      const res = await resolver.resolve4("myip.opendns.com");
+      if (res && res[0] && isPublicIpv4(res[0])) return res[0].trim();
+      throw new Error("No DNS IP");
+    },
+    async () => {
+      const res = await axios.get("https://api4.ipify.org?format=json", { timeout: 4000 });
+      if (res.data?.ip && isPublicIpv4(res.data.ip)) return String(res.data.ip).trim();
       throw new Error("No IP");
     },
     async () => {
-      const res = await axios.get("https://ipv4.icanhazip.com", { timeout: 3500, responseType: "text" });
-      if (res.data) return String(res.data).trim();
+      const res = await axios.get("https://ipv4.icanhazip.com", { timeout: 4000, responseType: "text" });
+      if (res.data && isPublicIpv4(res.data)) return String(res.data).trim();
       throw new Error("No IP");
     },
     async () => {
-      const res = await axios.get("https://v4.ident.me", { timeout: 3500, responseType: "text" });
-      if (res.data) return String(res.data).trim();
+      const res = await axios.get("https://v4.ident.me", { timeout: 4000, responseType: "text" });
+      if (res.data && isPublicIpv4(res.data)) return String(res.data).trim();
       throw new Error("No IP");
     },
     async () => {
-      const res = await axios.get("https://api.ipify.org?format=json", { timeout: 3500 });
-      if (res.data?.ip) return String(res.data.ip).trim();
+      const res = await axios.get("https://checkip.amazonaws.com", { timeout: 4000, responseType: "text" });
+      if (res.data && isPublicIpv4(res.data)) return String(res.data).trim();
       throw new Error("No IP");
     },
     async () => {
-      const res = await axios.get("https://checkip.amazonaws.com", { timeout: 3500, responseType: "text" });
-      if (res.data) return String(res.data).trim();
+      const res = await axios.get("https://ifconfig.me/ip", { timeout: 4000, responseType: "text" });
+      if (res.data && isPublicIpv4(res.data)) return String(res.data).trim();
       throw new Error("No IP");
     },
   ];
 
   try {
     const ip = await Promise.any(fetchers.map((fn) => fn()));
-    if (ip && /^(\d{1,3}\.){3}\d{1,3}$/.test(ip)) {
+    if (isPublicIpv4(ip)) {
       cachedOutboundIp = ip;
       lastIpFetchTime = now;
       return cachedOutboundIp;
     }
   } catch (err) {
-    console.warn("[System] Outbound IP resolution notice:", err.message);
+    console.warn("[System] Dynamic outbound IP detection notice:", err.message);
   }
 
-  return (
-    (cachedOutboundIp && cachedOutboundIp !== "127.0.0.1" ? cachedOutboundIp : null) ||
-    process.env.SERVER_PUBLIC_IP ||
-    process.env.SERVER_IP ||
-    "103.82.99.186"
-  );
+  if (process.env.SERVER_PUBLIC_IP && isPublicIpv4(process.env.SERVER_PUBLIC_IP)) {
+    return process.env.SERVER_PUBLIC_IP.trim();
+  }
+
+  if (process.env.SERVER_IP && isPublicIpv4(process.env.SERVER_IP)) {
+    return process.env.SERVER_IP.trim();
+  }
+
+  return cachedOutboundIp && isPublicIpv4(cachedOutboundIp) ? cachedOutboundIp : null;
 };
 
 const DATABASE_PRESETS = [
@@ -360,7 +377,7 @@ const getDeploymentGuide = async () => {
   // Populate dynamic IP into whitelist instructions
   const databases = DATABASE_PRESETS.map((db) => ({
     ...db,
-    whitelistInstruction: db.whitelistInstruction.replace(/{{IP}}/g, outboundIp),
+    whitelistInstruction: db.whitelistInstruction.replace(/{{IP}}/g, outboundIp || "YOUR_SERVER_IP"),
   }));
 
   return {
