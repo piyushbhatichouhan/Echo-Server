@@ -82,10 +82,13 @@ export default function Settings() {
       else setIpLoading(true);
       const ip = await getOutboundIp(force);
       if (ip && isPublicIpv4(ip)) {
-        setOutboundIp(ip);
+        setOutboundIp(ip.trim());
+      } else {
+        setOutboundIp(null);
       }
     } catch (err) {
       console.warn("Failed to load outbound IP:", err);
+      setOutboundIp(null);
     } finally {
       setIpLoading(false);
       setRefreshingIp(false);
@@ -659,16 +662,21 @@ export default function Settings() {
                     type="button"
                     className="settings-tile-copy-btn"
                     onClick={() => {
-                      if (!isPublicIpv4(outboundIp)) {
-                        toast?.info("Detecting IP", "Still detecting server outbound IP, please wait...");
-                        loadOutboundIp(true);
-                        return;
+                      const toCopy = isPublicIpv4(outboundIp)
+                        ? outboundIp
+                        : isPublicIpv4(import.meta.env.VITE_SERVER_IP)
+                        ? import.meta.env.VITE_SERVER_IP
+                        : "0.0.0.0/0";
+                      handleCopy(toCopy, "tile-outbound-ip");
+                      if (toCopy === "0.0.0.0/0") {
+                        toast?.info("Copied 0.0.0.0/0", "Copied 0.0.0.0/0 for MongoDB Atlas whitelist (recommended for CGNAT).");
+                      } else {
+                        toast?.success("Copied to Clipboard", `Server Outbound IP ${toCopy} copied.`);
                       }
-                      handleCopy(outboundIp, "tile-outbound-ip");
                     }}
-                    disabled={!isPublicIpv4(outboundIp)}
+                    disabled={ipLoading || refreshingIp}
                     aria-label="Copy Outbound IP"
-                    title={isPublicIpv4(outboundIp) ? "Copy Outbound IP" : "Detecting IP..."}
+                    title="Copy Outbound IP or 0.0.0.0/0"
                   >
                     {copiedField === "tile-outbound-ip" ? (
                       <Check size={14} />
@@ -680,7 +688,7 @@ export default function Settings() {
               </div>
 
               <div className="settings-tile-value settings-tile-value--mono">
-                {ipLoading && !isPublicIpv4(outboundIp) ? (
+                {ipLoading || refreshingIp ? (
                   <span className="settings-ip-detecting">
                     <RefreshCw size={14} className="settings-spin" /> Detecting Outbound IP...
                   </span>
@@ -690,7 +698,7 @@ export default function Settings() {
                   import.meta.env.VITE_SERVER_IP
                 ) : (
                   <span className="settings-ip-detecting" style={{ color: "var(--accent)" }}>
-                    Click Refresh to detect IP
+                    Dynamic CGNAT (Use 0.0.0.0/0)
                   </span>
                 )}
               </div>

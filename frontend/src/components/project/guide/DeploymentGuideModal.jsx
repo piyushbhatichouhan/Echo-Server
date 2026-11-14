@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Modal from "../../common/modal/modal";
 import {
   BookOpen,
@@ -320,13 +320,19 @@ export default function DeploymentGuideModal({ isOpen, onClose, initialTab = "ru
 
   const toast = useToast();
 
+  const isPublicIpv4 = (val) =>
+    typeof val === "string" &&
+    /^(?!0\.)(?!127\.)(?!10\.)(?!172\.(1[6-9]|2\d|3[01])\.)(?!192\.168\.)(\d{1,3}\.){3}\d{1,3}$/.test(
+      val.trim()
+    );
+
   const fetchIp = useCallback(async (force = false) => {
     try {
       if (force) setRefreshingIp(true);
       else setLoadingIp(true);
       const resIp = await getOutboundIp(force);
-      if (resIp && resIp !== "Auto-detected") {
-        setIp(resIp);
+      if (resIp && isPublicIpv4(resIp)) {
+        setIp(resIp.trim());
       }
     } catch (e) {
       console.warn("Failed to fetch outbound IP:", e);
@@ -336,59 +342,60 @@ export default function DeploymentGuideModal({ isOpen, onClose, initialTab = "ru
     }
   }, []);
 
+  const fetchedRef = useRef(false);
+
   useEffect(() => {
-    if (isOpen) {
-      if (initialTab) {
-        if (DB_IDS.includes(initialTab)) {
-          setActiveTab("database");
-          setActiveDb(initialTab);
-        } else if (initialTab === "db" || initialTab === "database") {
-          setActiveTab("database");
-        } else {
-          setActiveTab(initialTab);
-        }
-      }
-      if (!guideData) {
-        getDeploymentGuide()
-          .then((data) => {
-            setGuideData(data);
-            if (data?.outboundIp && data.outboundIp !== "Auto-detected") {
-              setIp(data.outboundIp);
-            }
-          })
-          .catch(() => {});
-      }
-      if (!ip) {
-        fetchIp();
+    if (!isOpen) return;
+
+    if (initialTab) {
+      if (DB_IDS.includes(initialTab)) {
+        setActiveTab("database");
+        setActiveDb(initialTab);
+      } else if (initialTab === "db" || initialTab === "database") {
+        setActiveTab("database");
+      } else {
+        setActiveTab(initialTab);
       }
     }
-  }, [isOpen, initialTab, guideData, ip, fetchIp]);
 
-  const isPublicIpv4 = (val) =>
-    typeof val === "string" &&
-    /^(?!0\.)(?!127\.)(?!10\.)(?!172\.(1[6-9]|2\d|3[01])\.)(?!192\.168\.)(\d{1,3}\.){3}\d{1,3}$/.test(
-      val.trim()
-    );
+    if (!guideData) {
+      getDeploymentGuide()
+        .then((data) => {
+          setGuideData(data);
+          if (data?.outboundIp && isPublicIpv4(data.outboundIp)) {
+            setIp(data.outboundIp.trim());
+          }
+        })
+        .catch(() => {});
+    }
+
+    if (!fetchedRef.current) {
+      fetchedRef.current = true;
+      fetchIp();
+    }
+  }, [isOpen, initialTab, fetchIp, guideData]);
 
   const copyToClipboard = (text, key) => {
-    if (!isPublicIpv4(text)) {
-      toast?.info?.("Detecting IP", "Still detecting server outbound IP, please wait...");
-      fetchIp(true);
-      return;
-    }
-    navigator.clipboard.writeText(text);
+    const toCopy = isPublicIpv4(text) ? text : "0.0.0.0/0";
+    navigator.clipboard.writeText(toCopy);
     setCopiedKey(key);
-    toast?.success?.("Copied to Clipboard", `Server Outbound IP ${text} copied.`);
+    if (isPublicIpv4(text)) {
+      toast?.success?.("Copied to Clipboard", `Server Outbound IP ${text} copied.`);
+    } else {
+      toast?.success?.("Copied 0.0.0.0/0", "Copied 0.0.0.0/0 for MongoDB Atlas whitelist (recommended for CGNAT).");
+    }
     setTimeout(() => setCopiedKey(null), 2000);
   };
 
-  const outboundIp = isPublicIpv4(ip)
+  const detectedIp = isPublicIpv4(ip)
     ? ip.trim()
     : isPublicIpv4(guideData?.outboundIp)
     ? guideData.outboundIp.trim()
     : isPublicIpv4(import.meta.env.VITE_SERVER_IP)
     ? import.meta.env.VITE_SERVER_IP.trim()
-    : "Detecting...";
+    : null;
+
+  const outboundIp = detectedIp || (loadingIp || refreshingIp ? "Detecting..." : "0.0.0.0/0 (CGNAT)");
   const databaseList = guideData?.databases || FALLBACK_DATABASES;
   const currentDb = databaseList.find((d) => d.id === activeDb) || databaseList[0];
 
@@ -794,7 +801,7 @@ app.get('*', (req, res) => {
                     <div className="eh-outbound-head">
                       <span className="eh-outbound-label">Server Outbound IP:</span>
                       <code className="eh-outbound-val">
-                        {loadingIp && !ip ? (
+                        {(loadingIp || refreshingIp) && !detectedIp ? (
                           <span className="eh-ip-loading-inline">
                             <RefreshCw size={12} className="eh-spin" /> Detecting...
                           </span>
@@ -806,8 +813,8 @@ app.get('*', (req, res) => {
                         type="button"
                         className="eh-copy-ip-btn"
                         onClick={() => copyToClipboard(outboundIp, `ip_${currentDb.id}`)}
-                        disabled={loadingIp && !ip}
-                        title={loadingIp && !ip ? "Detecting IP..." : "Copy IP"}
+                        disabled={(loadingIp || refreshingIp) && !detectedIp}
+                        title={(loadingIp || refreshingIp) && !detectedIp ? "Detecting IP..." : "Copy IP"}
                       >
                         {copiedKey === `ip_${currentDb.id}` ? (
                           <Check size={14} color="#032115" />

@@ -12,11 +12,19 @@ const isPublicIpv4 = (ip) =>
     ip.trim(),
   );
 
+const withTimeout = (promise, ms = 2500) => {
+  let timer;
+  const timeoutPromise = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`Timeout after ${ms}ms`)), ms);
+  });
+  return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timer));
+};
+
 const getDockerInfo = async () => {
   return await docker.info();
 };
 
-const getOutboundIp = async (forceRefresh = false) => {
+const getOutboundIp = async (forceRefresh = false, fallbackClientIp = null) => {
   if (process.env.SERVER_PUBLIC_IP && isPublicIpv4(process.env.SERVER_PUBLIC_IP)) {
     return process.env.SERVER_PUBLIC_IP.trim();
   }
@@ -26,37 +34,32 @@ const getOutboundIp = async (forceRefresh = false) => {
     return cachedOutboundIp;
   }
 
-  // Fast concurrent dynamic public IPv4 detection using DNS resolver and HTTP reflectors
+  // Fast concurrent dynamic public IPv4 detection using DNS resolver and HTTP reflectors with hard 2.5s timeout
   const fetchers = [
     async () => {
       const resolver = new Resolver();
       resolver.setServers(["208.67.222.222", "208.67.220.220"]);
-      const res = await resolver.resolve4("myip.opendns.com");
+      const res = await withTimeout(resolver.resolve4("myip.opendns.com"), 2000);
       if (res && res[0] && isPublicIpv4(res[0])) return res[0].trim();
       throw new Error("No DNS IP");
     },
     async () => {
-      const res = await axios.get("https://api4.ipify.org?format=json", { timeout: 4000 });
+      const res = await axios.get("https://api4.ipify.org?format=json", { timeout: 2500 });
       if (res.data?.ip && isPublicIpv4(res.data.ip)) return String(res.data.ip).trim();
       throw new Error("No IP");
     },
     async () => {
-      const res = await axios.get("https://ipv4.icanhazip.com", { timeout: 4000, responseType: "text" });
+      const res = await axios.get("https://ipv4.icanhazip.com", { timeout: 2500, responseType: "text" });
       if (res.data && isPublicIpv4(res.data)) return String(res.data).trim();
       throw new Error("No IP");
     },
     async () => {
-      const res = await axios.get("https://v4.ident.me", { timeout: 4000, responseType: "text" });
+      const res = await axios.get("https://checkip.amazonaws.com", { timeout: 2500, responseType: "text" });
       if (res.data && isPublicIpv4(res.data)) return String(res.data).trim();
       throw new Error("No IP");
     },
     async () => {
-      const res = await axios.get("https://checkip.amazonaws.com", { timeout: 4000, responseType: "text" });
-      if (res.data && isPublicIpv4(res.data)) return String(res.data).trim();
-      throw new Error("No IP");
-    },
-    async () => {
-      const res = await axios.get("https://ifconfig.me/ip", { timeout: 4000, responseType: "text" });
+      const res = await axios.get("https://ifconfig.me/ip", { timeout: 2500, responseType: "text" });
       if (res.data && isPublicIpv4(res.data)) return String(res.data).trim();
       throw new Error("No IP");
     },
@@ -70,9 +73,17 @@ const getOutboundIp = async (forceRefresh = false) => {
       return cachedOutboundIp;
     }
   } catch (err) {
-    console.warn("[System] Dynamic outbound IP detection notice:", err.message);
+    // Expected on airgapped or heavily filtered CGNAT environments
   }
 
+  // Fallback 1: Connecting client IP (from Cloudflare cf-connecting-ip or reverse proxy)
+  if (fallbackClientIp && isPublicIpv4(fallbackClientIp)) {
+    cachedOutboundIp = fallbackClientIp.trim();
+    lastIpFetchTime = now;
+    return cachedOutboundIp;
+  }
+
+  // Fallback 2: Environment variables
   if (process.env.SERVER_PUBLIC_IP && isPublicIpv4(process.env.SERVER_PUBLIC_IP)) {
     return process.env.SERVER_PUBLIC_IP.trim();
   }
@@ -371,8 +382,8 @@ print("Firebase Admin Initialized")`,
   },
 ];
 
-const getDeploymentGuide = async () => {
-  const outboundIp = await getOutboundIp();
+const getDeploymentGuide = async (fallbackClientIp = null) => {
+  const outboundIp = await getOutboundIp(false, fallbackClientIp);
 
   // Populate dynamic IP into whitelist instructions
   const databases = DATABASE_PRESETS.map((db) => ({
