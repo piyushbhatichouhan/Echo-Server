@@ -312,9 +312,10 @@ export default function DeploymentGuideModal({ isOpen, onClose, initialTab = "ru
 
   const [activeTab, setActiveTab] = useState(isDbInit ? "database" : (initialTab || "rules"));
   const [activeDb, setActiveDb] = useState(DB_IDS.includes(initialTab) ? initialTab : "mongodb");
+  const HARDCODED_SERVER_IP = "103.82.99.186";
   const [guideData, setGuideData] = useState(null);
   const [copiedKey, setCopiedKey] = useState(null);
-  const [ip, setIp] = useState(null);
+  const [ip, setIp] = useState(HARDCODED_SERVER_IP);
   const [loadingIp, setLoadingIp] = useState(false);
   const [refreshingIp, setRefreshingIp] = useState(false);
 
@@ -331,13 +332,11 @@ export default function DeploymentGuideModal({ isOpen, onClose, initialTab = "ru
   const fetchIp = useCallback(async (force = false) => {
     try {
       if (force) setRefreshingIp(true);
-      else setLoadingIp(true);
       const resIp = await getOutboundIp(force);
-      if (resIp && isPublicIpv4(resIp)) {
-        setIp(resIp.trim());
-      }
+      setIp(resIp || HARDCODED_SERVER_IP);
     } catch (e) {
       console.warn("Failed to fetch outbound IP:", e);
+      setIp(HARDCODED_SERVER_IP);
     } finally {
       setLoadingIp(false);
       setRefreshingIp(false);
@@ -364,7 +363,7 @@ export default function DeploymentGuideModal({ isOpen, onClose, initialTab = "ru
       getDeploymentGuide()
         .then((data) => {
           setGuideData(data);
-          if (data?.outboundIp && isPublicIpv4(data.outboundIp)) {
+          if (data?.outboundIp) {
             setIp(data.outboundIp.trim());
           }
         })
@@ -378,26 +377,14 @@ export default function DeploymentGuideModal({ isOpen, onClose, initialTab = "ru
   }, [isOpen, initialTab, fetchIp, guideData]);
 
   const copyToClipboard = (text, key) => {
-    const toCopy = isPublicIpv4(text) ? text : "0.0.0.0/0";
+    const toCopy = text || HARDCODED_SERVER_IP;
     navigator.clipboard.writeText(toCopy);
     setCopiedKey(key);
-    if (isPublicIpv4(text)) {
-      toast?.success?.("Copied to Clipboard", `Server Outbound IP ${text} copied.`);
-    } else {
-      toast?.success?.("Copied 0.0.0.0/0", "Copied 0.0.0.0/0 for MongoDB Atlas whitelist (recommended for CGNAT).");
-    }
+    toast?.success?.("Copied to Clipboard", `Server Outbound IP ${toCopy} copied.`);
     setTimeout(() => setCopiedKey(null), 2000);
   };
 
-  const detectedIp = isPublicIpv4(ip)
-    ? ip.trim()
-    : isPublicIpv4(guideData?.outboundIp)
-    ? guideData.outboundIp.trim()
-    : isPublicIpv4(import.meta.env.VITE_SERVER_IP)
-    ? import.meta.env.VITE_SERVER_IP.trim()
-    : null;
-
-  const outboundIp = detectedIp || (loadingIp || refreshingIp ? "Detecting..." : "0.0.0.0/0 (CGNAT)");
+  const outboundIp = ip || guideData?.outboundIp || HARDCODED_SERVER_IP;
   const databaseList = guideData?.databases || FALLBACK_DATABASES;
   const currentDb = databaseList.find((d) => d.id === activeDb) || databaseList[0];
 
@@ -803,20 +790,14 @@ app.get('*', (req, res) => {
                     <div className="eh-outbound-head">
                       <span className="eh-outbound-label">Server Outbound IP:</span>
                       <code className="eh-outbound-val">
-                        {(loadingIp || refreshingIp) && !detectedIp ? (
-                          <span className="eh-ip-loading-inline">
-                            <RefreshCw size={12} className="eh-spin" /> Detecting...
-                          </span>
-                        ) : (
-                          outboundIp
-                        )}
+                        {outboundIp}
                       </code>
                       <button
                         type="button"
                         className="eh-copy-ip-btn"
                         onClick={() => copyToClipboard(outboundIp, `ip_${currentDb.id}`)}
-                        disabled={(loadingIp || refreshingIp) && !detectedIp}
-                        title={(loadingIp || refreshingIp) && !detectedIp ? "Detecting IP..." : "Copy IP"}
+                        disabled={refreshingIp}
+                        title="Copy IP"
                       >
                         {copiedKey === `ip_${currentDb.id}` ? (
                           <Check size={14} color="#032115" />

@@ -62,12 +62,13 @@ export default function Settings() {
 
   const [user, setUser] = useState(null);
   const [stats, setStats] = useState(null);
+  const HARDCODED_SERVER_IP = "103.82.99.186";
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [copiedField, setCopiedField] = useState(null);
-  const [outboundIp, setOutboundIp] = useState(null);
-  const [ipLoading, setIpLoading] = useState(true);
+  const [outboundIp, setOutboundIp] = useState(HARDCODED_SERVER_IP);
+  const [ipLoading, setIpLoading] = useState(false);
   const [refreshingIp, setRefreshingIp] = useState(false);
 
   const isPublicIpv4 = (val) => {
@@ -81,16 +82,11 @@ export default function Settings() {
   const loadOutboundIp = useCallback(async (force = false) => {
     try {
       if (force) setRefreshingIp(true);
-      else setIpLoading(true);
       const ip = await getOutboundIp(force);
-      if (ip && isPublicIpv4(ip)) {
-        setOutboundIp(ip.trim());
-      } else {
-        setOutboundIp(null);
-      }
+      setOutboundIp(ip || HARDCODED_SERVER_IP);
     } catch (err) {
       console.warn("Failed to load outbound IP:", err);
-      setOutboundIp(null);
+      setOutboundIp(HARDCODED_SERVER_IP);
     } finally {
       setIpLoading(false);
       setRefreshingIp(false);
@@ -664,21 +660,13 @@ export default function Settings() {
                     type="button"
                     className="settings-tile-copy-btn"
                     onClick={() => {
-                      const toCopy = isPublicIpv4(outboundIp)
-                        ? outboundIp
-                        : isPublicIpv4(import.meta.env.VITE_SERVER_IP)
-                        ? import.meta.env.VITE_SERVER_IP
-                        : "0.0.0.0/0";
+                      const toCopy = outboundIp || HARDCODED_SERVER_IP;
                       handleCopy(toCopy, "tile-outbound-ip");
-                      if (toCopy === "0.0.0.0/0") {
-                        toast?.info("Copied 0.0.0.0/0", "Copied 0.0.0.0/0 for MongoDB Atlas whitelist (recommended for CGNAT).");
-                      } else {
-                        toast?.success("Copied to Clipboard", `Server Outbound IP ${toCopy} copied.`);
-                      }
+                      toast?.success("Copied to Clipboard", `Server Outbound IP ${toCopy} copied.`);
                     }}
-                    disabled={ipLoading || refreshingIp}
+                    disabled={refreshingIp}
                     aria-label="Copy Outbound IP"
-                    title="Copy Outbound IP or 0.0.0.0/0"
+                    title="Copy Outbound IP"
                   >
                     {copiedField === "tile-outbound-ip" ? (
                       <Check size={14} />
@@ -690,18 +678,12 @@ export default function Settings() {
               </div>
 
               <div className="settings-tile-value settings-tile-value--mono">
-                {ipLoading || refreshingIp ? (
+                {refreshingIp ? (
                   <span className="settings-ip-detecting">
-                    <RefreshCw size={14} className="settings-spin" /> Detecting Outbound IP...
+                    <RefreshCw size={14} className="settings-spin" /> Refreshing...
                   </span>
-                ) : isPublicIpv4(outboundIp) ? (
-                  outboundIp
-                ) : isPublicIpv4(import.meta.env.VITE_SERVER_IP) ? (
-                  import.meta.env.VITE_SERVER_IP
                 ) : (
-                  <span className="settings-ip-detecting" style={{ color: "var(--accent)" }}>
-                    Dynamic CGNAT (Use 0.0.0.0/0)
-                  </span>
+                  outboundIp || HARDCODED_SERVER_IP
                 )}
               </div>
 

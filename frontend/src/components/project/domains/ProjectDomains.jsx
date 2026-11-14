@@ -44,7 +44,7 @@ export default function ProjectDomains({
   const [submitting, setSubmitting] = useState(false);
   const [actionLoadingId, setActionLoadingId] = useState(null);
   const [copiedText, setCopiedText] = useState(null);
-  const [serverIp, setServerIp] = useState(import.meta.env.VITE_SERVER_IP || "");
+  const [serverIp, setServerIp] = useState(import.meta.env.VITE_SERVER_IP || "103.82.99.186");
 
   const toast = useToast();
 

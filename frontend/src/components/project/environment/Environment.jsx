@@ -45,7 +45,7 @@ export default function Environment({ projectId }) {
   const [redeploying, setRedeploying] = useState(false);
   const [exampleEnv, setExampleEnv] = useState(null);
 
-  const [outboundIp, setOutboundIp] = useState(null);
+  const [outboundIp, setOutboundIp] = useState("103.82.99.186");
   const [copiedIp, setCopiedIp] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
   const [guideTab, setGuideTab] = useState("db");

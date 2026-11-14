@@ -33,85 +33,13 @@ const getDockerInfo = async () => {
   return await docker.info();
 };
 
-const getOutboundIp = async (forceRefresh = false) => {
+const HARDCODED_SERVER_IP = "103.82.99.186";
+
+const getOutboundIp = async () => {
   if (process.env.SERVER_PUBLIC_IP && isPublicIp(process.env.SERVER_PUBLIC_IP)) {
     return process.env.SERVER_PUBLIC_IP.trim();
   }
-
-  const now = Date.now();
-  if (!forceRefresh && cachedOutboundIp && isPublicIp(cachedOutboundIp) && now - lastIpFetchTime < IP_CACHE_TTL_MS) {
-    return cachedOutboundIp;
-  }
-
-  const httpHeaders = { "User-Agent": "curl/8.0" };
-
-  // Fast concurrent dynamic public IP detection from server
-  const fetchers = [
-    async () => {
-      const res = await axios.get("https://api4.ipify.org?format=json", {
-        timeout: 2500,
-        headers: httpHeaders,
-      });
-      if (res.data?.ip && isPublicIp(res.data.ip)) return String(res.data.ip).trim();
-      throw new Error("No IP");
-    },
-    async () => {
-      const res = await axios.get("https://ipv4.icanhazip.com", {
-        timeout: 2500,
-        responseType: "text",
-        headers: httpHeaders,
-      });
-      if (res.data && isPublicIp(res.data)) return String(res.data).trim();
-      throw new Error("No IP");
-    },
-    async () => {
-      const res = await axios.get("https://checkip.amazonaws.com", {
-        timeout: 2500,
-        responseType: "text",
-        headers: httpHeaders,
-      });
-      if (res.data && isPublicIp(res.data)) return String(res.data).trim();
-      throw new Error("No IP");
-    },
-    async () => {
-      const res = await axios.get("https://ifconfig.me/ip", {
-        timeout: 2500,
-        responseType: "text",
-        headers: httpHeaders,
-      });
-      if (res.data && isPublicIp(res.data)) return String(res.data).trim();
-      throw new Error("No IP");
-    },
-    async () => {
-      const resolver = new Resolver();
-      resolver.setServers(["208.67.222.222", "208.67.220.220"]);
-      const res = await withTimeout(resolver.resolve4("myip.opendns.com"), 2000);
-      if (res && res[0] && isPublicIp(res[0])) return res[0].trim();
-      throw new Error("No DNS IP");
-    },
-  ];
-
-  try {
-    const ip = await Promise.any(fetchers.map((fn) => fn()));
-    if (isPublicIp(ip)) {
-      cachedOutboundIp = ip;
-      lastIpFetchTime = now;
-      return cachedOutboundIp;
-    }
-  } catch (err) {
-    // Expected on airgapped or heavily filtered CGNAT environments
-  }
-
-  // Fallback: Environment variables
-  if (process.env.SERVER_PUBLIC_IP && isPublicIp(process.env.SERVER_PUBLIC_IP)) {
-    return process.env.SERVER_PUBLIC_IP.trim();
-  }
-
-  if (process.env.SERVER_IP && isPublicIp(process.env.SERVER_IP)) {
-    return process.env.SERVER_IP.trim();
-  }
-
-  return cachedOutboundIp && isPublicIp(cachedOutboundIp) ? cachedOutboundIp : null;
+  return HARDCODED_SERVER_IP;
 };
 
 const DATABASE_PRESETS = [
