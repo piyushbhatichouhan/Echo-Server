@@ -117,9 +117,10 @@ export default function ProjectDomains({
   const handleVerifySsl = async (domain) => {
     try {
       setActionLoadingId(domain.id);
-      const updated = await verifyCustomDomain(projectId, domain.id);
+      const res = await verifyCustomDomain(projectId, domain.id);
+      const updated = res.data || res;
       toast.success(
-        `SSL certificate verified and renewed for '${domain.hostname}'.`
+        res.message || `SSL certificate verified and renewed for '${domain.hostname}'.`
       );
       setDomains((prev) =>
         prev.map((d) => (d.id === domain.id ? { ...d, ...updated } : d))
@@ -131,6 +132,7 @@ export default function ProjectDomains({
     }
   };
 
+  const customDomainsList = domains.filter((d) => d.is_custom);
   const serverIpTarget =
     import.meta.env.VITE_SERVER_IP ||
     (window.location.hostname &&
