@@ -65,9 +65,31 @@ const inspectDirectory = async (targetDir, workingDir = ".") => {
 
         let startCmd = "npm start";
         if (!hasStartScript) {
-          if (fileSet.has("backend")) startCmd = "node backend/server.js";
-          else if (fileSet.has("server")) startCmd = "node server/index.js";
-          else startCmd = "node server.js";
+          const candidates = [
+            "backend/server.js",
+            "backend/src/server.js",
+            "backend/index.js",
+            "backend/src/index.js",
+            "backend/app.js",
+            "server/index.js",
+            "server/server.js",
+            "server/src/index.js",
+            "server/app.js",
+            "src/server.js",
+            "src/index.js",
+            "server.js",
+            "index.js",
+            "app.js",
+          ];
+          for (const cand of candidates) {
+            try {
+              const stat = await fs.stat(path.join(targetDir, cand));
+              if (stat.isFile()) {
+                startCmd = `node ${cand}`;
+                break;
+              }
+            } catch {}
+          }
         }
 
         return {
@@ -192,6 +214,24 @@ const inspectDirectory = async (targetDir, workingDir = ".") => {
         if (fileSet.has("server.js")) startCmd = "node server.js";
         else if (fileSet.has("app.js")) startCmd = "node app.js";
         else if (fileSet.has("index.js")) startCmd = "node index.js";
+        else {
+          const subCandidates = [
+            "src/server.js",
+            "src/index.js",
+            "src/app.js",
+            "dist/server.js",
+            "dist/index.js",
+          ];
+          for (const cand of subCandidates) {
+            try {
+              const stat = await fs.stat(path.join(targetDir, cand));
+              if (stat.isFile()) {
+                startCmd = `node ${cand}`;
+                break;
+              }
+            } catch {}
+          }
+        }
       }
 
       return {

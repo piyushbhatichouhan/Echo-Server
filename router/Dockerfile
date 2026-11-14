@@ -2,13 +2,13 @@ FROM node:22-alpine
 
 WORKDIR /app
 
-# Copy dependency definitions
-COPY package*.json ./
+# Copy dependency definitions from router directory
+COPY --chown=node:node router/package*.json ./
 
 RUN npm install --omit=dev
 
-# Copy application sources
-COPY . ./
+# Copy application sources from router directory
+COPY --chown=node:node router .
 
 USER node
 

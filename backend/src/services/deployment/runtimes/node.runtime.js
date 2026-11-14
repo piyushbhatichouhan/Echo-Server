@@ -93,8 +93,15 @@ function generateDockerfile(context) {
   const installCmd = settings.install_command?.trim() || defaultInstall;
 
   const defaultStart =
-    'if [ -f package.json ] && grep -q \'"start":\' package.json; then npm start; elif [ -f server.js ]; then node server.js; elif [ -f app.js ]; then node app.js; elif [ -f index.js ]; then node index.js; elif [ -f dist/index.js ]; then node dist/index.js; else npm start; fi';
-  const startCmd = settings.start_command?.trim() || defaultStart;
+    'if [ -f server.js ]; then exec node server.js; elif [ -f src/server.js ]; then exec node src/server.js; elif [ -f backend/server.js ]; then exec node backend/server.js; elif [ -f backend/src/server.js ]; then exec node backend/src/server.js; elif [ -f server/index.js ]; then exec node server/index.js; elif [ -f server/server.js ]; then exec node server/server.js; elif [ -f app.js ]; then exec node app.js; elif [ -f index.js ]; then exec node index.js; elif [ -f src/index.js ]; then exec node src/index.js; elif [ -f dist/index.js ]; then exec node dist/index.js; elif [ -f package.json ] && grep -q \'"start":\' package.json; then exec npm start; else exec node server.js; fi';
+
+  const userStart = settings.start_command?.trim();
+  let startCmd;
+  if (!userStart || userStart === "node server.js") {
+    startCmd = defaultStart;
+  } else {
+    startCmd = `exec ${userStart}`;
+  }
 
   return `
 FROM node:22-alpine
@@ -138,7 +145,7 @@ ENV NODE_ENV="${userNodeEnv}"
 ENV PORT=${context.containerPort}
 EXPOSE ${context.containerPort}
 
-CMD ["sh", "-c", "exec ${startCmd.replace(/"/g, '\\"')}"]
+CMD ["sh", "-c", "${startCmd.replace(/"/g, '\\"')}"]
 `;
 }
 
