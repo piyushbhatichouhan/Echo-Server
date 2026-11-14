@@ -71,6 +71,8 @@ const ENGINE_DETAILS = {
   },
 };
 
+const ENGINE_CONFIGS = ENGINE_DETAILS;
+
 export default function ProjectDatabases({ projectId }) {
   const [databases, setDatabases] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -451,7 +453,7 @@ export default function ProjectDatabases({ projectId }) {
               <div className="eh-modal-field">
                 <label>Select Database Engine</label>
                 <div className="eh-engine-select-grid">
-                  {Object.entries(ENGINE_CONFIGS).map(([key, item]) => {
+                  {Object.entries(ENGINE_DETAILS).map(([key, item]) => {
                     const isSelected = selectedEngine === key;
                     return (
                       <div
