@@ -55,8 +55,9 @@ export default function Environment({ projectId }) {
     let mounted = true;
     getOutboundIp()
       .then((res) => {
-        if (mounted && res?.ip) {
-          setOutboundIp(res.ip);
+        if (mounted && res) {
+          const ipVal = typeof res === "string" ? res : res?.outboundIp || res?.ip || null;
+          if (ipVal) setOutboundIp(ipVal.trim());
         }
       })
       .catch(() => {});
