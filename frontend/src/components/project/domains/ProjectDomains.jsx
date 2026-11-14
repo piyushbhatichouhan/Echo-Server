@@ -26,6 +26,7 @@ import {
   deleteCustomDomain,
   verifyCustomDomain,
 } from "../../../services/domain.api";
+import { getOutboundIp } from "../../../services/system.api";
 
 export default function ProjectDomains({
   projectId,
@@ -43,8 +44,21 @@ export default function ProjectDomains({
   const [submitting, setSubmitting] = useState(false);
   const [actionLoadingId, setActionLoadingId] = useState(null);
   const [copiedText, setCopiedText] = useState(null);
+  const [serverIp, setServerIp] = useState(import.meta.env.VITE_SERVER_IP || "");
 
   const toast = useToast();
+
+  useEffect(() => {
+    let mounted = true;
+    getOutboundIp()
+      .then((ip) => {
+        if (mounted && ip) setServerIp(ip);
+      })
+      .catch(() => {});
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const fetchDomains = useCallback(async () => {
     if (!projectId) return;
@@ -134,12 +148,12 @@ export default function ProjectDomains({
 
   const customDomainsList = domains.filter((d) => d.is_custom);
   const serverIpTarget =
+    serverIp ||
     import.meta.env.VITE_SERVER_IP ||
-    (window.location.hostname &&
-    window.location.hostname !== "localhost" &&
-    window.location.hostname !== "127.0.0.1"
-      ? window.location.hostname
-      : "127.0.0.1 (Server IP)");
+    "YOUR_SERVER_IP";
+  const baseDomainTarget =
+    import.meta.env.VITE_BASE_DOMAIN ||
+    "devpiyush.in";
   const primaryDomain = domains.find((d) => d.is_primary) || (publication?.hostname ? {
     hostname: publication.hostname,
     is_primary: true,
@@ -399,14 +413,14 @@ export default function ProjectDomains({
                   <code>app</code> or <code>subdomain</code>
                 </td>
                 <td>
-                  <code className="eh-dns-target-val">devpiyush.in</code>
+                  <code className="eh-dns-target-val">{baseDomainTarget}</code>
                 </td>
                 <td>Automatic / 3600</td>
                 <td>
                   <button
                     type="button"
                     className="eh-dns-copy-btn"
-                    onClick={() => handleCopy("devpiyush.in", "cname")}
+                    onClick={() => handleCopy(baseDomainTarget, "cname")}
                   >
                     {copiedText === "cname" ? <Check size={13} /> : <Copy size={13} />}
                     <span>{copiedText === "cname" ? "Copied" : "Copy Value"}</span>
@@ -416,10 +430,10 @@ export default function ProjectDomains({
               <tr>
                 <td>
                   <span className="eh-dns-type-tag type-a">A</span>
-                  <span className="eh-dns-tag-desc">For Root / Apex (@) Domains</span>
+                  <span className="eh-dns-tag-desc">For Root (@) or Direct Subdomains</span>
                 </td>
                 <td>
-                  <code>@</code>
+                  <code>@</code> or <code>subdomain</code>
                 </td>
                 <td>
                   <code className="eh-dns-target-val">{serverIpTarget}</code>
@@ -429,7 +443,7 @@ export default function ProjectDomains({
                   <button
                     type="button"
                     className="eh-dns-copy-btn"
-                    onClick={() => handleCopy(serverIpTarget.split(" ")[0], "a-record")}
+                    onClick={() => handleCopy(serverIpTarget, "a-record")}
                   >
                     {copiedText === "a-record" ? <Check size={13} /> : <Copy size={13} />}
                     <span>{copiedText === "a-record" ? "Copied" : "Copy Value"}</span>
@@ -438,6 +452,16 @@ export default function ProjectDomains({
               </tr>
             </tbody>
           </table>
+        </div>
+
+        <div className="eh-dns-cloudflare-callout">
+          <AlertCircle size={20} style={{ color: "#d29922", flexShrink: 0, marginTop: 2 }} />
+          <div>
+            <strong>Using Cloudflare for your domain? (Avoid Error 1014)</strong>
+            <p>
+              If your custom domain is on Cloudflare, set the Proxy status to <strong>DNS only (Grey Cloud ☁️)</strong>. Cloudflare forbids cross-account CNAME proxying (<code>Error 1014: CNAME Cross-User Banned</code>). Or use an <strong>A Record</strong> pointing to <code>{serverIpTarget}</code>.
+            </p>
+          </div>
         </div>
 
         <div className="eh-dns-callout">

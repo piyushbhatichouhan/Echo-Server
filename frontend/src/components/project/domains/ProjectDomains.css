@@ -475,6 +475,36 @@
   color: #8b949e;
 }
 
+.eh-dns-cloudflare-callout {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 18px;
+  background: rgba(210, 153, 34, 0.08);
+  border: 1px solid rgba(210, 153, 34, 0.25);
+  border-radius: 8px;
+  color: #c9d1d9;
+  font-size: 0.85rem;
+}
+
+.eh-dns-cloudflare-callout strong {
+  display: block;
+  color: #d29922;
+  margin-bottom: 2px;
+}
+
+.eh-dns-cloudflare-callout p {
+  margin: 0;
+  color: #8b949e;
+}
+
+.eh-dns-cloudflare-callout code {
+  color: #f0f6fc;
+  background: rgba(110, 118, 129, 0.2);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
 /* Modal */
 .eh-modal-backdrop {
   position: fixed;
